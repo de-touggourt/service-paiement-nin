@@ -10,7 +10,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <style>
@@ -114,7 +113,7 @@
     }
     
     .input-icon-wrapper input {
-      padding-left: 45px; 
+      padding-left: 50px; /* مساحة للأيقونة */
     }
 
     .camera-btn {
@@ -125,8 +124,8 @@
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 20px; /* حجم الأيقونة */
-      color: #6a11cb; /* لون الأيقونة */
+      font-size: 22px; 
+      color: #6a11cb;
       padding: 5px;
       z-index: 10;
       transition: all 0.2s ease;
@@ -473,11 +472,11 @@ function showForm(fbData, savedData, isEdit) {
     <div class="outer-group">
        <label style="color:#d9534f;">رقم التعريف الوطني (NIN)</label>
        <div class="input-icon-wrapper">
-         <button type="button" class="camera-btn" onclick="triggerCamera()" title="التقاط الرقم">
+         <button type="button" class="camera-btn" onclick="triggerCamera()" title="التقاط الرقم من الكاميرا">
             <i class="fa-solid fa-camera"></i>
          </button>
          <input type="text" id="ninField" value="${val_nin}" placeholder="18 رقم من بطاقة التعريف" oninput="validateNumber(this)">
-         <input type="file" id="cameraInput" accept="image/*" style="display: none;" onchange="processImage(this)">
+         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="processImage(this)">
        </div>
        <div id="scanStatus" class="scanning-loader"></div>
     </div>
