@@ -355,7 +355,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 🛑🛑🛑
+// 🛑🛑🛑 استبدل هذا الرابط برابط السكريبت الخاص بك 🛑🛑🛑
 const scriptURL = "https://script.google.com/macros/s/AKfycbxhTB6G77YGS_zQDSeIPoICvbbiEwae4zvGyjKw35c37xuQc3gok5x_wFg6m9eyMnITzw/exec";
 
 // --- خريطة الرتب (محدثة) ---
@@ -438,7 +438,6 @@ const gradeMap = {
   "6225": "عون أمن ووقاية",
   "6241": "عامل مهني مستوى الاول"
 };
-
 const baladiyaMap = { "توقرت": ["توقرت", "النزلة", "تبسبست", "الزاوية العابدية"], "تماسين": ["تماسين", "بلدة عمر"], "المقارين": ["المقارين", "سيدي سليمان"], "الحجيرة": ["الحجيرة", "العالية"], "الطيبات": ["الطيبات", "المنقر", "ابن ناصر"] };
 
 window.primarySchoolsByBaladiya = {
@@ -543,7 +542,7 @@ async function checkEmployee() {
   const rawInput = document.getElementById("ccpInput").value.trim();
   const cleanInput = rawInput.replace(/\D/g, ''); 
 
-  if (cleanInput.length < 3) return Swal.fire("تنبيه", "رقم CCP غير صحيح", "warning");
+  if (cleanInput.length < 3) return Swal.fire("تنبيه", "رقم الحساب البريدي الجاري CCP غير صحيح", "warning");
 
   Swal.fire({ title: 'جاري التحقق...', didOpen:()=>Swal.showLoading(), allowOutsideClick: false });
 
@@ -585,7 +584,7 @@ async function checkEmployee() {
       title: 'تم تسجيل الدخول بنجاح',
       html: `
         مرحباً بك:
-        <span style="color:#6a11cb; font-weight:800; font-size:16px;">
+        <span style="color:#6a11cb; font-weight:700; font-size:18px;">
           ${displayData.fmn || ''} ${displayData.frn || ''}
         </span>
       `,
@@ -631,7 +630,8 @@ function showReviewModal(data, context) {
 
   const warningBox = `
     <div style="border: 2px solid #dc3545; background-color: #fff8f8; color: #dc3545; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; text-align: center; font-size: 14px;">
-      ⚠️ معلومات التسجيل (غير مؤكدة)
+      ⚠️ معلومات التسجيل (غير مؤكدة)<br>
+      يرجى مراجعة صحة المعلومات وتأكيدها لطباعة الإستمارة
     </div>
   `;
 
@@ -654,7 +654,7 @@ function showReviewModal(data, context) {
 
   Swal.fire({
     title: context === 'new' ? 'تم التسجيل بنجاح' : 'مراجعة البيانات',
-    html: htmlTable + '<p style="color:#555; font-size:13px; margin-top:10px;">يرجى مراجعة المعلومات وتأكيدها لطباعة الاستمارة</p>',
+    html: htmlTable + '<p style="color:#FF0000; font-size:13px; margin-top:10px; font-weight: bold;">في حالة التعديل بعد تأكيد المعلومات ، يرجى مراجعة وتأكيد صحة المعلومات مرة ثانية لطباعة الإستمارة المعدلة</p>',
     icon: 'info',
     showDenyButton: true,
     showCancelButton: true,
@@ -928,7 +928,7 @@ async function submitRegistration() {
   const phoneRegex = /^(05|06|07)[0-9]{8}$/;
   if(!phoneRegex.test(phone.value)) {
       phone.classList.add("input-error");
-      return Swal.fire({ icon: 'warning', title: 'رقم الهاتف غير صحيح' });
+      return Swal.fire({ icon: 'warning', title: 'الهاتف غير صحيح' });
   }
   if(nin.value.length !== 18) {
       nin.classList.add("input-error");
@@ -1067,4 +1067,3 @@ function updateWorkPlace() {
 </script>
 </body>
 </html>
-
