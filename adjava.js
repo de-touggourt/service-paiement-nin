@@ -498,11 +498,9 @@ window.openAddModal = function() {
     confirmButtonColor: '#2a9d8f',
     focusConfirm: false,
     
-    // كود التحقق وجلب البيانات
     didOpen: () => {
         const ccpInput = document.getElementById('inp_ccp');
 
-        // دالة تحويل الرتب
         const getJobFromGrade = (code) => {
             if(!code) return "";
             const mapping = {
@@ -519,22 +517,24 @@ window.openAddModal = function() {
             if (!rawInput) return;
 
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-            Toast.fire({ icon: 'info', title: 'جاري البحث بجميع الصيغ...' });
+            Toast.fire({ icon: 'info', title: 'جاري البحث...' });
 
-            // --- منطق injava.js المطور للبحث ---
-            const cleanInput = rawInput.replace(/\D/g, ''); // حذف الحروف
-            const baseCCP = cleanInput.replace(/^0+/, '');  // حذف الأصفار من اليسار
+            const cleanInput = rawInput.replace(/\D/g, ''); 
+            const baseCCP = cleanInput.replace(/^0+/, ''); 
 
-            // قائمة الاحتمالات (كما في الملف المرفق + تحسينات)
+            // 1. تحضير الاحتمالات بحذر (تجنب NaN)
             const candidates = [
-                rawInput,                   // 1. ما كتبه المستخدم بالضبط
-                cleanInput,                 // 2. الأرقام فقط
-                baseCCP,                    // 3. الرقم بدون أصفار (مثال: 123)
-                baseCCP.padStart(10, '0'),  // 4. الرقم بـ 10 خانات (مثال: 0000000123)
-                Number(baseCCP)             // 5. الرقم كنوع Number (للأمان)
+                rawInput,
+                cleanInput,
+                baseCCP,
+                baseCCP.padStart(10, '0')
             ];
             
-            // إزالة التكرار من الاحتمالات
+            // إضافة الرقم فقط إذا كان رقماً صحيحاً
+            if (baseCCP && !isNaN(Number(baseCCP))) {
+                candidates.push(Number(baseCCP));
+            }
+            
             const uniqueCandidates = [...new Set(candidates)];
             console.log("Searching for:", uniqueCandidates);
 
@@ -542,34 +542,35 @@ window.openAddModal = function() {
             const employeesRef = collection(db, "employeescompay");
 
             try {
-                // المحاولة 1: البحث عن طريق ID الوثيقة (Document ID) لكل الاحتمالات
+                // المحاولة 1: البحث عن طريق ID
                 for (const candidate of uniqueCandidates) {
-                    // ID في فايربيس دائماً String
                     const docRef = doc(db, "employeescompay", String(candidate));
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
                         console.log("Found by Doc ID:", candidate);
                         data = docSnap.data();
-                        break; // وجدنا البيانات، نوقف البحث
+                        break; 
                     }
                 }
 
-                // المحاولة 2: إذا لم نجد بالـ ID، نبحث داخل الحقول (Query) لكل الاحتمالات
+                // المحاولة 2: البحث داخل الحقول
                 if (!data) {
                     for (const candidate of uniqueCandidates) {
-                        // بحث كحقل (مرة كنص ومرة كرقم إذا كان الاحتمال رقمي)
-                        let q = query(employeesRef, where("ccp", "==", candidate));
-                        let querySnapshot = await getDocs(q);
-                        
-                        if (!querySnapshot.empty) {
-                             console.log("Found by Field Query:", candidate);
-                             data = querySnapshot.docs[0].data();
-                             break;
+                        try {
+                            let q = query(employeesRef, where("ccp", "==", candidate));
+                            let querySnapshot = await getDocs(q);
+                            if (!querySnapshot.empty) {
+                                console.log("Found by Field Query:", candidate);
+                                data = querySnapshot.docs[0].data();
+                                break;
+                            }
+                        } catch (qErr) {
+                            console.warn("Query warning for:", candidate, qErr.message);
+                            // نتجاهل خطأ الاستعلام الواحد ونكمل الباقي
                         }
                     }
                 }
 
-                // عرض النتائج
                 if (data) {
                     if(data.ass) document.getElementById('inp_ass').value = data.ass;
                     if(data.fmn) document.getElementById('inp_fmn').value = data.fmn;
@@ -590,12 +591,18 @@ window.openAddModal = function() {
                     }
                     Toast.fire({ icon: 'success', title: 'تم العثور على البيانات!' });
                 } else {
-                    Toast.fire({ icon: 'warning', title: 'لم يتم العثور على الحساب بعد الفحص الشامل' });
+                    Toast.fire({ icon: 'warning', title: 'لم يتم العثور على الحساب' });
                 }
 
             } catch (error) {
-                console.error("Search Error:", error);
-                Toast.fire({ icon: 'error', title: 'حدث خطأ أثناء البحث' });
+                console.error("Critical Search Error:", error);
+                // 🛑 هذا السطر سيعطيك سبب الخطأ الحقيقي 🛑
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ تقني',
+                    text: error.message,
+                    footer: 'افتح Console (F12) لرؤية التفاصيل'
+                });
             }
         });
     },
@@ -860,3 +867,4 @@ window.formatDateForInput = function(d) {
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
 };
+
