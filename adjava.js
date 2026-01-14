@@ -486,7 +486,7 @@ window.openFirebaseModal = function() {
 };
 
 // --- الدالة المعدلة كلياً: تسجيل موظف جديد (مدمج بها منطق injava.js للتحقق) ---
-// --- الدالة المعدلة: تسجيل موظف جديد (مع إصلاح خطأ null) ---
+// --- الدالة المعدلة: تسجيل موظف جديد (مع حل مشكلة اختفاء النافذة عند الضغط على Enter) ---
 window.openAddModal = function() {
   Swal.fire({
     title: 'تسجيل موظف جديد',
@@ -498,18 +498,17 @@ window.openAddModal = function() {
     cancelButtonText: 'إلغاء',
     confirmButtonColor: '#2a9d8f',
     focusConfirm: false,
+    allowEnterKey: false, // 🛑 منع إغلاق النافذة بزر Enter بشكل عام
     
     // كود التحقق وجلب البيانات
     didOpen: () => {
         const ccpInput = document.getElementById('inp_ccp');
 
-        // دالة مساعدة لتعبئة الحقول بأمان (تمنع الخطأ إذا كان الحقل غير موجود)
+        // دالة مساعدة لتعبئة الحقول بأمان
         const safeSetVal = (id, val) => {
             const el = document.getElementById(id);
             if (el) {
                 el.value = val;
-            } else {
-                console.warn(`Element with id '${id}' not found in DOM.`);
             }
         };
 
@@ -525,8 +524,9 @@ window.openAddModal = function() {
             return mapping[code] || mapping[code.split('/')[0]] || "";
         };
 
-        ccpInput.addEventListener('change', async function() {
-            const rawInput = this.value.trim();
+        // --- دالة البحث المفصلة ---
+        const performSearch = async () => {
+            const rawInput = ccpInput.value.trim();
             if (!rawInput) return;
 
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
@@ -578,14 +578,13 @@ window.openAddModal = function() {
                                 break;
                             }
                         } catch (qErr) {
-                            // تجاهل الأخطاء الفردية في الاستعلام
+                            // تجاهل الأخطاء الفردية
                         }
                     }
                 }
 
                 // تعبئة البيانات عند العثور عليها
                 if (data) {
-                    // استخدام دالة safeSetVal لمنع الانهيار
                     if(data.ass) safeSetVal('inp_ass', data.ass);
                     if(data.fmn) safeSetVal('inp_fmn', data.fmn);
                     if(data.frn) safeSetVal('inp_frn', data.frn);
@@ -610,13 +609,21 @@ window.openAddModal = function() {
 
             } catch (error) {
                 console.error("Critical Search Error:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'خطأ تقني',
-                    text: error.message
-                });
+                Swal.fire({ icon: 'error', title: 'خطأ تقني', text: error.message });
+            }
+        };
+
+        // 🛑 التعامل مع زر Enter بشكل خاص لمنع الإغلاق 🛑
+        ccpInput.addEventListener('keydown', async function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault(); // يمنع إغلاق النافذة
+                event.stopPropagation();
+                await performSearch(); // ينفذ البحث
             }
         });
+
+        // البحث عند الخروج من الحقل أيضاً
+        ccpInput.addEventListener('change', performSearch);
     },
 
     preConfirm: () => window.getFormDataFromModal()
@@ -626,6 +633,7 @@ window.openAddModal = function() {
     }
   });
 };
+
 window.openEditModal = function(index) {
   const d = allData[index];
   Swal.fire({
@@ -878,5 +886,6 @@ window.formatDateForInput = function(d) {
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
 };
+
 
 
