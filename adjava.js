@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// تم تحديث الاستيراد هنا لإضافة collection, query, where, getDocs
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- إعدادات Firebase ---
 const firebaseConfig = {
@@ -479,12 +480,12 @@ window.openFirebaseModal = function() {
     }
   }).then((res) => {
     if(res.isConfirmed) {
-         window.saveToFirebaseDB(res.value);
+          window.saveToFirebaseDB(res.value);
     }
   });
 };
 
-// --- الدالة المعدلة: تسجيل موظف جديد مع جلب البيانات تلقائياً وتحديد الوظيفة ---
+// --- الدالة المعدلة كلياً: تسجيل موظف جديد (مدمج بها منطق injava.js للتحقق) ---
 window.openAddModal = function() {
   Swal.fire({
     title: 'تسجيل موظف جديد',
@@ -497,89 +498,107 @@ window.openAddModal = function() {
     confirmButtonColor: '#2a9d8f',
     focusConfirm: false,
     
-    // بدء كود المزامنة مع Firebase وجلب الوظيفة
+    // كود التحقق وجلب البيانات
     didOpen: () => {
         const ccpInput = document.getElementById('inp_ccp');
 
-        // قائمة تحويل الرتب إلى وظائف (يمكنك التعديل عليها هنا)
+        // دالة تحويل الرتب
         const getJobFromGrade = (code) => {
             if(!code) return "";
             const mapping = {
-                // التعليم الابتدائي
-                "11": "أستاذ المدرسة الابتدائية",
-                "14": "مدير مدرسة ابتدائية",
-                "12": "مساعد مدير مدرسة ابتدائية",
-                
-                // التعليم المتوسط
-                "12": "أستاذ التعليم المتوسط",
-                "13": "أستاذ رئيسي للتعليم المتوسط",
-                "15": "مستشار التربية",
-                "17": "مدير متوسطة",
-
-                // التعليم الثانوي
-                "13": "أستاذ التعليم الثانوي",
-                "14": "أستاذ رئيسي للتعليم الثانوي",
-                "16": "ناظر ثانوية",
-                "18": "مدير ثانوية",
-
-                // إداريين وعمال
-                "10": "مشرف تربية",
-                "11": "مشرف رئيسي للتربية",
-                "A1": "عامل مهني صنف 1",
-                "OP1": "عامل مهني صنف 1",
-                // أضف المزيد حسب الحاجة
+                "11": "أستاذ المدرسة الابتدائية", "14": "مدير مدرسة ابتدائية", "12": "مساعد مدير مدرسة ابتدائية",
+                "12/1": "أستاذ التعليم المتوسط", "13": "أستاذ رئيسي للتعليم المتوسط", "15": "مستشار التربية", "17": "مدير متوسطة",
+                "13/1": "أستاذ التعليم الثانوي", "14/1": "أستاذ رئيسي للتعليم الثانوي", "16": "ناظر ثانوية", "18": "مدير ثانوية",
+                "10": "مشرف تربية", "A1": "عامل مهني", "OP1": "عامل مهني", "4087": "مشرف تربية", "5019": "أستاذ تعليم ثانوي"
             };
-            // البحث عن تطابق تام، أو بالجزء الأول قبل الشرطة (مثلاً 12/1)
             return mapping[code] || mapping[code.split('/')[0]] || "";
         };
 
         ccpInput.addEventListener('change', async function() {
-            const ccpValue = this.value.trim();
-            if (!ccpValue) return;
+            const rawInput = this.value.trim();
+            if (!rawInput) return;
 
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-            Toast.fire({ icon: 'info', title: 'جاري البحث في الأرشيف...' });
+            Toast.fire({ icon: 'info', title: 'جاري البحث بجميع الصيغ...' });
+
+            // --- منطق injava.js المطور للبحث ---
+            const cleanInput = rawInput.replace(/\D/g, ''); // حذف الحروف
+            const baseCCP = cleanInput.replace(/^0+/, '');  // حذف الأصفار من اليسار
+
+            // قائمة الاحتمالات (كما في الملف المرفق + تحسينات)
+            const candidates = [
+                rawInput,                   // 1. ما كتبه المستخدم بالضبط
+                cleanInput,                 // 2. الأرقام فقط
+                baseCCP,                    // 3. الرقم بدون أصفار (مثال: 123)
+                baseCCP.padStart(10, '0'),  // 4. الرقم بـ 10 خانات (مثال: 0000000123)
+                Number(baseCCP)             // 5. الرقم كنوع Number (للأمان)
+            ];
+            
+            // إزالة التكرار من الاحتمالات
+            const uniqueCandidates = [...new Set(candidates)];
+            console.log("Searching for:", uniqueCandidates);
+
+            let data = null;
+            const employeesRef = collection(db, "employeescompay");
 
             try {
-                const docRef = doc(db, "employeescompay", ccpValue);
-                const docSnap = await getDoc(docRef);
+                // المحاولة 1: البحث عن طريق ID الوثيقة (Document ID) لكل الاحتمالات
+                for (const candidate of uniqueCandidates) {
+                    // ID في فايربيس دائماً String
+                    const docRef = doc(db, "employeescompay", String(candidate));
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        console.log("Found by Doc ID:", candidate);
+                        data = docSnap.data();
+                        break; // وجدنا البيانات، نوقف البحث
+                    }
+                }
 
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
+                // المحاولة 2: إذا لم نجد بالـ ID، نبحث داخل الحقول (Query) لكل الاحتمالات
+                if (!data) {
+                    for (const candidate of uniqueCandidates) {
+                        // بحث كحقل (مرة كنص ومرة كرقم إذا كان الاحتمال رقمي)
+                        let q = query(employeesRef, where("ccp", "==", candidate));
+                        let querySnapshot = await getDocs(q);
+                        
+                        if (!querySnapshot.empty) {
+                             console.log("Found by Field Query:", candidate);
+                             data = querySnapshot.docs[0].data();
+                             break;
+                        }
+                    }
+                }
 
-                    // 1. تعبئة البيانات الشخصية
+                // عرض النتائج
+                if (data) {
                     if(data.ass) document.getElementById('inp_ass').value = data.ass;
                     if(data.fmn) document.getElementById('inp_fmn').value = data.fmn;
                     if(data.frn) document.getElementById('inp_frn').value = data.frn;
-                    
-                    // 2. تعبئة الرتبة والوظيفة
+                    if(data.nin) document.getElementById('inp_nin').value = data.nin;
+
                     if(data.gr) {
                         document.getElementById('inp_gr').value = data.gr;
                         const jobTitle = getJobFromGrade(data.gr);
-                        if(jobTitle) {
-                            document.getElementById('inp_job').value = jobTitle;
-                        }
+                        if(jobTitle) document.getElementById('inp_job').value = jobTitle;
                     }
 
-                    // 3. تعبئة التاريخ
                     if (data.diz) {
                         let dateObj = data.diz.toDate ? data.diz.toDate() : new Date(data.diz);
                         if (!isNaN(dateObj.getTime())) {
                             document.getElementById('inp_diz').value = dateObj.toISOString().split('T')[0];
                         }
                     }
-
-                    Toast.fire({ icon: 'success', title: 'تم جلب البيانات وتحديد الوظيفة' });
+                    Toast.fire({ icon: 'success', title: 'تم العثور على البيانات!' });
                 } else {
-                    Toast.fire({ icon: 'warning', title: 'رقم الحساب غير موجود في قاعدة البيانات' });
+                    Toast.fire({ icon: 'warning', title: 'لم يتم العثور على الحساب بعد الفحص الشامل' });
                 }
+
             } catch (error) {
-                console.error("Error fetching data:", error);
-                Toast.fire({ icon: 'error', title: 'حدث خطأ في الاتصال' });
+                console.error("Search Error:", error);
+                Toast.fire({ icon: 'error', title: 'حدث خطأ أثناء البحث' });
             }
         });
     },
-    // نهاية كود المزامنة
 
     preConfirm: () => window.getFormDataFromModal()
   }).then((res) => {
