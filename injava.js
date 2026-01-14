@@ -921,3 +921,4 @@ function updateWorkPlace() {
   else area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
 
 }
+
