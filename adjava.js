@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-// تم تحديث الاستيراد هنا لإضافة collection, query, where, getDocs
-import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- إعدادات Firebase ---
 const firebaseConfig = {
@@ -17,6 +16,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // --- الكود المخفي (HTML) ---
+// تمت إضافة قائمة الفلترة وأزرار التنقل بين الصفحات
 const SECURE_DASHBOARD_HTML = `
   <div class="dashboard-container" style="display:block;">
     <div class="header-area">
@@ -113,7 +113,7 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzd
 let allData = [];
 let filteredData = [];
 let currentPage = 1;
-const rowsPerPage = 10;
+const rowsPerPage = 10; // عدد التسجيلات في كل صفحة
 
 const baladiyaMap = { 
     "توقرت": ["توقرت", "النزلة", "تبسبست", "الزاوية العابدية"], 
@@ -142,6 +142,7 @@ window.verifyAdminLogin = async function() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
+            // تم التعديل هنا لقراءة الحقل الجديد
             const realPass = docSnap.data().service_pay_adminn; 
 
             if (String(passInput) === String(realPass)) {
@@ -196,7 +197,7 @@ window.loadData = async function() {
     if(result.status === "success") {
       allData = result.data;
       window.updateStats(allData);
-      window.applyFilters();
+      window.applyFilters(); // تطبيق الفلتر الافتراضي عند التحميل
     } else {
       tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">خطأ: ${result.message}</td></tr>`;
     }
@@ -206,11 +207,13 @@ window.loadData = async function() {
   }
 };
 
+// دالة الفلترة الرئيسية (تجمع بين البحث وحالة الفلتر)
 window.applyFilters = function() {
     const query = document.getElementById("searchInput").value.toLowerCase();
     const statusFilter = document.getElementById("statusFilter").value;
 
     filteredData = allData.filter(row => {
+        // 1. فلترة النص
         const matchesSearch = (
             (row.fmn && row.fmn.includes(query)) ||
             (row.frn && row.frn.includes(query)) ||
@@ -219,6 +222,7 @@ window.applyFilters = function() {
             (row.schoolName && row.schoolName.includes(query))
         );
 
+        // 2. فلترة الحالة
         let matchesStatus = true;
         const isConfirmed = String(row.confirmed).toLowerCase() === "true";
 
@@ -231,14 +235,17 @@ window.applyFilters = function() {
         return matchesSearch && matchesStatus;
     });
 
+    // إعادة تعيين الصفحة إلى 1 عند تغيير الفلتر
     currentPage = 1;
     window.renderCurrentPage();
 };
 
+// دالة عرض الصفحة الحالية (Pagination Logic)
 window.renderCurrentPage = function() {
     const totalItems = filteredData.length;
     const totalPages = Math.ceil(totalItems / rowsPerPage);
     
+    // التأكد من أن الصفحة الحالية صالحة
     if (currentPage < 1) currentPage = 1;
     if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
 
@@ -246,7 +253,7 @@ window.renderCurrentPage = function() {
     const end = start + rowsPerPage;
     const pageData = filteredData.slice(start, end);
 
-    window.renderTable(pageData);
+    window.renderTable(pageData); // عرض البيانات المقطوعة فقط
     window.updatePaginationUI(totalPages);
 };
 
@@ -262,7 +269,7 @@ window.updatePaginationUI = function(totalPages) {
     const pageInfo = document.getElementById("pageInfo");
 
     if (totalPages <= 1 && filteredData.length > 0) {
-         controls.style.display = "none";
+         controls.style.display = "none"; // إخفاء إذا صفحة واحدة
     } else if (filteredData.length === 0) {
          controls.style.display = "none";
     } else {
@@ -284,6 +291,8 @@ window.renderTable = function(data) {
   }
 
   data.forEach((row) => {
+    // البحث عن الاندكس الأصلي للعنصر في المصفوفة الكبيرة لضمان عمل أزرار التعديل والحذف بشكل صحيح
+    // ملاحظة: هذا مهم لأننا نعرض جزء فقط من البيانات
     const originalIndex = allData.findIndex(item => item.ccp === row.ccp);
 
     const isConfirmed = String(row.confirmed).toLowerCase() === "true";
@@ -321,6 +330,7 @@ window.renderTable = function(data) {
   });
 };
 
+// بقية الدوال المساعدة (Excel, Firebase Save, Modals) ...
 window.saveToFirebaseDB = function(formData) {
     Swal.fire({ title: 'جاري الحفظ في Firestore...', didOpen: () => Swal.showLoading() });
 
@@ -480,13 +490,11 @@ window.openFirebaseModal = function() {
     }
   }).then((res) => {
     if(res.isConfirmed) {
-          window.saveToFirebaseDB(res.value);
+         window.saveToFirebaseDB(res.value);
     }
   });
 };
 
-// --- الدالة المعدلة كلياً: تسجيل موظف جديد (مدمج بها منطق injava.js للتحقق) ---
-// --- الدالة المعدلة: تسجيل موظف جديد (مع حل مشكلة اختفاء النافذة عند الضغط على Enter) ---
 window.openAddModal = function() {
   Swal.fire({
     title: 'تسجيل موظف جديد',
@@ -498,134 +506,6 @@ window.openAddModal = function() {
     cancelButtonText: 'إلغاء',
     confirmButtonColor: '#2a9d8f',
     focusConfirm: false,
-    allowEnterKey: false, // 🛑 منع إغلاق النافذة بزر Enter بشكل عام
-    
-    // كود التحقق وجلب البيانات
-    didOpen: () => {
-        const ccpInput = document.getElementById('inp_ccp');
-
-        // دالة مساعدة لتعبئة الحقول بأمان
-        const safeSetVal = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.value = val;
-            }
-        };
-
-        // دالة تحويل الرتب
-        const getJobFromGrade = (code) => {
-            if(!code) return "";
-            const mapping = {
-                "11": "أستاذ المدرسة الابتدائية", "14": "مدير مدرسة ابتدائية", "12": "مساعد مدير مدرسة ابتدائية",
-                "12/1": "أستاذ التعليم المتوسط", "13": "أستاذ رئيسي للتعليم المتوسط", "15": "مستشار التربية", "17": "مدير متوسطة",
-                "13/1": "أستاذ التعليم الثانوي", "14/1": "أستاذ رئيسي للتعليم الثانوي", "16": "ناظر ثانوية", "18": "مدير ثانوية",
-                "10": "مشرف تربية", "A1": "عامل مهني", "OP1": "عامل مهني", "4087": "مشرف تربية", "5019": "أستاذ تعليم ثانوي"
-            };
-            return mapping[code] || mapping[code.split('/')[0]] || "";
-        };
-
-        // --- دالة البحث المفصلة ---
-        const performSearch = async () => {
-            const rawInput = ccpInput.value.trim();
-            if (!rawInput) return;
-
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-            Toast.fire({ icon: 'info', title: 'جاري البحث...' });
-
-            // تنظيف المدخلات
-            const cleanInput = rawInput.replace(/\D/g, ''); 
-            const baseCCP = cleanInput.replace(/^0+/, ''); 
-
-            // إعداد احتمالات البحث
-            const candidates = [
-                rawInput,
-                cleanInput,
-                baseCCP,
-                baseCCP.padStart(10, '0')
-            ];
-            
-            if (baseCCP && !isNaN(Number(baseCCP))) {
-                candidates.push(Number(baseCCP));
-            }
-            
-            const uniqueCandidates = [...new Set(candidates)];
-            console.log("Searching for:", uniqueCandidates);
-
-            let data = null;
-            const employeesRef = collection(db, "employeescompay");
-
-            try {
-                // المحاولة 1: البحث عن طريق ID
-                for (const candidate of uniqueCandidates) {
-                    const docRef = doc(db, "employeescompay", String(candidate));
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        console.log("Found by Doc ID:", candidate);
-                        data = docSnap.data();
-                        break; 
-                    }
-                }
-
-                // المحاولة 2: البحث داخل الحقول
-                if (!data) {
-                    for (const candidate of uniqueCandidates) {
-                        try {
-                            let q = query(employeesRef, where("ccp", "==", candidate));
-                            let querySnapshot = await getDocs(q);
-                            if (!querySnapshot.empty) {
-                                console.log("Found by Field Query:", candidate);
-                                data = querySnapshot.docs[0].data();
-                                break;
-                            }
-                        } catch (qErr) {
-                            // تجاهل الأخطاء الفردية
-                        }
-                    }
-                }
-
-                // تعبئة البيانات عند العثور عليها
-                if (data) {
-                    if(data.ass) safeSetVal('inp_ass', data.ass);
-                    if(data.fmn) safeSetVal('inp_fmn', data.fmn);
-                    if(data.frn) safeSetVal('inp_frn', data.frn);
-                    if(data.nin) safeSetVal('inp_nin', data.nin);
-
-                    if(data.gr) {
-                        safeSetVal('inp_gr', data.gr);
-                        const jobTitle = getJobFromGrade(data.gr);
-                        if(jobTitle) safeSetVal('inp_job', jobTitle);
-                    }
-
-                    if (data.diz) {
-                        let dateObj = data.diz.toDate ? data.diz.toDate() : new Date(data.diz);
-                        if (!isNaN(dateObj.getTime())) {
-                            safeSetVal('inp_diz', dateObj.toISOString().split('T')[0]);
-                        }
-                    }
-                    Toast.fire({ icon: 'success', title: 'تم العثور على البيانات!' });
-                } else {
-                    Toast.fire({ icon: 'warning', title: 'لم يتم العثور على الحساب' });
-                }
-
-            } catch (error) {
-                console.error("Critical Search Error:", error);
-                Swal.fire({ icon: 'error', title: 'خطأ تقني', text: error.message });
-            }
-        };
-
-        // 🛑 التعامل مع زر Enter بشكل خاص لمنع الإغلاق 🛑
-        ccpInput.addEventListener('keydown', async function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault(); // يمنع إغلاق النافذة
-                event.stopPropagation();
-                await performSearch(); // ينفذ البحث
-            }
-        });
-
-        // البحث عند الخروج من الحقل أيضاً
-        ccpInput.addEventListener('change', performSearch);
-    },
-
     preConfirm: () => window.getFormDataFromModal()
   }).then((res) => {
     if(res.isConfirmed) {
@@ -769,7 +649,7 @@ window.initModalData = function(d) {
 window.getFirebaseFormHtml = function() {
   return `
       <div class="edit-form-wrapper">
-        <div class="form-section-title"><i class="fas fa-database"></i> بيانات Database المطلوبة</div>
+        <div class="form-section-title"><i class="fas fa-database"></i> بيانات Firebase المطلوبة</div>
         <div class="edit-form-grid">
             <div class="edit-form-group"><label>رقم الحساب البريدي (CCP)</label><input id="inp_ccp" placeholder="10 أرقام"></div>
             <div class="edit-form-group"><label>رقم الضمان الاجتماعي (ASS)</label><input id="inp_ass" placeholder="12 رقم"></div>
@@ -886,6 +766,3 @@ window.formatDateForInput = function(d) {
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
 };
-
-
-
