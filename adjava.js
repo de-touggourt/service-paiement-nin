@@ -649,7 +649,7 @@ window.initModalData = function(d) {
 window.getFirebaseFormHtml = function() {
   return `
       <div class="edit-form-wrapper">
-        <div class="form-section-title"><i class="fas fa-database"></i> بيانات Firebase المطلوبة</div>
+        <div class="form-section-title"><i class="fas fa-database"></i> بيانات Database المطلوبة</div>
         <div class="edit-form-grid">
             <div class="edit-form-group"><label>رقم الحساب البريدي (CCP)</label><input id="inp_ccp" placeholder="10 أرقام"></div>
             <div class="edit-form-group"><label>رقم الضمان الاجتماعي (ASS)</label><input id="inp_ass" placeholder="12 رقم"></div>
@@ -766,3 +766,4 @@ window.formatDateForInput = function(d) {
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
 };
+
