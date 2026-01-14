@@ -486,6 +486,7 @@ window.openFirebaseModal = function() {
 };
 
 // --- الدالة المعدلة كلياً: تسجيل موظف جديد (مدمج بها منطق injava.js للتحقق) ---
+// --- الدالة المعدلة: تسجيل موظف جديد (مع إصلاح خطأ null) ---
 window.openAddModal = function() {
   Swal.fire({
     title: 'تسجيل موظف جديد',
@@ -498,9 +499,21 @@ window.openAddModal = function() {
     confirmButtonColor: '#2a9d8f',
     focusConfirm: false,
     
+    // كود التحقق وجلب البيانات
     didOpen: () => {
         const ccpInput = document.getElementById('inp_ccp');
 
+        // دالة مساعدة لتعبئة الحقول بأمان (تمنع الخطأ إذا كان الحقل غير موجود)
+        const safeSetVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = val;
+            } else {
+                console.warn(`Element with id '${id}' not found in DOM.`);
+            }
+        };
+
+        // دالة تحويل الرتب
         const getJobFromGrade = (code) => {
             if(!code) return "";
             const mapping = {
@@ -519,10 +532,11 @@ window.openAddModal = function() {
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
             Toast.fire({ icon: 'info', title: 'جاري البحث...' });
 
+            // تنظيف المدخلات
             const cleanInput = rawInput.replace(/\D/g, ''); 
             const baseCCP = cleanInput.replace(/^0+/, ''); 
 
-            // 1. تحضير الاحتمالات بحذر (تجنب NaN)
+            // إعداد احتمالات البحث
             const candidates = [
                 rawInput,
                 cleanInput,
@@ -530,7 +544,6 @@ window.openAddModal = function() {
                 baseCCP.padStart(10, '0')
             ];
             
-            // إضافة الرقم فقط إذا كان رقماً صحيحاً
             if (baseCCP && !isNaN(Number(baseCCP))) {
                 candidates.push(Number(baseCCP));
             }
@@ -565,28 +578,29 @@ window.openAddModal = function() {
                                 break;
                             }
                         } catch (qErr) {
-                            console.warn("Query warning for:", candidate, qErr.message);
-                            // نتجاهل خطأ الاستعلام الواحد ونكمل الباقي
+                            // تجاهل الأخطاء الفردية في الاستعلام
                         }
                     }
                 }
 
+                // تعبئة البيانات عند العثور عليها
                 if (data) {
-                    if(data.ass) document.getElementById('inp_ass').value = data.ass;
-                    if(data.fmn) document.getElementById('inp_fmn').value = data.fmn;
-                    if(data.frn) document.getElementById('inp_frn').value = data.frn;
-                    if(data.nin) document.getElementById('inp_nin').value = data.nin;
+                    // استخدام دالة safeSetVal لمنع الانهيار
+                    if(data.ass) safeSetVal('inp_ass', data.ass);
+                    if(data.fmn) safeSetVal('inp_fmn', data.fmn);
+                    if(data.frn) safeSetVal('inp_frn', data.frn);
+                    if(data.nin) safeSetVal('inp_nin', data.nin);
 
                     if(data.gr) {
-                        document.getElementById('inp_gr').value = data.gr;
+                        safeSetVal('inp_gr', data.gr);
                         const jobTitle = getJobFromGrade(data.gr);
-                        if(jobTitle) document.getElementById('inp_job').value = jobTitle;
+                        if(jobTitle) safeSetVal('inp_job', jobTitle);
                     }
 
                     if (data.diz) {
                         let dateObj = data.diz.toDate ? data.diz.toDate() : new Date(data.diz);
                         if (!isNaN(dateObj.getTime())) {
-                            document.getElementById('inp_diz').value = dateObj.toISOString().split('T')[0];
+                            safeSetVal('inp_diz', dateObj.toISOString().split('T')[0]);
                         }
                     }
                     Toast.fire({ icon: 'success', title: 'تم العثور على البيانات!' });
@@ -596,12 +610,10 @@ window.openAddModal = function() {
 
             } catch (error) {
                 console.error("Critical Search Error:", error);
-                // 🛑 هذا السطر سيعطيك سبب الخطأ الحقيقي 🛑
                 Swal.fire({
                     icon: 'error',
                     title: 'خطأ تقني',
-                    text: error.message,
-                    footer: 'افتح Console (F12) لرؤية التفاصيل'
+                    text: error.message
                 });
             }
         });
@@ -614,7 +626,6 @@ window.openAddModal = function() {
     }
   });
 };
-
 window.openEditModal = function(index) {
   const d = allData[index];
   Swal.fire({
@@ -867,4 +878,5 @@ window.formatDateForInput = function(d) {
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
 };
+
 
