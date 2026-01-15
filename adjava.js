@@ -537,36 +537,42 @@ window.openFirebaseModal = function() {
   });
 };
 
-// --- دالة منطق التأكيد (جديدة) ---
+// --- دالة منطق التأكيد ومعالجة البيانات ---
 window.processConfirmationLogic = function(formData) {
+    // إنشاء نسخة من البيانات لتعديلها
     let processedData = { ...formData };
     
-    // التحقق من حالة التأكيد (النصية) القادمة من الـ Select
+    // التحقق من القيمة القادمة من القائمة المنسدلة (true/false)
     const isConfirmed = String(processedData.confirmed) === "true";
 
     if (isConfirmed) {
-        // 1. حالة: مؤكد ✅
+        // 1. حالة: الملف مؤكد ✅
+        // نقوم بتوليد تاريخ ووقت اللحظة الحالية
         const now = new Date();
         const dateStr = now.getFullYear() + '-' +
             String(now.getMonth() + 1).padStart(2, '0') + '-' +
             String(now.getDate()).padStart(2, '0');
+            
         const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
             String(now.getMinutes()).padStart(2, '0') + ':' +
             String(now.getSeconds()).padStart(2, '0');
 
+        // تعبئة الحقول بالبيانات الجديدة
         processedData.date_confirm = `${dateStr} ${timeStr}`;
-        processedData.confirmed_by = ADMIN_INFO.name;
-        processedData.reviewer_phone = ADMIN_INFO.phone;
+        processedData.confirmed_by = ADMIN_INFO.name;      // اسم المسؤول من الإعدادات
+        processedData.reviewer_phone = ADMIN_INFO.phone;   // هاتف المسؤول من الإعدادات
 
     } else {
-        // 2. حالة: غير مؤكد ⏳ (حذف البيانات)
-        processedData.date_confirm = "";
-        processedData.confirmed_by = "";
-        processedData.reviewer_phone = "";
+        // 2. حالة: الملف غير مؤكد ⏳ (إلغاء التأكيد)
+        // ⚠️ هام: إرسال سلسلة فارغة ("") سيجبر قاعدة البيانات على مسح القيمة القديمة
+        processedData.date_confirm = ""; 
+        processedData.confirmed_by = ""; 
+        processedData.reviewer_phone = ""; 
     }
 
     return processedData;
 };
+
 
 window.openAddModal = function() {
   Swal.fire({
@@ -587,7 +593,6 @@ window.openAddModal = function() {
   });
 };
 
-// --- تحديث دالة التعديل (معدلة) ---
 window.openEditModal = function(index) {
   const d = allData[index];
   Swal.fire({
@@ -606,8 +611,10 @@ window.openEditModal = function(index) {
     preConfirm: () => window.getFormDataFromModal()
   }).then((res) => {
     if(res.isConfirmed) {
-      // تطبيق منطق التأكيد الجديد قبل الحفظ
+      // ⚠️ استدعاء دالة المعالجة هنا هو ما يضمن تطبيق التغييرات قبل الحفظ
       const finalData = window.processConfirmationLogic(res.value);
+      
+      // إرسال البيانات النهائية
       window.handleSave(finalData, "update_admin");
     }
   });
@@ -1128,3 +1135,4 @@ window.printPendingList = function() {
     `);
     printWindow.document.close();
 };
+
