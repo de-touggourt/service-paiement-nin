@@ -610,14 +610,57 @@ window.updBalAdmin = function() {
   }
 };
 
+// --- (NEW) دالة التحكم في تغيير الطور ---
+window.handleLevelChange = function() {
+    const level = document.getElementById("inp_level").value;
+    const daairaSelect = document.getElementById("inp_daaira");
+    const baladiyaSelect = document.getElementById("inp_baladiya");
+    
+    if (level === "مديرية التربية") {
+        // تعيين الدائرة إلى توقرت وقفلها
+        daairaSelect.value = "توقرت";
+        daairaSelect.disabled = true;
+        
+        // تحديث قائمة البلديات يدوياً
+        window.updBalAdmin(); 
+        
+        // تعيين البلدية إلى توقرت وقفلها
+        baladiyaSelect.value = "توقرت";
+        baladiyaSelect.disabled = true;
+        
+        // تعيين مكان العمل
+        const area = document.getElementById("institutionArea");
+        area.innerHTML = `
+            <input id="inp_school" value="مديرية التربية لولاية توقرت" readonly 
+            style="width:100%; padding:12px; border:1px solid #dee2e6; border-radius:10px; background:#e9ecef; color:#495057; font-weight:bold;">
+        `;
+    } else {
+        // إعادة التفعيل
+        daairaSelect.disabled = false;
+        baladiyaSelect.disabled = false;
+        
+        // تحديث القوائم بشكل طبيعي
+        window.updateWorkPlaceAdmin();
+    }
+};
+
+// --- (UPDATED) تحديث دالة مكان العمل ---
 window.updateWorkPlaceAdmin = function() {
   const l = document.getElementById("inp_level").value;
+  
+  if (l === "مديرية التربية") return; // يتم التعامل معها في handleLevelChange
+
   const d = document.getElementById("inp_daaira").value;
   const b = document.getElementById("inp_baladiya").value;
   const area = document.getElementById("institutionArea");
+  
   area.innerHTML = ''; 
   
   const mkSel = (lst) => {
+    if (!lst || lst.length === 0) {
+        area.innerHTML = '<input id="inp_school" placeholder="لا توجد بيانات متاحة" readonly style="width:100%; padding:12px; border:1px solid #dee2e6; border-radius:10px; background:#fff3cd;">';
+        return;
+    }
     let s = document.createElement("select");
     s.id = "inp_school";
     s.innerHTML = '<option value="">-- اختر --</option>';
@@ -626,18 +669,38 @@ window.updateWorkPlaceAdmin = function() {
     area.appendChild(s);
   };
   
-  if(l === 'ابتدائي' && b && primarySchoolsByBaladiya) mkSel(primarySchoolsByBaladiya[b] || []);
-  else if((l === 'متوسط' || l === 'ثانوي') && d && institutionsByDaaira) mkSel(institutionsByDaaira[d][l] || []);
-  else area.innerHTML = '<input id="inp_school" placeholder="اختر الطور والمنطقة أولاً" readonly style="width:100%; padding:12px; border:1px solid #dee2e6; border-radius:10px; background:#e9ecef;">';
+  if(l === 'ابتدائي') {
+     if(b && primarySchoolsByBaladiya) mkSel(primarySchoolsByBaladiya[b] || []);
+     else area.innerHTML = '<input id="inp_school" placeholder="اختر البلدية أولاً" readonly style="width:100%; padding:12px; border:1px solid #dee2e6; border-radius:10px; background:#e9ecef;">';
+  }
+  else if(l === 'متوسط' || l === 'ثانوي') {
+      // إصلاح: الآن نعتمد على الدائرة فقط للطورين المتوسط والثانوي
+      if(d && institutionsByDaaira && institutionsByDaaira[d]) mkSel(institutionsByDaaira[d][l] || []);
+      else area.innerHTML = '<input id="inp_school" placeholder="اختر الدائرة أولاً" readonly style="width:100%; padding:12px; border:1px solid #dee2e6; border-radius:10px; background:#e9ecef;">';
+  }
+  else {
+      area.innerHTML = '<input id="inp_school" placeholder="اختر الطور والمنطقة أولاً" readonly style="width:100%; padding:12px; border:1px solid #dee2e6; border-radius:10px; background:#e9ecef;">';
+  }
 };
 
+// --- (UPDATED) دالة تهيئة المودال ---
 window.initModalData = function(d) {
     if(!d) return;
+    
+    // إذا كان مسجل كمديرية تربية
+    if (d.level === "مديرية التربية") {
+        window.handleLevelChange();
+        return;
+    }
+
     if(d.daaira) {
         window.updBalAdmin();
         setTimeout(() => {
-            document.getElementById("inp_baladiya").value = d.baladiya;
+            const balSelect = document.getElementById("inp_baladiya");
+            if(balSelect) balSelect.value = d.baladiya;
+            
             window.updateWorkPlaceAdmin();
+            
             setTimeout(() => {
                 const schoolSelect = document.getElementById("inp_school");
                 if(schoolSelect) schoolSelect.value = d.schoolName;
@@ -663,6 +726,7 @@ window.getFirebaseFormHtml = function() {
       </div>`;
 };
 
+// --- (UPDATED) نموذج التعديل ---
 window.getFormHtml = function(d, isAddMode) {
   const val = (k) => d[k] || '';
   const isConfirmed = String(d.confirmed) === "true";
@@ -688,7 +752,7 @@ window.getFormHtml = function(d, isAddMode) {
             <div class="edit-form-group"><label>الوظيفة</label><input id="inp_job" value="${val('job')}" placeholder="مثال: أستاذ..."></div>
             <div class="edit-form-group"><label>الرتبة (الكود)</label><input id="inp_gr" value="${val('gr')}" placeholder="مثال: 12/2"></div>
             <div class="edit-form-group"><label>الطور</label>
-                <select id="inp_level" onchange="window.updateWorkPlaceAdmin()">
+                <select id="inp_level" onchange="window.handleLevelChange()">
                     <option value="">-- اختر --</option>
                     <option value="ابتدائي" ${val('level') === 'ابتدائي' ? 'selected' : ''}>ابتدائي</option>
                     <option value="متوسط" ${val('level') === 'متوسط' ? 'selected' : ''}>متوسط</option>
@@ -703,7 +767,7 @@ window.getFormHtml = function(d, isAddMode) {
                 <select id="inp_baladiya" onchange="window.updateWorkPlaceAdmin()"><option value="">-- اختر --</option></select>
             </div>
             <div class="edit-form-group full-width"><label>مؤسسة العمل</label>
-                <div id="institutionArea"><select id="inp_school"><option value="">-- اختر الطور والدائرة أولاً --</option></select></div>
+                <div id="institutionArea"><input id="inp_school" value="${val('schoolName')}" readonly style="width:100%; padding:12px; border:1px solid #dee2e6; border-radius:10px; background:#e9ecef;"></div>
             </div>
         </div>
 
@@ -767,5 +831,3 @@ window.formatDateForInput = function(d) {
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
 };
-
-
