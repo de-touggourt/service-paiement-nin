@@ -859,14 +859,26 @@ window.formatDateForInput = function(d) {
 };
 
 // ==========================================
-// 🆕 ميزة قائمة الملفات غير المؤكدة والطباعة (معدلة)
+// 🆕 ميزة قائمة الملفات غير المؤكدة (النسخة النهائية: طباعة عرضية + استنتاج ذكي)
 // ==========================================
 
 window.openPendingListModal = function() {
-    // 1. تصفية البيانات (فقط غير المؤكدة)
+    // 1. بناء خريطة للمدارس ومن قام بتأكيدها (الاستنتاج الذكي)
+    const schoolConfirmerMap = {};
+    allData.forEach(row => {
+        const isConf = String(row.confirmed).toLowerCase() === "true";
+        if (isConf && row.schoolName && row.confirmed_by) {
+            schoolConfirmerMap[row.schoolName] = {
+                name: row.confirmed_by,
+                phone: row.reviewer_phone || ''
+            };
+        }
+    });
+
+    // 2. تصفية البيانات (فقط غير المؤكدة)
     let pendingList = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
 
-    // 2. الترتيب تصاعدياً حسب مكان العمل
+    // 3. الترتيب تصاعدياً حسب مكان العمل
     pendingList.sort((a, b) => {
         const schoolA = a.schoolName || "";
         const schoolB = b.schoolName || "";
@@ -878,26 +890,44 @@ window.openPendingListModal = function() {
         return;
     }
 
-    // 3. بناء جدول العرض
+    // 4. بناء جدول العرض
     let tableRows = pendingList.map((row, index) => {
-        // تنسيق التواريخ
-        const regDate = row.date ? window.fmtDate(row.date) : '<span style="color:#ccc">---</span>';
+        const regDate = row.date ? window.fmtDateTime(row.date) : '<span style="color:#ccc">---</span>';
         const editDate = row.date_edit ? window.fmtDateTime(row.date_edit) : '<span style="color:#ccc">---</span>';
-        
-        // بيانات المؤكد (إن وجدت)
-        const confirmerName = row.confirmed_by || '<span style="color:#999; font-size:11px;">غير متوفر</span>';
-        const confirmerPhone = row.reviewer_phone || '<span style="color:#999; font-size:11px;">---</span>';
+        const jobInfo = `${row.job || ''} <span style="color:#888">/</span> ${row.gr || ''}`;
+
+        // --- منطق الاستنتاج ---
+        let confName = row.confirmed_by;
+        let confPhone = row.reviewer_phone;
+        let isInferred = false;
+
+        if (!confName && row.schoolName && schoolConfirmerMap[row.schoolName]) {
+            confName = schoolConfirmerMap[row.schoolName].name;
+            confPhone = schoolConfirmerMap[row.schoolName].phone;
+            isInferred = true;
+        }
+
+        // تنسيق عرض المؤكد
+        let confirmerDisplay = '<span style="color:#ccc; font-size:11px;">غير محدد</span>';
+        if (confName) {
+            const styleColor = isInferred ? 'color:#666; font-style:italic;' : 'color:#000; font-weight:bold;';
+            const icon = isInferred ? '<i class="fas fa-magic" title="تم استنتاجه من موظف آخر" style="color:#ffc107; margin-left:3px;"></i>' : '';
+            confirmerDisplay = `
+                <div style="${styleColor}">${icon}${confName}</div>
+                <div style="direction:ltr; font-size:11px; color:#555;">${confPhone || ''}</div>
+            `;
+        }
 
         return `
             <tr style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${index + 1}</td>
                 <td style="padding:10px; font-weight:bold; color:#2b2d42;">${row.fmn} ${row.frn}</td>
+                <td style="padding:10px;">${jobInfo}</td>
                 <td style="padding:10px;">${row.schoolName || '-'}</td>
-                <td style="padding:10px; font-size:13px;">${regDate}</td>
-                <td style="padding:10px; font-size:13px; color:#4361ee;">${editDate}</td>
-                <td style="padding:10px;">${confirmerName}</td>
-                <td style="padding:10px; direction:ltr; text-align:right;">${confirmerPhone}</td>
-                <td style="padding:10px;"><span class="badge badge-pending">غير مؤكد</span></td>
+                <td style="padding:10px; direction:ltr; text-align:right;">${row.phone || ''}</td>
+                <td style="padding:10px; font-size:12px; direction:ltr;">${regDate}</td>
+                <td style="padding:10px; font-size:12px; color:#4361ee; direction:ltr;">${editDate}</td>
+                <td style="padding:10px;">${confirmerDisplay}</td>
             </tr>
         `;
     }).join('');
@@ -913,13 +943,13 @@ window.openPendingListModal = function() {
                 <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
                     <tr>
                         <th style="padding:12px;">#</th>
-                        <th style="padding:12px;">الاسم الكامل</th>
+                        <th style="padding:12px;">الاسم واللقب</th>
+                        <th style="padding:12px;">الوظيفة / الرتبة</th>
                         <th style="padding:12px;">مكان العمل</th>
+                        <th style="padding:12px;">رقم الهاتف</th>
                         <th style="padding:12px;">تاريخ التسجيل</th>
-                        <th style="padding:12px;">آخر تعديل</th>
-                        <th style="padding:12px;">اسم المؤكد</th>
-                        <th style="padding:12px;">هاتف المؤكد</th>
-                        <th style="padding:12px;">الحالة</th>
+                        <th style="padding:12px;">آخر تحديث</th>
+                        <th style="padding:12px;">بيانات المؤكد</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -932,77 +962,132 @@ window.openPendingListModal = function() {
     Swal.fire({
         title: '<strong>قائمة الملفات غير المؤكدة</strong>',
         html: modalContent,
-        width: '1100px', // زيادة العرض لاستيعاب الأعمدة الجديدة
+        width: '1150px',
         showConfirmButton: false,
         showCloseButton: true,
-        customClass: {
-            popup: 'swal-wide'
-        }
+        customClass: { popup: 'swal-wide' }
     });
 };
 
 window.printPendingList = function() {
+    // 1. إعادة بناء خريطة الاستنتاج
+    const schoolConfirmerMap = {};
+    allData.forEach(row => {
+        if (String(row.confirmed).toLowerCase() === "true" && row.schoolName && row.confirmed_by) {
+            schoolConfirmerMap[row.schoolName] = {
+                name: row.confirmed_by,
+                phone: row.reviewer_phone || ''
+            };
+        }
+    });
+
     let listToPrint = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
     listToPrint.sort((a, b) => (a.schoolName || "").localeCompare((b.schoolName || ""), "ar"));
 
     const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
     
     let printRows = listToPrint.map((row, index) => {
+        const regDate = row.date ? window.fmtDateTime(row.date) : '-';
+        const editDate = row.date_edit ? window.fmtDateTime(row.date_edit) : '-';
+
+        let confName = row.confirmed_by;
+        let confPhone = row.reviewer_phone;
+        
+        // تطبيق الاستنتاج
+        if (!confName && row.schoolName && schoolConfirmerMap[row.schoolName]) {
+            confName = schoolConfirmerMap[row.schoolName].name;
+            confPhone = schoolConfirmerMap[row.schoolName].phone;
+        }
+
+        const confirmerStr = confName ? `<span style="font-weight:bold;">${confName}</span> <br> <span style="font-size:11px; color:#555;">${confPhone || ''}</span>` : '-';
+
         return `
             <tr>
                 <td>${index + 1}</td>
-                <td>${row.fmn} ${row.frn}</td>
+                <td style="font-weight:bold;">${row.fmn} ${row.frn}</td>
+                <td>${row.job || ''} / ${row.gr || ''}</td>
                 <td>${row.schoolName || ''}</td>
-                <td>${row.date ? window.fmtDate(row.date) : '-'}</td>
-                <td>${row.date_edit ? window.fmtDate(row.date_edit) : '-'}</td>
-                <td>${row.confirmed_by || '-'}</td>
-                <td dir="ltr" style="text-align:right;">${row.reviewer_phone || '-'}</td>
+                <td dir="ltr" style="text-align:right;">${row.phone || ''}</td>
+                <td dir="ltr">${regDate}</td>
+                <td dir="ltr">${editDate}</td>
+                <td>${confirmerStr}</td>
             </tr>
         `;
     }).join('');
 
+    // فتح في تبويب جديد بدون أبعاد محددة
     const printWindow = window.open('', '_blank');
+    
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
         <head>
             <title>قائمة الملفات غير المؤكدة</title>
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-                body { font-family: 'Cairo', sans-serif; padding: 20px; }
+                
+                /* تنسيق الطباعة بالعرض */
+                @page { 
+                    size: landscape; 
+                    margin: 10mm; 
+                }
+
+                body { font-family: 'Cairo', sans-serif; padding: 20px; -webkit-print-color-adjust: exact; }
+                
                 .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-                th, td { border: 1px solid #000; padding: 5px; text-align: center; }
-                th { background-color: #eee; font-weight: bold; }
+                .header h3 { margin: 0; color: #444; }
+                .header h2 { margin: 10px 0; text-decoration: underline; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: center; vertical-align: middle; }
+                th { background-color: #e0e0e0 !important; font-weight: bold; font-size: 13px; }
+                
+                .print-btn-container { text-align: center; margin-bottom: 20px; }
+                .print-btn { background: #333; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-family: 'Cairo'; }
+                
                 @media print {
-                    button { display: none; }
-                    th { background-color: #ddd !important; -webkit-print-color-adjust: exact; }
+                    .print-btn-container { display: none; }
+                    body { padding: 0; }
                 }
             </style>
         </head>
         <body>
+            <div class="print-btn-container">
+                <button class="print-btn" onclick="window.print()">🖨️ اضغط هنا للطباعة</button>
+            </div>
+
             <div class="header">
+                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
                 <h3>مديرية التربية لولاية توقرت - مصلحة الرواتب</h3>
-                <h2 style="text-decoration: underline;">قائمة الملفات غير المؤكدة</h2>
+                <h2>قائمة الملفات غير المؤكدة</h2>
                 <p>تاريخ الاستخراج: ${printDate}</p>
             </div>
+
             <table>
                 <thead>
                     <tr>
-                        <th width="5%">#</th>
-                        <th width="20%">الاسم واللقب</th>
-                        <th width="25%">مكان العمل</th>
-                        <th width="10%">تاريخ التسجيل</th>
-                        <th width="10%">آخر تعديل</th>
-                        <th width="15%">اسم المؤكد</th>
-                        <th width="15%">هاتف المؤكد</th>
+                        <th width="4%">#</th>
+                        <th width="16%">الاسم واللقب</th>
+                        <th width="14%">الوظيفة / الرتبة</th>
+                        <th width="20%">مكان العمل</th>
+                        <th width="10%">رقم الهاتف</th>
+                        <th width="12%">تاريخ التسجيل</th>
+                        <th width="12%">آخر تحديث</th>
+                        <th width="12%">بيانات المؤكد (آلي)</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${printRows}
                 </tbody>
             </table>
+
+            <div style="margin-top:20px; font-size:14px; font-weight:bold;">
+                العدد الإجمالي للملفات: ${listToPrint.length}
+            </div>
+
             <script>
-                window.onload = function() { window.print(); }
+                window.onload = function() { 
+                    setTimeout(function() { window.print(); }, 500); 
+                }
             </script>
         </body>
         </html>
