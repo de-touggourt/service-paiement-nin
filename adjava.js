@@ -15,6 +15,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// --- إعدادات المسؤول للمصادقة (جديد) ---
+const ADMIN_INFO = {
+    name: "مصلحة الرواتب", // الاسم الذي سيظهر عند التأكيد
+    phone: "030000000"     // رقم الهاتف الذي سيظهر عند التأكيد
+};
+
 // --- الكود المخفي (HTML) ---
 const SECURE_DASHBOARD_HTML = `
   <div class="dashboard-container" style="display:block;">
@@ -531,6 +537,37 @@ window.openFirebaseModal = function() {
   });
 };
 
+// --- دالة منطق التأكيد (جديدة) ---
+window.processConfirmationLogic = function(formData) {
+    let processedData = { ...formData };
+    
+    // التحقق من حالة التأكيد (النصية) القادمة من الـ Select
+    const isConfirmed = String(processedData.confirmed) === "true";
+
+    if (isConfirmed) {
+        // 1. حالة: مؤكد ✅
+        const now = new Date();
+        const dateStr = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0');
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0') + ':' +
+            String(now.getSeconds()).padStart(2, '0');
+
+        processedData.date_confirm = `${dateStr} ${timeStr}`;
+        processedData.confirmed_by = ADMIN_INFO.name;
+        processedData.reviewer_phone = ADMIN_INFO.phone;
+
+    } else {
+        // 2. حالة: غير مؤكد ⏳ (حذف البيانات)
+        processedData.date_confirm = "";
+        processedData.confirmed_by = "";
+        processedData.reviewer_phone = "";
+    }
+
+    return processedData;
+};
+
 window.openAddModal = function() {
   Swal.fire({
     title: 'تسجيل موظف جديد',
@@ -550,6 +587,7 @@ window.openAddModal = function() {
   });
 };
 
+// --- تحديث دالة التعديل (معدلة) ---
 window.openEditModal = function(index) {
   const d = allData[index];
   Swal.fire({
@@ -568,7 +606,9 @@ window.openEditModal = function(index) {
     preConfirm: () => window.getFormDataFromModal()
   }).then((res) => {
     if(res.isConfirmed) {
-      window.handleSave(res.value, "update_admin");
+      // تطبيق منطق التأكيد الجديد قبل الحفظ
+      const finalData = window.processConfirmationLogic(res.value);
+      window.handleSave(finalData, "update_admin");
     }
   });
 };
@@ -951,12 +991,12 @@ window.openPendingListModal = function() {
             <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
                 <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
                     <tr>
-                        <th style="padding:12px;">#</th>
+                        <th style="padding:12px;">الرقم</th>
                         <th style="padding:12px;">الاسم واللقب</th>
                         <th style="padding:12px;">الوظيفة</th> <th style="padding:12px;">مكان العمل</th>
                         <th style="padding:12px;">رقم الهاتف</th>
                         <th style="padding:12px;">تاريخ التسجيل</th>
-                        <th style="padding:12px;">آخر تحديث</th>
+                        <th style="padding:12px;">آخر تعديل</th>
                         <th style="padding:12px;">بيانات المؤكد</th>
                     </tr>
                 </thead>
@@ -1069,8 +1109,8 @@ window.printPendingList = function() {
                         <th width="20%">مكان العمل</th>
                         <th width="10%">رقم الهاتف</th>
                         <th width="12%">تاريخ التسجيل</th>
-                        <th width="12%">آخر تحديث</th>
-                        <th width="12%">بيانات المؤكد (آلي)</th>
+                        <th width="12%">آخر تعديل</th>
+                        <th width="12%">بيانات المؤكد (إن وجد)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1088,4 +1128,3 @@ window.printPendingList = function() {
     `);
     printWindow.document.close();
 };
-
