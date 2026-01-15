@@ -693,6 +693,7 @@ window.getFormHtml = function(d, isAddMode) {
                     <option value="ابتدائي" ${val('level') === 'ابتدائي' ? 'selected' : ''}>ابتدائي</option>
                     <option value="متوسط" ${val('level') === 'متوسط' ? 'selected' : ''}>متوسط</option>
                     <option value="ثانوي" ${val('level') === 'ثانوي' ? 'selected' : ''}>ثانوي</option>
+                    <option value="مديرية التربية" ${val('level') === 'مديرية التربية' ? 'selected' : ''}>مديرية التربية</option>
                 </select>
             </div>
              <div class="edit-form-group"><label>الدائرة</label>
@@ -766,4 +767,5 @@ window.formatDateForInput = function(d) {
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
 };
+
 
