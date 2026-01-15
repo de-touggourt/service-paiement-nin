@@ -118,7 +118,7 @@ const SECURE_DASHBOARD_HTML = `
 `;
 
 // --- المتغيرات العامة ---
-const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzdFIFtiLiLjPX0xcwxEUjG5gsoeZ8yQJ5OL5IwIlJMgsrAJxwA/exec"; 
+const scriptURL = "https://script.google.com/macros/s/AKfycbwOXtYgx0ibd1BcPIORiVCYh7JtLHuA-JCDU41L2GXzlhDsgcvkhijtD3ezaNi6hwI3Ow/exec"; 
 
 // متغيرات البيانات والصفحات
 let allData = [];
@@ -1135,4 +1135,5 @@ window.printPendingList = function() {
     `);
     printWindow.document.close();
 };
+
 
