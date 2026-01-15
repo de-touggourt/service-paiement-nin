@@ -861,6 +861,7 @@ async function submitRegistration() {
 }
 
 // 8️⃣ الطباعة
+// 8️⃣ الطباعة (معدلة لعدم الخروج من النظام)
 function printA4(d) {
   const table = document.getElementById("printTable");
   document.getElementById("p_date").innerText = new Date().toLocaleDateString('ar-DZ');
@@ -882,7 +883,10 @@ function printA4(d) {
   `;
 
   window.print();
-  setTimeout(() => location.reload(), 500); 
+  
+  // 🛑 التعديل هنا: استخدام resetInterface بدلاً من reload 🛑
+  // هذا يعيدك للبحث عن موظف جديد دون طلب كلمة المرور
+  setTimeout(() => resetInterface(), 500); 
 }
 
 // --- دوال القوائم ---
