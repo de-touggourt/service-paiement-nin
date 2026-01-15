@@ -859,14 +859,14 @@ window.formatDateForInput = function(d) {
 };
 
 // ==========================================
-// 🆕 ميزة قائمة الملفات غير المؤكدة والطباعة
+// 🆕 ميزة قائمة الملفات غير المؤكدة (التنسيق المطلوب فقط)
 // ==========================================
 
 window.openPendingListModal = function() {
     // 1. تصفية البيانات (فقط غير المؤكدة)
     let pendingList = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
 
-    // 2. الترتيب تصاعدياً حسب مكان العمل (schoolName)
+    // 2. الترتيب تصاعدياً حسب مكان العمل
     pendingList.sort((a, b) => {
         const schoolA = a.schoolName || "";
         const schoolB = b.schoolName || "";
@@ -878,45 +878,43 @@ window.openPendingListModal = function() {
         return;
     }
 
-    // 3. بناء جدول العرض داخل النافذة المنبثقة
+    // 3. بناء جدول العرض
     let tableRows = pendingList.map((row, index) => {
+        // تنسيق التواريخ
         const regDate = row.date ? window.fmtDate(row.date) : '-';
-        const editDate = row.date_edit ? window.fmtDate(row.date_edit) : '-';
-        const confirmer = row.confirmed_by || '---';
-        const confPhone = row.reviewer_phone || '---';
+        const editDate = row.date_edit ? window.fmtDateTime(row.date_edit) : '-'; // وقت وتاريخ لآخر تحديث
+        const jobInfo = `${row.job || ''} <span style="color:#888">/</span> ${row.gr || ''}`;
 
         return `
-            <tr>
-                <td>${index + 1}</td>
-                <td style="font-weight:bold;">${row.fmn} ${row.frn}</td>
-                <td>${row.schoolName || '-'}</td>
-                <td>${regDate}</td>
-                <td>${editDate}</td>
-                <td>${confirmer}</td>
-                <td dir="ltr">${confPhone}</td>
-                <td><span style="color:orange; font-weight:bold;">غير مؤكد</span></td>
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px;">${index + 1}</td>
+                <td style="padding:10px; font-weight:bold; color:#2b2d42;">${row.fmn} ${row.frn}</td>
+                <td style="padding:10px;">${jobInfo}</td>
+                <td style="padding:10px;">${row.schoolName || '-'}</td>
+                <td style="padding:10px; direction:ltr; text-align:right;">${row.phone || ''}</td>
+                <td style="padding:10px; font-size:13px;">${regDate}</td>
+                <td style="padding:10px; font-size:13px; color:#4361ee;">${editDate}</td>
             </tr>
         `;
     }).join('');
 
     const modalContent = `
-        <div style="text-align:right; margin-bottom:15px;">
+        <div style="text-align:left; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
             <button onclick="window.printPendingList()" class="btn" style="background-color:#2b2d42; color:white;">
-                طباعة القائمة الرسمية <i class="fas fa-print"></i>
+                طباعة القائمة <i class="fas fa-print"></i>
             </button>
         </div>
-        <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
-            <table class="custom-table" style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
-                <thead style="background:#f1f3f5; position:sticky; top:0;">
+        <div class="table-responsive" style="max-height:500px; overflow-y:auto; direction:rtl;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
+                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
                     <tr>
-                        <th style="padding:10px; border:1px solid #ddd;">#</th>
-                        <th style="padding:10px; border:1px solid #ddd;">الاسم الكامل</th>
-                        <th style="padding:10px; border:1px solid #ddd;">مكان العمل</th>
-                        <th style="padding:10px; border:1px solid #ddd;">تاريخ التسجيل</th>
-                        <th style="padding:10px; border:1px solid #ddd;">آخر عملية</th>
-                        <th style="padding:10px; border:1px solid #ddd;">المؤكد (إن وجد)</th>
-                        <th style="padding:10px; border:1px solid #ddd;">هاتف المؤكد</th>
-                        <th style="padding:10px; border:1px solid #ddd;">الحالة</th>
+                        <th style="padding:12px;">#</th>
+                        <th style="padding:12px;">الاسم واللقب</th>
+                        <th style="padding:12px;">الوظيفة / الرتبة</th>
+                        <th style="padding:12px;">مكان العمل</th>
+                        <th style="padding:12px;">رقم الهاتف</th>
+                        <th style="padding:12px;">تاريخ التسجيل</th>
+                        <th style="padding:12px;">آخر تحديث</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -927,22 +925,21 @@ window.openPendingListModal = function() {
     `;
 
     Swal.fire({
-        title: 'قائمة الملفات غير المؤكدة',
+        title: '<strong>قائمة الملفات غير المؤكدة</strong>',
         html: modalContent,
         width: '1000px',
         showConfirmButton: false,
-        showCloseButton: true
+        showCloseButton: true,
+        customClass: { popup: 'swal-wide' }
     });
 };
 
 window.printPendingList = function() {
-    // إعادة جلب وترتيب البيانات للطباعة لضمان التطابق
     let listToPrint = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
     listToPrint.sort((a, b) => (a.schoolName || "").localeCompare((b.schoolName || ""), "ar"));
 
     const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
     
-    // بناء محتوى الطباعة
     let printRows = listToPrint.map((row, index) => {
         return `
             <tr>
@@ -950,10 +947,9 @@ window.printPendingList = function() {
                 <td>${row.fmn} ${row.frn}</td>
                 <td>${row.job || ''} / ${row.gr || ''}</td>
                 <td>${row.schoolName || ''}</td>
-                <td>${row.phone || ''}</td>
+                <td dir="ltr" style="text-align:right;">${row.phone || ''}</td>
                 <td>${row.date ? window.fmtDate(row.date) : '-'}</td>
                 <td>${row.date_edit ? window.fmtDate(row.date_edit) : '-'}</td>
-                <td>${row.confirmed_by || '-'}</td>
             </tr>
         `;
     }).join('');
@@ -966,52 +962,41 @@ window.printPendingList = function() {
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
                 body { font-family: 'Cairo', sans-serif; padding: 20px; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-                .header h1 { margin: 0; font-size: 24px; color: #333; }
-                .header p { margin: 5px 0 0; color: #666; font-size: 14px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-                th, td { border: 1px solid #333; padding: 6px; text-align: center; }
-                th { background-color: #f0f0f0; font-weight: bold; }
-                td { vertical-align: middle; }
-                .footer { margin-top: 30px; font-size: 12px; text-align: left; color: #555; }
+                .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+                th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+                th { background-color: #eee; font-weight: bold; }
                 @media print {
                     button { display: none; }
-                    body { padding: 0; }
                     th { background-color: #ddd !important; -webkit-print-color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
             <div class="header">
-                <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
-                <h2>مديرية التربية لولاية توقرت - مصلحة الرواتب</h2>
-                <h3 style="margin-top:15px; text-decoration: underline;">قائمة ملفات الموظفين غير المؤكدة</h3>
+                <h3>مديرية التربية لولاية توقرت - مصلحة الرواتب</h3>
+                <h2 style="text-decoration: underline;">قائمة الملفات غير المؤكدة</h2>
                 <p>تاريخ الاستخراج: ${printDate}</p>
             </div>
-
             <table>
                 <thead>
                     <tr>
                         <th width="5%">#</th>
                         <th width="20%">الاسم واللقب</th>
-                        <th width="15%">الوظيفة/الرتبة</th>
-                        <th width="20%">مكان العمل</th>
-                        <th width="10%">رقم الهاتف</th>
+                        <th width="15%">الوظيفة / الرتبة</th>
+                        <th width="25%">مكان العمل</th>
+                        <th width="15%">رقم الهاتف</th>
                         <th width="10%">تاريخ التسجيل</th>
                         <th width="10%">آخر تحديث</th>
-                        <th width="10%">المُراجع (إن وجد)</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${printRows}
                 </tbody>
             </table>
-
-            <div class="footer">
-                <p>عدد الملفات غير المؤكدة: ${listToPrint.length}</p>
-                <p>تم استخراج هذه الوثيقة آلياً من النظام.</p>
+             <div style="margin-top:20px; font-size:12px;">
+                العدد الإجمالي: ${listToPrint.length}
             </div>
-            
             <script>
                 window.onload = function() { window.print(); }
             </script>
