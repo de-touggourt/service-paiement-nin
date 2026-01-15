@@ -134,7 +134,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // 🛑🛑🛑 استبدل هذا الرابط برابط السكريبت الخاص بك 🛑🛑🛑
-const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzdFIFtiLiLjPX0xcwxEUjG5gsoeZ8yQJ5OL5IwIlJMgsrAJxwA/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbwOXtYgx0ibd1BcPIORiVCYh7JtLHuA-JCDU41L2GXzlhDsgcvkhijtD3ezaNi6hwI3Ow/exec";
 
 // --- خريطة الرتب (كما هي تماماً) ---
 const gradeMap = {
@@ -963,5 +963,6 @@ function updateWorkPlace() {
   else if((l === 'متوسط' || l === 'ثانوي') && d && window.institutionsByDaaira) mkSel(window.institutionsByDaaira[d][l]||[]);
   else area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
 }
+
 
 
