@@ -73,7 +73,13 @@ const SECURE_DASHBOARD_HTML = `
       <button class="btn btn-excel" onclick="window.downloadExcel()">
         تحميل Excel <i class="fas fa-file-excel"></i>
       </button>
+
+<button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">
+  قائمة الغير مؤكدة <i class="fas fa-clipboard-list"></i>
+</button>
+
     </div>
+
 
     <div class="table-container">
       <div class="table-responsive">
@@ -850,4 +856,167 @@ window.formatDateForInput = function(d) {
         if(isNaN(date)) return "";
         return date.toISOString().split('T')[0];
     } catch(e) { return ""; }
+};
+
+// ==========================================
+// 🆕 ميزة قائمة الملفات غير المؤكدة والطباعة
+// ==========================================
+
+window.openPendingListModal = function() {
+    // 1. تصفية البيانات (فقط غير المؤكدة)
+    let pendingList = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
+
+    // 2. الترتيب تصاعدياً حسب مكان العمل (schoolName)
+    pendingList.sort((a, b) => {
+        const schoolA = a.schoolName || "";
+        const schoolB = b.schoolName || "";
+        return schoolA.localeCompare(schoolB, "ar");
+    });
+
+    if (pendingList.length === 0) {
+        Swal.fire('تنبيه', 'لا توجد ملفات غير مؤكدة حالياً', 'info');
+        return;
+    }
+
+    // 3. بناء جدول العرض داخل النافذة المنبثقة
+    let tableRows = pendingList.map((row, index) => {
+        const regDate = row.date ? window.fmtDate(row.date) : '-';
+        const editDate = row.date_edit ? window.fmtDate(row.date_edit) : '-';
+        const confirmer = row.confirmed_by || '---';
+        const confPhone = row.reviewer_phone || '---';
+
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td style="font-weight:bold;">${row.fmn} ${row.frn}</td>
+                <td>${row.schoolName || '-'}</td>
+                <td>${regDate}</td>
+                <td>${editDate}</td>
+                <td>${confirmer}</td>
+                <td dir="ltr">${confPhone}</td>
+                <td><span style="color:orange; font-weight:bold;">غير مؤكد</span></td>
+            </tr>
+        `;
+    }).join('');
+
+    const modalContent = `
+        <div style="text-align:right; margin-bottom:15px;">
+            <button onclick="window.printPendingList()" class="btn" style="background-color:#2b2d42; color:white;">
+                طباعة القائمة الرسمية <i class="fas fa-print"></i>
+            </button>
+        </div>
+        <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+            <table class="custom-table" style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
+                <thead style="background:#f1f3f5; position:sticky; top:0;">
+                    <tr>
+                        <th style="padding:10px; border:1px solid #ddd;">#</th>
+                        <th style="padding:10px; border:1px solid #ddd;">الاسم الكامل</th>
+                        <th style="padding:10px; border:1px solid #ddd;">مكان العمل</th>
+                        <th style="padding:10px; border:1px solid #ddd;">تاريخ التسجيل</th>
+                        <th style="padding:10px; border:1px solid #ddd;">آخر عملية</th>
+                        <th style="padding:10px; border:1px solid #ddd;">المؤكد (إن وجد)</th>
+                        <th style="padding:10px; border:1px solid #ddd;">هاتف المؤكد</th>
+                        <th style="padding:10px; border:1px solid #ddd;">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    Swal.fire({
+        title: 'قائمة الملفات غير المؤكدة',
+        html: modalContent,
+        width: '1000px',
+        showConfirmButton: false,
+        showCloseButton: true
+    });
+};
+
+window.printPendingList = function() {
+    // إعادة جلب وترتيب البيانات للطباعة لضمان التطابق
+    let listToPrint = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
+    listToPrint.sort((a, b) => (a.schoolName || "").localeCompare((b.schoolName || ""), "ar"));
+
+    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+    
+    // بناء محتوى الطباعة
+    let printRows = listToPrint.map((row, index) => {
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${row.fmn} ${row.frn}</td>
+                <td>${row.job || ''} / ${row.gr || ''}</td>
+                <td>${row.schoolName || ''}</td>
+                <td>${row.phone || ''}</td>
+                <td>${row.date ? window.fmtDate(row.date) : '-'}</td>
+                <td>${row.date_edit ? window.fmtDate(row.date_edit) : '-'}</td>
+                <td>${row.confirmed_by || '-'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <title>قائمة الملفات غير المؤكدة</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+                body { font-family: 'Cairo', sans-serif; padding: 20px; }
+                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                .header h1 { margin: 0; font-size: 24px; color: #333; }
+                .header p { margin: 5px 0 0; color: #666; font-size: 14px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+                th, td { border: 1px solid #333; padding: 6px; text-align: center; }
+                th { background-color: #f0f0f0; font-weight: bold; }
+                td { vertical-align: middle; }
+                .footer { margin-top: 30px; font-size: 12px; text-align: left; color: #555; }
+                @media print {
+                    button { display: none; }
+                    body { padding: 0; }
+                    th { background-color: #ddd !important; -webkit-print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
+                <h2>مديرية التربية لولاية توقرت - مصلحة الرواتب</h2>
+                <h3 style="margin-top:15px; text-decoration: underline;">قائمة ملفات الموظفين غير المؤكدة</h3>
+                <p>تاريخ الاستخراج: ${printDate}</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="20%">الاسم واللقب</th>
+                        <th width="15%">الوظيفة/الرتبة</th>
+                        <th width="20%">مكان العمل</th>
+                        <th width="10%">رقم الهاتف</th>
+                        <th width="10%">تاريخ التسجيل</th>
+                        <th width="10%">آخر تحديث</th>
+                        <th width="10%">المُراجع (إن وجد)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${printRows}
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <p>عدد الملفات غير المؤكدة: ${listToPrint.length}</p>
+                <p>تم استخراج هذه الوثيقة آلياً من النظام.</p>
+            </div>
+            
+            <script>
+                window.onload = function() { window.print(); }
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 };
