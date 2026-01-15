@@ -1020,7 +1020,8 @@ window.printPendingList = function() {
                 <td style="font-weight:bold;">${row.fmn} ${row.frn}</td>
                 <td>${row.job || ''}</td>
                 <td>${row.schoolName || ''}</td>
-                <td dir="ltr" style="text-align:right;">${row.phone || ''}</td>
+               <td dir="ltr" style="text-align:center; vertical-align: middle;">${row.phone || ''}</td>
+
                 <td dir="ltr">${regDate}</td>
                 <td dir="ltr">${editDate}</td>
                 <td>${confirmerStr}</td>
@@ -1062,7 +1063,7 @@ window.printPendingList = function() {
             <table>
                 <thead>
                     <tr>
-                        <th width="4%">#</th>
+                        <th width="4%">الرقم</th>
                         <th width="16%">الاسم واللقب</th>
                         <th width="14%">الوظيفة</th>
                         <th width="20%">مكان العمل</th>
@@ -1087,3 +1088,4 @@ window.printPendingList = function() {
     `);
     printWindow.document.close();
 };
+
