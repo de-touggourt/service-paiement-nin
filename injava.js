@@ -118,7 +118,7 @@ const SECURE_INTERFACE_HTML = `
 `;
 
 // 🛑🛑🛑 ضع رابط لوحة التحكم الخاصة بك هنا 🛑🛑🛑
-const ADMIN_DASHBOARD_URL = "service_pay_nin_admin0955tggt.html"; 
+const ADMIN_DASHBOARD_URL = "admin0955tggt.html"; 
 
 // --- إعدادات Firebase ---
 const firebaseConfig = {
@@ -963,3 +963,4 @@ function updateWorkPlace() {
   else if((l === 'متوسط' || l === 'ثانوي') && d && window.institutionsByDaaira) mkSel(window.institutionsByDaaira[d][l]||[]);
   else area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
 }
+
