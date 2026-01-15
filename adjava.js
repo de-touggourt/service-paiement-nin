@@ -862,143 +862,134 @@ window.formatDateForInput = function(d) {
 // 🆕 ميزة قائمة الملفات غير المؤكدة (التنسيق المطلوب فقط)
 // ==========================================
 
-window.openPendingListModal = function() {
-    // 1. تصفية البيانات (فقط غير المؤكدة)
-    let pendingList = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
-
-    // 2. الترتيب تصاعدياً حسب مكان العمل
-    pendingList.sort((a, b) => {
-        const schoolA = a.schoolName || "";
-        const schoolB = b.schoolName || "";
-        return schoolA.localeCompare(schoolB, "ar");
-    });
-
-    if (pendingList.length === 0) {
-        Swal.fire('تنبيه', 'لا توجد ملفات غير مؤكدة حالياً', 'info');
-        return;
-    }
-
-    // 3. بناء جدول العرض
-    let tableRows = pendingList.map((row, index) => {
-        // تنسيق التواريخ
-        const regDate = row.date ? window.fmtDate(row.date) : '-';
-        const editDate = row.date_edit ? window.fmtDateTime(row.date_edit) : '-'; // وقت وتاريخ لآخر تحديث
-        const jobInfo = `${row.job || ''} <span style="color:#888">/</span> ${row.gr || ''}`;
-
-        return `
-            <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:10px;">${index + 1}</td>
-                <td style="padding:10px; font-weight:bold; color:#2b2d42;">${row.fmn} ${row.frn}</td>
-                <td style="padding:10px;">${jobInfo}</td>
-                <td style="padding:10px;">${row.schoolName || '-'}</td>
-                <td style="padding:10px; direction:ltr; text-align:right;">${row.phone || ''}</td>
-                <td style="padding:10px; font-size:13px;">${regDate}</td>
-                <td style="padding:10px; font-size:13px; color:#4361ee;">${editDate}</td>
-            </tr>
-        `;
-    }).join('');
-
-    const modalContent = `
-        <div style="text-align:left; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <button onclick="window.printPendingList()" class="btn" style="background-color:#2b2d42; color:white;">
-                طباعة القائمة <i class="fas fa-print"></i>
-            </button>
-        </div>
-        <div class="table-responsive" style="max-height:500px; overflow-y:auto; direction:rtl;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
-                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                    <tr>
-                        <th style="padding:12px;">#</th>
-                        <th style="padding:12px;">الاسم واللقب</th>
-                        <th style="padding:12px;">الوظيفة / الرتبة</th>
-                        <th style="padding:12px;">مكان العمل</th>
-                        <th style="padding:12px;">رقم الهاتف</th>
-                        <th style="padding:12px;">تاريخ التسجيل</th>
-                        <th style="padding:12px;">آخر تحديث</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRows}
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    Swal.fire({
-        title: '<strong>قائمة الملفات غير المؤكدة</strong>',
-        html: modalContent,
-        width: '1000px',
-        showConfirmButton: false,
-        showCloseButton: true,
-        customClass: { popup: 'swal-wide' }
-    });
-};
+// ==========================================
+// 🆕 دالة الطباعة (تحديث: عرض أفقي + فتح في تبويب)
+// ==========================================
 
 window.printPendingList = function() {
+    // 1. إعادة بناء خريطة المؤكدين (للاستنتاج الذكي عند الطباعة)
+    const schoolConfirmerMap = {};
+    allData.forEach(row => {
+        if (String(row.confirmed).toLowerCase() === "true" && row.schoolName && row.confirmed_by) {
+            schoolConfirmerMap[row.schoolName] = {
+                name: row.confirmed_by,
+                phone: row.reviewer_phone || ''
+            };
+        }
+    });
+
+    // 2. تجهيز القائمة وترتيبها
     let listToPrint = allData.filter(row => String(row.confirmed).toLowerCase() !== "true");
     listToPrint.sort((a, b) => (a.schoolName || "").localeCompare((b.schoolName || ""), "ar"));
 
     const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
     
+    // 3. بناء صفوف الجدول
     let printRows = listToPrint.map((row, index) => {
+        const regDate = row.date ? window.fmtDateTime(row.date) : '-';
+        const editDate = row.date_edit ? window.fmtDateTime(row.date_edit) : '-';
+
+        // منطق الاستنتاج (لملء بيانات المؤكد تلقائياً من زملاء نفس المؤسسة)
+        let confName = row.confirmed_by;
+        let confPhone = row.reviewer_phone;
+        
+        if (!confName && row.schoolName && schoolConfirmerMap[row.schoolName]) {
+            confName = schoolConfirmerMap[row.schoolName].name;
+            confPhone = schoolConfirmerMap[row.schoolName].phone;
+        }
+
+        const confirmerStr = confName ? `<span style="font-weight:bold;">${confName}</span> <br> <span style="font-size:11px; color:#555;">${confPhone || ''}</span>` : '-';
+
         return `
             <tr>
                 <td>${index + 1}</td>
-                <td>${row.fmn} ${row.frn}</td>
+                <td style="font-weight:bold;">${row.fmn} ${row.frn}</td>
                 <td>${row.job || ''} / ${row.gr || ''}</td>
                 <td>${row.schoolName || ''}</td>
                 <td dir="ltr" style="text-align:right;">${row.phone || ''}</td>
-                <td>${row.date ? window.fmtDate(row.date) : '-'}</td>
-                <td>${row.date_edit ? window.fmtDate(row.date_edit) : '-'}</td>
+                <td dir="ltr">${regDate}</td>
+                <td dir="ltr">${editDate}</td>
+                <td>${confirmerStr}</td>
             </tr>
         `;
     }).join('');
 
+    // 4. فتح تبويب جديد (بدون تحديد أبعاد ليفتح كـ Tab وليس Popup)
     const printWindow = window.open('', '_blank');
+    
+    // 5. كتابة المحتوى مع تنسيق الصفحة (Landscape)
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
         <head>
             <title>قائمة الملفات غير المؤكدة</title>
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-                body { font-family: 'Cairo', sans-serif; padding: 20px; }
+                
+                /* إعداد الصفحة للطباعة بالعرض (Landscape) */
+                @page { 
+                    size: landscape; 
+                    margin: 10mm; 
+                }
+
+                body { font-family: 'Cairo', sans-serif; padding: 20px; -webkit-print-color-adjust: exact; }
+                
                 .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-                th, td { border: 1px solid #000; padding: 6px; text-align: center; }
-                th { background-color: #eee; font-weight: bold; }
+                .header h2 { margin: 5px 0; }
+                .header h3 { margin: 0; color: #444; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: center; vertical-align: middle; }
+                th { background-color: #e0e0e0 !important; font-weight: bold; font-size: 13px; }
+                
+                /* تنسيق زر الطباعة داخل الصفحة الجديدة (اختياري) */
+                .print-btn-container { text-align: center; margin-bottom: 20px; }
+                .print-btn { background: #333; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-family: 'Cairo'; }
+                
                 @media print {
-                    button { display: none; }
-                    th { background-color: #ddd !important; -webkit-print-color-adjust: exact; }
+                    .print-btn-container { display: none; }
+                    body { padding: 0; }
                 }
             </style>
         </head>
         <body>
+            <div class="print-btn-container">
+                <button class="print-btn" onclick="window.print()">🖨️ اضغط هنا للطباعة</button>
+            </div>
+
             <div class="header">
+                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
                 <h3>مديرية التربية لولاية توقرت - مصلحة الرواتب</h3>
-                <h2 style="text-decoration: underline;">قائمة الملفات غير المؤكدة</h2>
+                <h2 style="text-decoration: underline; margin-top:15px;">قائمة الملفات غير المؤكدة</h2>
                 <p>تاريخ الاستخراج: ${printDate}</p>
             </div>
+
             <table>
                 <thead>
                     <tr>
-                        <th width="5%">#</th>
-                        <th width="20%">الاسم واللقب</th>
-                        <th width="15%">الوظيفة / الرتبة</th>
-                        <th width="25%">مكان العمل</th>
-                        <th width="15%">رقم الهاتف</th>
-                        <th width="10%">تاريخ التسجيل</th>
-                        <th width="10%">آخر تحديث</th>
+                        <th width="4%">#</th>
+                        <th width="16%">الاسم واللقب</th>
+                        <th width="14%">الوظيفة / الرتبة</th>
+                        <th width="20%">مكان العمل</th>
+                        <th width="10%">رقم الهاتف</th>
+                        <th width="12%">تاريخ التسجيل</th>
+                        <th width="12%">آخر تحديث</th>
+                        <th width="12%">بيانات المؤكد (آلي)</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${printRows}
                 </tbody>
             </table>
-             <div style="margin-top:20px; font-size:12px;">
-                العدد الإجمالي: ${listToPrint.length}
+
+            <div style="margin-top:20px; font-size:14px; font-weight:bold;">
+                العدد الإجمالي للملفات: ${listToPrint.length}
             </div>
+
             <script>
-                window.onload = function() { window.print(); }
+                // محاولة الطباعة تلقائياً عند التحميل
+                window.onload = function() { 
+                    setTimeout(function() { window.print(); }, 500); 
+                }
             </script>
         </body>
         </html>
