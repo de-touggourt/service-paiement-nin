@@ -1,46 +1,41 @@
 // ============================================================
-// كود تخطي شاشة القفل عند القدوم من لوحة التحكم
+// كود استقبال الإشارة السرية (postMessage)
 // ============================================================
-window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // التحقق من وجود إذن المرور الخاص بالمسؤول
-    if (urlParams.get('auth') === 'bypass_admin') {
+window.addEventListener("message", (event) => {
+    // 1. التحقق من محتوى الرسالة
+    // يجب أن تطابق الرسالة المرسلة من لوحة التحكم تماماً
+    if (event.data === "AUTH_Dir55@tggt") {
         
+        // ✅ وصلت الإشارة الصحيحة من لوحة التحكم!
         const overlay = document.getElementById("systemLoginOverlay");
         const container = document.getElementById("interfaceCard");
         
-        // 1. إخفاء شاشة القفل
+        // إخفاء القفل
         if(overlay) overlay.style.display = 'none';
 
-        // 2. حقن واجهة المستخدم (لأنها مخفية داخل متغير JS)
-        // ملاحظة: المتغير SECURE_INTERFACE_HTML معرف في الأسفل، لذا سيتم جلبه
+        // حقن الواجهة
         if(container && typeof SECURE_INTERFACE_HTML !== 'undefined') {
-            container.innerHTML = SECURE_INTERFACE_HTML;
-            container.classList.add("show-content");
-            container.style.display = "block"; // التأكد من العرض في حالة CSS
+            // نتأكد أننا لم نقم بالحقن مسبقاً
+            if (!container.classList.contains("show-content")) {
+                container.innerHTML = SECURE_INTERFACE_HTML;
+                container.classList.add("show-content");
+                container.style.display = "block";
 
-            // 3. تفعيل زر Enter (نفس منطق الدالة verifySystemLogin)
-            const ccpInp = document.getElementById("ccpInput");
-            if(ccpInp) {
-                ccpInp.addEventListener("keypress", function(event) {
-                    if (event.key === "Enter") {
-                        event.preventDefault(); 
-                        document.getElementById("loginBtn").click(); 
-                    }
-                });
+                // تفعيل زر Enter
+                const ccpInp = document.getElementById("ccpInput");
+                if(ccpInp) {
+                    ccpInp.addEventListener("keypress", function(e) {
+                        if (e.key === "Enter") { e.preventDefault(); document.getElementById("loginBtn").click(); }
+                    });
+                }
+                
+                // رسالة نجاح
+                const Toast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
+                Toast.fire({ icon: 'success', title: 'تم الاتصال الآمن بلوحة التحكم' });
             }
-
-            // 4. رسالة ترحيبية صغيرة (اختياري)
-            const Toast = Swal.mixin({
-                toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
-            });
-            Toast.fire({ icon: 'success', title: 'تم الدخول بصلاحيات المسؤول' });
         }
     }
 });
-// ============================================================
-
 
 
 // --- الثوابت المخفية (HTML المحمي) ---

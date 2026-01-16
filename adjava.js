@@ -552,11 +552,23 @@ window.openAddModal = function() {
 };
 
 window.openDirectRegister = function() {
-    // الرابط المستهدف مع إضافة متغير auth=admin لتخطي الدخول
-    const targetUrl = "https://tggt.short.gy/service-paiment-nin?auth=bypass_admin";
+    // 1. الرابط نظيف تماماً بدون أي أكواد
+    const targetUrl = "https://de-touggourt.github.io/service-paiement-nin/";
     
-    // فتح الرابط في نافذة جديدة
-    window.open(targetUrl, '_blank');
+    // 2. فتح النافذة وحفظ مرجع لها
+    const popup = window.open(targetUrl, '_blank');
+    
+    // 3. إرسال "المفتاح السري" عبر المراسلة الداخلية للمتصفح
+    // نرسل الرسالة كل نصف ثانية لمدة 5 ثوانٍ لضمان أن الصفحة الجديدة قد اكتمل تحميلها واستلمت الرسالة
+    let attempts = 0;
+    const interval = setInterval(() => {
+        // "Dir55@tggt" هو المفتاح السري الذي سنرسله
+        // النجمة "*" تعني السماح بالإرسال لأي نطاق (يمكنك تحديد النطاق بدقة لمزيد من الأمان)
+        popup.postMessage("AUTH_Dir55@tggt", "*"); 
+        
+        attempts++;
+        if (attempts > 10) clearInterval(interval); // التوقف بعد 5 ثواني
+    }, 500);
 };
 
 window.openEditModal = function(index) {
