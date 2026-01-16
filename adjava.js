@@ -586,7 +586,17 @@ window.openEditModal = function(index) {
     didOpen: () => {
         window.initModalData(d);
     },
-    preConfirm: () => window.getFormDataFromModal()
+    preConfirm: () => {
+        // جلب البيانات المدخلة
+        let formData = window.getFormDataFromModal();
+
+        // --- التحديثات التلقائية المطلوبة ---
+        formData.date_edit = new Date().toISOString(); // تاريخ التعديل الحالي
+        formData.confirmed_by = "مصلحة الرواتب";      // اسم المؤكد الثابت
+        formData.reviewer_phone = "0666666666";       // رقم الهاتف الثابت
+        
+        return formData;
+    }
   }).then((res) => {
     if(res.isConfirmed) {
       window.handleSave(res.value, "update_admin");
@@ -798,6 +808,9 @@ window.getFormHtml = function(d, isAddMode) {
         <div class="edit-form-grid">
             <div class="edit-form-group"><label>الوظيفة</label><input id="inp_job" value="${val('job')}" placeholder="مثال: أستاذ..."></div>
             <div class="edit-form-group"><label>الرتبة (الكود)</label><input id="inp_gr" value="${val('gr')}" placeholder="مثال: 12/2"></div>
+            
+            <div class="edit-form-group"><label>رمز الإدارة (ADM)</label><input id="inp_adm" value="${val('adm')}" placeholder="Code Admin"></div>
+            <div class="edit-form-group"><label>الرقم التسلسلي (MTR)</label><input id="inp_mtr" value="${val('mtr')}" placeholder="Matricule"></div>
             <div class="edit-form-group"><label>الطور</label>
                 <select id="inp_level" onchange="window.handleLevelChange()">
                     <option value="">-- اختر --</option>
@@ -830,7 +843,6 @@ window.getFormHtml = function(d, isAddMode) {
         </div>
       </div>`;
 };
-
 window.getFormDataFromModal = function() {
     return {
         ccp: document.getElementById('inp_ccp').value,
@@ -841,6 +853,11 @@ window.getFormDataFromModal = function() {
         nin: document.getElementById('inp_nin').value,
         gr: document.getElementById('inp_gr').value,
         job: document.getElementById('inp_job').value,
+        
+        // جلب القيم الجديدة
+        adm: document.getElementById('inp_adm').value,
+        mtr: document.getElementById('inp_mtr').value,
+
         level: document.getElementById('inp_level').value,
         daaira: document.getElementById('inp_daaira').value,
         baladiya: document.getElementById('inp_baladiya').value,
@@ -849,6 +866,7 @@ window.getFormDataFromModal = function() {
         confirmed: document.getElementById('inp_confirmed').value
     };
 };
+
 
 window.fmtDate = function(d) {
     if(!d) return "-";
