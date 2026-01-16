@@ -272,6 +272,25 @@
         border-color: var(--primary-color);
         box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
     }
+
+/* ============================================================ */
+    /* 🌟 3. حقل مؤسسة العمل ليأخذ العرض الكامل */
+    /* ============================================================ */
+  
+    .edit-form-group:has(select[id*="etab"]), 
+    .edit-form-group:has(input[id*="etab"]),
+    .edit-form-group:has(select[id*="institution"]),
+    .edit-form-group:has(input[id*="institution"]) {
+        grid-column: 1 / -1 !important; /* يجبر الحقل على أخذ عرض الصف كاملاً */
+    }
+
+    /* تحسين إضافي لقائمة اختيار المؤسسة لضمان عدم اقتصاص النص الطويل */
+    select[id*="etab"] option, 
+    select[id*="institution"] option {
+        font-size: 13px;
+        padding: 5px;
+    }
+
 </style>
 </head>
 <body>
