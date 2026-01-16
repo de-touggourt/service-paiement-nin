@@ -272,9 +272,8 @@
         border-color: var(--primary-color);
         box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
     }
-
 /* ============================================================ */
-    /* 🌟 3. إصلاح حقل مؤسسة العمل (توسط عمودي + عرض كامل) */
+    /* 🌟 3. إصلاح حقل مؤسسة العمل (ليطابق الحقول الأخرى تماماً) */
     /* ============================================================ */
     
     /* 1. إجبار الحاوية على أخذ العرض الكامل */
@@ -286,18 +285,33 @@
         width: 100% !important;
     }
 
-    /* 2. ضبط القائمة لتوسط النص عمودياً */
+    /* 2. تنسيق القائمة لتكون نسخة طبق الأصل من الـ Input */
     select[id*="etab"], 
     select[id*="institution"] {
-        height: 42px !important;           /* ارتفاع ثابت للحقل */
-        line-height: 40px !important;      /* (الارتفاع - 2 بكسل حدود) = يضع النص في المنتصف */
-        padding-top: 0 !important;         /* إزالة الحشوة العلوية */
-        padding-bottom: 0 !important;      /* إزالة الحشوة السفلية */
-        padding-left: 10px !important;     /* مسافة جانبية للجمالية */
-        padding-right: 30px !important;    /* مسافة جانبية للجمالية */
+        width: 100% !important;
+        height: 42px !important;           
+        line-height: 40px !important;      
         
-        font-size: 13px !important;        /* حجم خط مناسب */
-        display: block !important;
+        /* هنا التعديل الأساسي: جعل الحواف مطابقة للحقول الأخرى */
+        padding: 0 12px !important;        
+        
+        /* جعل حجم الخط ووزنه مطابقاً تماماً */
+        font-size: 14px !important;        
+        font-weight: 600 !important;       
+        
+        color: #333 !important;
+        background-color: #fcfcfc !important;
+        border: 1px solid #ced4da !important; 
+        border-radius: 8px !important; 
+    }
+
+    /* إضافة تأثير التركيز ليطابق الحقول الأخرى */
+    select[id*="etab"]:focus, 
+    select[id*="institution"]:focus {
+        border-color: var(--primary-color) !important; 
+        background-color: #fff !important;
+        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1) !important; 
+        outline: none !important; 
     }
 
 </style>
