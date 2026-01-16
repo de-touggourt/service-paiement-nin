@@ -734,7 +734,7 @@ async function confirmData(data) {
   }
 }
 
-// 6️⃣ التعبئة
+// 6️⃣ التعبئة (مصححة)
 function fillForm(fbData, savedData) {
   document.getElementById("interfaceCard").classList.add("expanded-mode");
   document.getElementById("mainHeader").style.display = "none";
@@ -760,20 +760,38 @@ function fillForm(fbData, savedData) {
     phoneInp.style.direction = "ltr";
     
     document.getElementById("ninField").value = savedData.nin || '';
+    
+    // تعيين الأطوار والبلديات
     document.getElementById("levelField").value = savedData.level || "";
     document.getElementById("daairaField").value = savedData.daaira || "";
     
+    // تحديث البلديات
     updBal(); 
+    
     setTimeout(() => {
+        // تعيين البلدية
         document.getElementById("baladiyaField").value = savedData.baladiya || "";
+        
+        // بناء مكان العمل
         updateWorkPlace();
+        
         setTimeout(() => {
             const select = document.querySelector("#institutionArea select");
-            if(select) select.value = savedData.schoolCode || savedData.schoolName;
-            document.getElementById("institutionCodeField").value = savedData.schoolCode || "";
+            // ✅ التصحيح هنا: نتحقق إذا كان هناك قائمة منسدلة نقوم بتحديثها
+            // أما إذا كان حقل نصي (مديرية التربية) فلا نتدخل لأن updateWorkPlace قامت بالواجب
+            if(select) {
+                select.value = savedData.schoolCode || savedData.schoolName;
+                document.getElementById("institutionCodeField").value = savedData.schoolCode || "";
+            } else {
+                // إذا لم نجد قائمة، نتأكد أن الكود المخفي لا يتم مسحه إذا كان فارغاً
+                if(savedData.level === "مديرية التربية") {
+                     document.getElementById("institutionCodeField").value = "مديرية التربية";
+                }
+            }
         }, 100);
     }, 100);
   } else {
+    // تصفير الحقول عند التسجيل الجديد
     document.getElementById("phoneField").value = "";
     document.getElementById("ninField").value = "";
     document.getElementById("levelField").value = "";
@@ -785,7 +803,8 @@ function fillForm(fbData, savedData) {
   }
 }
 
-// 7️⃣ إرسال التسجيل أو التعديل (محسنة)
+
+// 7️⃣ إرسال التسجيل أو التعديل (مصححة)
 async function submitRegistration() {
   // تعريف الحقول المطلوبة
   const fields = {
@@ -802,24 +821,33 @@ async function submitRegistration() {
   const codeField = document.getElementById("institutionCodeField");
   const schoolSelect = document.querySelector("#institutionArea select");
   const institutionArea = document.getElementById("institutionArea");
+  // ✅ إضافة: جلب الحقل النصي (في حالة المديرية)
+  const readonlyInput = institutionArea.querySelector("input");
 
   // 1. تنظيف الأخطاء السابقة
   Object.values(fields).forEach(el => el.classList.remove("input-error"));
   institutionArea.style.border = "none";
 
-  let firstErrorField = null; // لتحديد أول حقل فيه خطأ
+  let firstErrorField = null;
 
   // 2. التحقق من الحقول الأساسية
   for (const [key, field] of Object.entries(fields)) {
+    // نستثني الدائرة والبلدية من التحقق إذا كانت الحالة مديرية التربية لأنها قد تكون معطلة (disabled)
+    if ((key === 'daaira' || key === 'baladiya') && fields.level.value === "مديرية التربية") {
+        continue; 
+    }
+    
     if (!field.value.trim()) {
       field.classList.add("input-error");
       if (!firstErrorField) firstErrorField = field;
     }
   }
 
-  // 3. التحقق من المؤسسة (منطق خاص لأنها قد تكون قائمة أو حقل نصي)
-  // الشرط: إذا لم يكن هناك كود مؤسسة (hidden) ولا يوجد خيار محدد في القائمة
-  const isSchoolSelected = (schoolSelect && schoolSelect.value !== "") || (codeField.value !== "");
+  // 3. التحقق من المؤسسة (منطق معدل)
+  // ✅ التصحيح: القبول إذا كان هناك قائمة مختارة، أو كود مخفي، أو حقل نصي ظاهر به قيمة
+  const isSchoolSelected = (schoolSelect && schoolSelect.value !== "") || 
+                           (codeField.value !== "") || 
+                           (readonlyInput && readonlyInput.value !== "");
   
   if (!isSchoolSelected) {
     institutionArea.style.border = "2px solid #dc3545"; 
@@ -829,8 +857,7 @@ async function submitRegistration() {
 
   // إذا وجدنا حقولاً فارغة
   if (firstErrorField) {
-    // التركيز على أول حقل خطأ
-    if(firstErrorField.focus) firstErrorField.focus(); 
+    if(firstErrorField.focus && typeof firstErrorField.focus === 'function') firstErrorField.focus(); 
     return Swal.fire({ 
       icon: 'error', 
       title: 'حقول ناقصة', 
@@ -840,7 +867,7 @@ async function submitRegistration() {
     });
   }
 
-  // 4. التحقق من صحة البيانات (تاريخ، هاتف، رقم وطني)
+  // 4. التحقق من صحة البيانات
   const birthDate = new Date(fields.diz.value);
   if(isNaN(birthDate.getFullYear()) || birthDate.getFullYear() > new Date().getFullYear() - 18) {
       fields.diz.classList.add("input-error");
@@ -874,18 +901,22 @@ async function submitRegistration() {
   p.append("level", fields.level.value);
   p.append("daaira", fields.daaira.value);
   p.append("baladiya", fields.baladiya.value);
-  p.append("schoolCode", codeField.value);
   
-  // تحديد اسم المؤسسة
+  // تحديد كود المؤسسة واسمها
+  // إذا كان الكود فارغاً ولكن يوجد حقل نصي (حالة المديرية)، نضع قيمة افتراضية للكود
+  let finalCode = codeField.value;
+  if(!finalCode && readonlyInput && readonlyInput.value.includes("مديرية")) {
+      finalCode = "مديرية التربية";
+  }
+  p.append("schoolCode", finalCode);
+  
   if (schoolSelect) {
       p.append("schoolName", schoolSelect.options[schoolSelect.selectedIndex].text);
   } else {
-      // في حالة المديرية أو الحقول النصية الثابتة
-      const readonlyInput = institutionArea.querySelector("input");
-      p.append("schoolName", readonlyInput ? readonlyInput.value : codeField.value);
+      const inputVal = readonlyInput ? readonlyInput.value : "";
+      p.append("schoolName", inputVal || finalCode);
   }
 
-  // منطق التحديث أو التسجيل الجديد
   const action = currentEmployeeData ? "update" : "register";
   p.set("action", action);
   p.set("confirmed", "false"); 
@@ -898,7 +929,6 @@ async function submitRegistration() {
   
   p.append("date_confirm", "");
 
-  // الحفاظ على بيانات المؤكد إذا كانت موجودة
   if (currentEmployeeData) {
       if(currentEmployeeData.confirmed_by) p.append("confirmed_by", currentEmployeeData.confirmed_by);
       if(currentEmployeeData.reviewer_phone) p.append("reviewer_phone", currentEmployeeData.reviewer_phone);
@@ -914,7 +944,6 @@ async function submitRegistration() {
       let newData = {};
       for(let [k,v] of p.entries()) newData[k] = v;
       
-      // دمج البيانات القديمة المفقودة في النموذج (مثل المؤكد)
       if (currentEmployeeData) {
           if(!newData.confirmed_by) newData.confirmed_by = currentEmployeeData.confirmed_by || "";
           if(!newData.reviewer_phone) newData.reviewer_phone = currentEmployeeData.reviewer_phone || "";
@@ -930,6 +959,7 @@ async function submitRegistration() {
     Swal.fire("خطأ", "فشل الاتصال بالسيرفر", "error"); 
   }
 }
+
 // 8️⃣ الطباعة
 // 8️⃣ الطباعة (معدلة لعدم الخروج من النظام)
 function printA4(d) {
