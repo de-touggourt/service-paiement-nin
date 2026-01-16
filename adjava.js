@@ -359,6 +359,7 @@ window.renderTable = function(data) {
         <div class="actions-cell">
           <button class="action-btn btn-view" onclick="window.viewDetails(${originalIndex})" title="عرض التفاصيل"><i class="fas fa-eye"></i></button>
           <button class="action-btn btn-edit" onclick="window.openEditModal(${originalIndex})" title="تعديل"><i class="fas fa-pen-to-square"></i></button>
+          <button class="action-btn btn-print" onclick="window.printForm(${originalIndex})" title="طباعة الاستمارة" style="background-color: #6a11cb;"><i class="fas fa-file-invoice"></i></button>
           <button class="action-btn btn-delete" onclick="window.deleteUser('${row.ccp}')" title="حذف"><i class="fas fa-trash-can"></i></button>
         </div>
       </td>
@@ -1217,3 +1218,183 @@ window.printPendingList = function() {
     printWindow.document.close();
 };
 
+// ==========================================
+// 🖨️ دالة طباعة الاستمارة (تصميم مطابق للأصل)
+// ==========================================
+window.printForm = function(index) {
+    const d = allData[index];
+    
+    // تنسيق التاريخ الحالي للطباعة
+    const printDate = new Date().toLocaleDateString('ar-DZ');
+    
+    // تنسيق تاريخ الميلاد
+    const birthDate = d.diz ? window.fmtDate(d.diz) : "---";
+
+    // بيانات المؤكد (مع معالجة القيم الفارغة)
+    const confirmerName = d.confirmed_by || "---";
+    const confirmerPhone = d.reviewer_phone || "---";
+
+    // الرتبة والوظيفة
+    const jobTitle = d.job || d.gr || "---";
+
+    // فتح نافذة جديدة للطباعة
+    const printWindow = window.open('', '_blank');
+
+    // كتابة محتوى النافذة (نفس كود index.html و injava.js بالضبط)
+    printWindow.document.write(`
+        <html lang="ar" dir="rtl">
+        <head>
+            <meta charset="UTF-8">
+            <title>طباعة الاستمارة - ${d.fmn} ${d.frn}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+            <style>
+                /* نفس CSS الموجود في index.html لضمان التطابق */
+                * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif !important; }
+                
+                body {
+                    background: white; 
+                    margin: 0; 
+                    padding: 0; 
+                    display: block;
+                    width: 210mm;
+                    margin: 0 auto;
+                }
+
+                #printContainer {
+                    width: 100%;
+                    padding: 10mm 15mm; 
+                    direction: rtl;
+                    color: #000;
+                }
+
+                .print-official-header {
+                    display: flex; justify-content: space-between; align-items: center;
+                    margin-bottom: 5px; padding-bottom: 10px; border-bottom: 3px double #000;
+                }
+                .print-logo-img { width: 160px; height: auto; object-fit: contain; }
+                .print-titles-official { text-align: center; flex-grow: 1; }
+                .print-titles-official h3 { margin: 3px 0; font-size: 16px; font-weight: 700; color: #000; }
+                
+                .print-form-title-box {
+                    border: 2px solid #000; border-radius: 6px; padding: 8px;
+                    margin: 15px 0 20px 0; text-align: center; background-color: #f9f9f9 !important;
+                    -webkit-print-color-adjust: exact;
+                }
+                .print-main-title {
+                    margin: 0; font-size: 20px; font-weight: 800; color: #000;
+                    text-decoration: underline; text-underline-offset: 4px;
+                }
+                .print-date { margin-top: 5px; font-size: 13px; font-weight: 600; }
+
+                .data-table { 
+                    width: 100%; border-collapse: collapse; margin: 10px 0; 
+                    font-size: 14px; border: 2px solid #000;
+                }
+                .data-table th { 
+                    background-color: #eee !important; -webkit-print-color-adjust: exact;
+                    padding: 7px 10px; border: 1px solid #000; width: 35%; text-align: right; font-weight: 800;
+                }
+                .data-table td { 
+                    padding: 7px 10px; border: 1px solid #000; font-weight: 600; color: #000; text-align: right; 
+                }
+
+                .auth-box {
+                    border: 2px solid #000; padding: 10px; margin: 20px 0;
+                    background-color: #fff !important; font-size: 14px; text-align: center;
+                }
+                .auth-title { display: block; font-weight: 800; margin-bottom: 8px; font-size: 15px; }
+                .auth-details { display: flex; justify-content: center; gap: 20px; }
+
+                .signature-section {
+                    margin-top: 40px; display: flex; justify-content: space-between; padding: 0 20px;
+                }
+                .signature-box {
+                    text-align: center; border: 1px dashed #000; padding: 15px 10px; 
+                    width: 220px; height: 140px; position: relative;
+                }
+                .signature-box strong {
+                    display: block; margin-bottom: 4px; padding-bottom: 0;
+                    border-bottom: none; font-size: 14px; font-weight: 800;
+                }
+                .signature-box small { display: block; font-size: 12px; font-weight: 600; }
+
+                @media print {
+                    @page { margin: 0; size: A4; }
+                    body { margin: 0; padding: 0; }
+                    #printContainer { width: 100%; }
+                    .no-print { display: none; }
+                }
+                
+                .print-btn-float {
+                    position: fixed; bottom: 20px; left: 20px; 
+                    background: #333; color: white; padding: 10px 20px; 
+                    border-radius: 5px; cursor: pointer; border: none; font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <button class="print-btn-float no-print" onclick="window.print()">🖨️ طباعة</button>
+
+            <div id="printContainer">
+                <div class="print-official-header">
+                    <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" alt="شعار" class="print-logo-img">
+                    <div class="print-titles-official">
+                        <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                        <h3>وزارة التربية الوطنية</h3>
+                        <h3>مديرية التربية لولاية توقرت</h3>
+                        <h3>مصلحة تسيير نفقات المستخدمين</h3>
+                    </div>
+                    <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" alt="شعار" class="print-logo-img">
+                </div>
+
+                <div class="print-form-title-box">
+                    <h2 class="print-main-title">استمارة معلومات الموظف</h2>
+                    <div class="print-date">تاريخ الاستخراج: <span>${printDate}</span></div>
+                </div>
+
+                <table class="data-table">
+                    <tr><th>اللقب</th><td>${d.fmn}</td></tr>
+                    <tr><th>الاسم</th><td>${d.frn}</td></tr>
+                    <tr><th>تاريخ الميلاد</th><td>${birthDate}</td></tr>
+                    <tr><th>رقم الحساب البريدي (CCP)</th><td>${d.ccp}</td></tr>
+                    <tr><th>رقم الضمان الاجتماعي</th><td>${d.ass}</td></tr>
+                    <tr><th>الرتبة / الوظيفة</th><td>${jobTitle}</td></tr>
+                    <tr><th>مكان العمل</th><td>${d.schoolName || ''}</td></tr>
+                    <tr><th>الدائرة / البلدية</th><td>${d.daaira || ''} / ${d.baladiya || ''}</td></tr>
+                    <tr><th>رقم الهاتف</th><td style="text-align: right;"><span dir="ltr">${d.phone}</span></td></tr>
+                    <tr><th>رقم التعريف الوطني (NIN)</th><td>${d.nin || ''}</td></tr>
+                </table>
+
+                <div class="auth-box">
+                    <div class="auth-title">✅ مصادقة المعلومات:</div>
+                    <div class="auth-details">
+                        <span>اسم المؤكد: <span style="font-weight:bold;">${confirmerName}</span></span>
+                        <span style="border-left: 2px solid #ccc; margin: 0 10px;"></span>
+                        <span>رقم الهاتف: <span dir="ltr" style="font-weight:bold;">${confirmerPhone}</span></span>
+                    </div>
+                </div>
+
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <strong>إمضاء المعني</strong>
+                        <small>أصرح بصحة المعلومات</small>
+                    </div>
+                    <div class="signature-box">
+                        <strong>إمضاء وختم الإدارة</strong>
+                        <small>مصادق عليه</small>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+                // طباعة تلقائية عند التحميل
+                window.onload = function() {
+                    setTimeout(function() { window.print(); }, 500);
+                }
+            </script>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+};
