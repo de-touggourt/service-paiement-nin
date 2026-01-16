@@ -574,7 +574,7 @@ window.openDirectRegister = function() {
 window.openEditModal = function(index) {
   const d = allData[index];
   
-  // دالة لتنسيق الوقت والتاريخ (YYYY-MM-DD HH:mm:ss)
+  // دالة مساعدة لتنسيق الوقت
   const getFormattedDate = () => {
       const now = new Date();
       const year = now.getFullYear();
@@ -600,27 +600,87 @@ window.openEditModal = function(index) {
         window.initModalData(d);
     },
     preConfirm: () => {
-        // 1. جلب البيانات من الحقول الظاهرة في النافذة
+        // 1. جلب البيانات من النموذج
         let formData = window.getFormDataFromModal();
+
+        // =========================================================
+        // 1️⃣ التحقق من الحقول الفارغة (Empty Fields Check)
+        // =========================================================
         
-        // 2. حساب التوقيت الحالي
+        // خريطة لربط أسماء الحقول البرمجية بأسمائها العربية للعرض
+        const requiredFields = {
+            ccp: 'رقم الحساب البريدي (CCP)',
+            ass: 'رقم الضمان الاجتماعي (ASS)',
+            fmn: 'اللقب',
+            frn: 'الاسم',
+            diz: 'تاريخ الميلاد',
+            nin: 'رقم التعريف الوطني (NIN)',
+            gr: 'الرتبة',
+            job: 'الوظيفة',
+            adm: 'رمز الإدارة (ADM)',
+            mtr: 'الرقم التسلسلي (MTR)',
+            level: 'الطور',
+            daaira: 'الدائرة',
+            baladiya: 'البلدية',
+            schoolName: 'مؤسسة العمل',
+            phone: 'رقم الهاتف'
+        };
+
+        // حلقة تكرارية لفحص كل الحقول
+        for (const [key, label] of Object.entries(requiredFields)) {
+            // التحقق مما إذا كانت القيمة فارغة أو تحتوي مسافات فقط
+            if (!formData[key] || formData[key].toString().trim() === '') {
+                Swal.showValidationMessage(`⚠️ الحقل "${label}" إجباري ولا يمكن تركه فارغاً.`);
+                return false; // إيقاف العملية
+            }
+        }
+
+        // =========================================================
+        // 2️⃣ التحقق من صحة التنسيق (Format Validation)
+        // =========================================================
+
+        // أ) التحقق من أن CCP أرقام فقط
+        if (!/^\d+$/.test(formData.ccp)) {
+            Swal.showValidationMessage('⚠️ رقم CCP يجب أن يحتوي على أرقام فقط.');
+            return false;
+        }
+
+        // ب) التحقق من الهاتف (10 أرقام، يبدأ بـ 05/06/07)
+        const phoneRegex = /^(05|06|07)[0-9]{8}$/;
+        if (!phoneRegex.test(String(formData.phone).replace(/\s/g, ''))) {
+            Swal.showValidationMessage('⚠️ رقم الهاتف غير صحيح (يجب أن يكون 10 أرقام ويبدأ بـ 05, 06, 07).');
+            return false;
+        }
+
+        // ج) التحقق من NIN (18 رقم)
+        if (!/^\d{18}$/.test(formData.nin)) {
+            Swal.showValidationMessage(`⚠️ رقم التعريف الوطني (NIN) يجب أن يتكون من 18 رقمًا (المُدخل: ${formData.nin.length}).`);
+            return false;
+        }
+
+        // د) التحقق من ASS (12 رقم)
+        if (!/^\d{12}$/.test(formData.ass)) {
+            Swal.showValidationMessage(`⚠️ رقم الضمان الاجتماعي (ASS) يجب أن يتكون من 12 رقمًا (المُدخل: ${formData.ass.length}).`);
+            return false;
+        }
+
+        // =========================================================
+        // 3️⃣ تجهيز البيانات للحفظ (بعد نجاح التحقق)
+        // =========================================================
+        
         const currentDateTime = getFormattedDate();
 
-        // =========================================================
-        // ✅ تصحيح هام: تاريخ التعديل يتم تحديثه دائماً وبشكل إجباري
-        // =========================================================
+        // تحديث تاريخ التعديل
         formData.date_edit = currentDateTime; 
-
-        // 3. إضافة بيانات مصلحة الرواتب (ثابتة)
+        
+        // بيانات ثابتة للمسؤول
         formData.confirmed_by = "مصلحة الرواتب";
-        formData.reviewer_phone = "0666666666";
+        formData.reviewer_phone = "0662340604"; 
 
-        // 4. التعامل مع تاريخ التأكيد (بناءً على الحالة فقط)
+        // منطق تاريخ التأكيد
         if (formData.confirmed === "true") {
-            // إذا كانت الحالة "مؤكد": نحدث تاريخ التأكيد أيضاً
             formData.date_confirm = currentDateTime;
         } else {
-            // إذا كانت الحالة "غير مؤكد": نمسح تاريخ التأكيد
             formData.date_confirm = ""; 
         }
         
@@ -628,7 +688,6 @@ window.openEditModal = function(index) {
     }
   }).then((res) => {
     if(res.isConfirmed) {
-      // إرسال البيانات (التي تتضمن الآن date_edit في كل الحالات)
       window.handleSave(res.value, "update_admin");
     }
   });
