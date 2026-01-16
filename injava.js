@@ -1,5 +1,32 @@
+// ضع هذا الكود في بداية السكريبت في صفحة التسجيل (tggt.short.gy/service-paiment-nin)
+window.onload = function() {
+    // التحقق من وجود إذن المرور في الرابط
+    const urlParams = new URLSearchParams(window.location.search);
+    const authType = urlParams.get('auth');
+
+    if (authType === 'bypass_admin') {
+        // كود لإخفاء واجهة الدخول وإظهار واجهة التسجيل مباشرة
+        // (قم بتغيير المعرفات IDs حسب الموجود في صفحتك)
+        
+        // مثال: إخفاء قسم الدخول
+        if(document.getElementById("login-section")) {
+            document.getElementById("login-section").style.display = "none";
+        }
+        
+        // إظهار قسم النموذج مباشرة
+        if(document.getElementById("form-section")) {
+            document.getElementById("form-section").style.display = "block";
+        }
+        
+        // إذا كنت تستخدم SweetAlert للدخول، يمكنك إغلاقه أو عدم تشغيله
+    }
+};
+
+
+
 // --- الثوابت المخفية (HTML المحمي) ---
 // هذا الكود لن يظهر في المتصفح كعناصر إلا بعد كلمة المرور الصحيحة
+
 const SECURE_INTERFACE_HTML = `
     <div class="page-header" id="mainHeader">
       <div class="header-text">
@@ -134,7 +161,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // 🛑🛑🛑 استبدل هذا الرابط برابط السكريبت الخاص بك 🛑🛑🛑
-const scriptURL = "https://script.google.com/macros/s/AKfycbwOXtYgx0ibd1BcPIORiVCYh7JtLHuA-JCDU41L2GXzlhDsgcvkhijtD3ezaNi6hwI3Ow/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzdFIFtiLiLjPX0xcwxEUjG5gsoeZ8yQJ5OL5IwIlJMgsrAJxwA/exec";
 
 // --- خريطة الرتب (كما هي تماماً) ---
 const gradeMap = {
@@ -963,6 +990,5 @@ function updateWorkPlace() {
   else if((l === 'متوسط' || l === 'ثانوي') && d && window.institutionsByDaaira) mkSel(window.institutionsByDaaira[d][l]||[]);
   else area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
 }
-
 
 

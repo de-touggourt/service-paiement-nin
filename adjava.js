@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -14,12 +15,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-// --- إعدادات المسؤول للمصادقة (جديد) ---
-const ADMIN_INFO = {
-    name: "مصلحة الرواتب", // الاسم الذي سيظهر عند التأكيد
-    phone: "030000000"     // رقم الهاتف الذي سيظهر عند التأكيد
-};
 
 // --- الكود المخفي (HTML) ---
 const SECURE_DASHBOARD_HTML = `
@@ -64,9 +59,9 @@ const SECURE_DASHBOARD_HTML = `
         <option value="pending">⏳ الغير مؤكدة فقط</option>
       </select>
 
-    <button class="btn btn-add" onclick="window.openAddModal()">
-        تسجيل جديد <i class="fas fa-plus"></i>
-      </button>
+    <button class="btn btn-add" onclick="window.openDirectRegister()">
+    تسجيل جديد <i class="fas fa-plus"></i>
+    </button>
 
     <button class="btn btn-refresh" onclick="window.loadData()">
         تحديث <i class="fas fa-sync-alt"></i>
@@ -118,7 +113,7 @@ const SECURE_DASHBOARD_HTML = `
 `;
 
 // --- المتغيرات العامة ---
-const scriptURL = "https://script.google.com/macros/s/AKfycbwOXtYgx0ibd1BcPIORiVCYh7JtLHuA-JCDU41L2GXzlhDsgcvkhijtD3ezaNi6hwI3Ow/exec"; 
+const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzdFIFtiLiLjPX0xcwxEUjG5gsoeZ8yQJ5OL5IwIlJMgsrAJxwA/exec"; 
 
 // متغيرات البيانات والصفحات
 let allData = [];
@@ -537,43 +532,6 @@ window.openFirebaseModal = function() {
   });
 };
 
-// --- دالة منطق التأكيد ومعالجة البيانات ---
-window.processConfirmationLogic = function(formData) {
-    // إنشاء نسخة من البيانات لتعديلها
-    let processedData = { ...formData };
-    
-    // التحقق من القيمة القادمة من القائمة المنسدلة (true/false)
-    const isConfirmed = String(processedData.confirmed) === "true";
-
-    if (isConfirmed) {
-        // 1. حالة: الملف مؤكد ✅
-        // نقوم بتوليد تاريخ ووقت اللحظة الحالية
-        const now = new Date();
-        const dateStr = now.getFullYear() + '-' +
-            String(now.getMonth() + 1).padStart(2, '0') + '-' +
-            String(now.getDate()).padStart(2, '0');
-            
-        const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
-            String(now.getMinutes()).padStart(2, '0') + ':' +
-            String(now.getSeconds()).padStart(2, '0');
-
-        // تعبئة الحقول بالبيانات الجديدة
-        processedData.date_confirm = `${dateStr} ${timeStr}`;
-        processedData.confirmed_by = ADMIN_INFO.name;      // اسم المسؤول من الإعدادات
-        processedData.reviewer_phone = ADMIN_INFO.phone;   // هاتف المسؤول من الإعدادات
-
-    } else {
-        // 2. حالة: الملف غير مؤكد ⏳ (إلغاء التأكيد)
-        // ⚠️ هام: إرسال سلسلة فارغة ("") سيجبر قاعدة البيانات على مسح القيمة القديمة
-        processedData.date_confirm = ""; 
-        processedData.confirmed_by = ""; 
-        processedData.reviewer_phone = ""; 
-    }
-
-    return processedData;
-};
-
-
 window.openAddModal = function() {
   Swal.fire({
     title: 'تسجيل موظف جديد',
@@ -591,6 +549,14 @@ window.openAddModal = function() {
       window.handleSave(res.value, "register");
     }
   });
+};
+
+window.openDirectRegister = function() {
+    // الرابط المستهدف مع إضافة متغير auth=admin لتخطي الدخول
+    const targetUrl = "https://tggt.short.gy/service-paiment-nin?auth=bypass_admin";
+    
+    // فتح الرابط في نافذة جديدة
+    window.open(targetUrl, '_blank');
 };
 
 window.openEditModal = function(index) {
@@ -611,11 +577,7 @@ window.openEditModal = function(index) {
     preConfirm: () => window.getFormDataFromModal()
   }).then((res) => {
     if(res.isConfirmed) {
-      // ⚠️ استدعاء دالة المعالجة هنا هو ما يضمن تطبيق التغييرات قبل الحفظ
-      const finalData = window.processConfirmationLogic(res.value);
-      
-      // إرسال البيانات النهائية
-      window.handleSave(finalData, "update_admin");
+      window.handleSave(res.value, "update_admin");
     }
   });
 };
@@ -1135,5 +1097,4 @@ window.printPendingList = function() {
     `);
     printWindow.document.close();
 };
-
 
