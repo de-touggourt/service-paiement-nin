@@ -573,6 +573,19 @@ window.openDirectRegister = function() {
 
 window.openEditModal = function(index) {
   const d = allData[index];
+  
+  // دالة مساعدة داخلية لتنسيق التاريخ والوقت بشكل جميل (YYYY-MM-DD HH:mm:ss)
+  const getFormattedDate = () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  };
+
   Swal.fire({
     title: 'تعديل بيانات الموظف',
     width: '800px',
@@ -587,26 +600,25 @@ window.openEditModal = function(index) {
         window.initModalData(d);
     },
     preConfirm: () => {
-        // 1. جلب البيانات الأساسية من النموذج
+        // 1. جلب البيانات من الحقول
         let formData = window.getFormDataFromModal();
         
-        // 2. تحديد التوقيت الحالي
-        const now = new Date();
-        const isoDate = now.toISOString(); // تنسيق التاريخ القياسي
+        // 2. الحصول على الوقت الحالي بالتنسيق المحسن
+        const currentDateTime = getFormattedDate();
 
-        // --- أ: تحديث تاريخ التعديل (إجباري دائماً) ---
-        formData.date_edit = isoDate;
+        // --- أ: تحديث تاريخ التعديل (دائماً يرسل) ---
+        formData.date_edit = currentDateTime;
 
         // --- ب: بيانات المسؤول الثابتة ---
         formData.confirmed_by = "مصلحة الرواتب";
         formData.reviewer_phone = "0666666666";
 
-        // --- ج: منطق تاريخ التأكيد (شرطي) ---
+        // --- ج: شرط تاريخ التأكيد ---
         if (formData.confirmed === "true") {
-            // الحالة مؤكدة: نرسل تاريخ التأكيد الحالي
-            formData.date_confirm = isoDate;
+            // إذا كان مؤكداً: نرسل تاريخ التأكيد الجديد
+            formData.date_confirm = currentDateTime;
         } else {
-            // الحالة غير مؤكدة: نرسل فراغ لإلغاء أي تاريخ سابق
+            // إذا كان غير مؤكد: نرسل قيمة فارغة (لمسح أي تاريخ قديم)
             formData.date_confirm = ""; 
         }
         
