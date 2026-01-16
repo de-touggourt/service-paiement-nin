@@ -1,26 +1,45 @@
-// ضع هذا الكود في بداية السكريبت في صفحة التسجيل (tggt.short.gy/service-paiment-nin)
-window.onload = function() {
-    // التحقق من وجود إذن المرور في الرابط
+// ============================================================
+// كود تخطي شاشة القفل عند القدوم من لوحة التحكم
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const authType = urlParams.get('auth');
+    
+    // التحقق من وجود إذن المرور الخاص بالمسؤول
+    if (urlParams.get('auth') === 'bypass_admin') {
+        
+        const overlay = document.getElementById("systemLoginOverlay");
+        const container = document.getElementById("interfaceCard");
+        
+        // 1. إخفاء شاشة القفل
+        if(overlay) overlay.style.display = 'none';
 
-    if (authType === 'bypass_admin') {
-        // كود لإخفاء واجهة الدخول وإظهار واجهة التسجيل مباشرة
-        // (قم بتغيير المعرفات IDs حسب الموجود في صفحتك)
-        
-        // مثال: إخفاء قسم الدخول
-        if(document.getElementById("login-section")) {
-            document.getElementById("login-section").style.display = "none";
+        // 2. حقن واجهة المستخدم (لأنها مخفية داخل متغير JS)
+        // ملاحظة: المتغير SECURE_INTERFACE_HTML معرف في الأسفل، لذا سيتم جلبه
+        if(container && typeof SECURE_INTERFACE_HTML !== 'undefined') {
+            container.innerHTML = SECURE_INTERFACE_HTML;
+            container.classList.add("show-content");
+            container.style.display = "block"; // التأكد من العرض في حالة CSS
+
+            // 3. تفعيل زر Enter (نفس منطق الدالة verifySystemLogin)
+            const ccpInp = document.getElementById("ccpInput");
+            if(ccpInp) {
+                ccpInp.addEventListener("keypress", function(event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault(); 
+                        document.getElementById("loginBtn").click(); 
+                    }
+                });
+            }
+
+            // 4. رسالة ترحيبية صغيرة (اختياري)
+            const Toast = Swal.mixin({
+                toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
+            });
+            Toast.fire({ icon: 'success', title: 'تم الدخول بصلاحيات المسؤول' });
         }
-        
-        // إظهار قسم النموذج مباشرة
-        if(document.getElementById("form-section")) {
-            document.getElementById("form-section").style.display = "block";
-        }
-        
-        // إذا كنت تستخدم SweetAlert للدخول، يمكنك إغلاقه أو عدم تشغيله
     }
-};
+});
+// ============================================================
 
 
 
