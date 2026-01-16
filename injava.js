@@ -103,7 +103,7 @@ const SECURE_INTERFACE_HTML = `
 
       <div class="outer-group" style="margin-bottom: 20px;">
         <label>الطور:</label>
-        <select id="levelField" onchange="updateWorkPlace(); removeError(this)">
+       <select id="levelField" onchange="resetGeoFields(); updateWorkPlace(); removeError(this)">
           <option value="">-- اختر --</option>
           <option value="ابتدائي">ابتدائي</option>
           <option value="متوسط">متوسط</option>
@@ -785,56 +785,80 @@ function fillForm(fbData, savedData) {
   }
 }
 
-// 7️⃣ إرسال التسجيل أو التعديل
+// 7️⃣ إرسال التسجيل أو التعديل (محسنة)
 async function submitRegistration() {
-  const fmn = document.getElementById("fmnField");
-  const frn = document.getElementById("frnField");
-  const diz = document.getElementById("dizField");
-  const level = document.getElementById("levelField");
-  const daaira = document.getElementById("daairaField");
-  const baladiya = document.getElementById("baladiyaField");
-  const phone = document.getElementById("phoneField");
-  const nin = document.getElementById("ninField");
-  
+  // تعريف الحقول المطلوبة
+  const fields = {
+    fmn: document.getElementById("fmnField"),
+    frn: document.getElementById("frnField"),
+    diz: document.getElementById("dizField"),
+    level: document.getElementById("levelField"),
+    daaira: document.getElementById("daairaField"),
+    baladiya: document.getElementById("baladiyaField"),
+    phone: document.getElementById("phoneField"),
+    nin: document.getElementById("ninField")
+  };
+
   const codeField = document.getElementById("institutionCodeField");
   const schoolSelect = document.querySelector("#institutionArea select");
-  
-  [fmn, frn, diz, level, daaira, baladiya, phone, nin].forEach(el => el.classList.remove("input-error"));
-  document.getElementById("institutionArea").style.border = "none";
+  const institutionArea = document.getElementById("institutionArea");
 
-  let hasEmpty = false;
-  const fieldsToCheck = [fmn, frn, diz, level, daaira, baladiya, phone, nin];
-  fieldsToCheck.forEach(field => {
-    if(!field.value.trim()) {
-       field.classList.add("input-error");
-       hasEmpty = true;
+  // 1. تنظيف الأخطاء السابقة
+  Object.values(fields).forEach(el => el.classList.remove("input-error"));
+  institutionArea.style.border = "none";
+
+  let firstErrorField = null; // لتحديد أول حقل فيه خطأ
+
+  // 2. التحقق من الحقول الأساسية
+  for (const [key, field] of Object.entries(fields)) {
+    if (!field.value.trim()) {
+      field.classList.add("input-error");
+      if (!firstErrorField) firstErrorField = field;
     }
-  });
-
-  if ((!schoolSelect || schoolSelect.value === "") && codeField.value === "") {
-     document.getElementById("institutionArea").style.border = "2px solid #dc3545"; 
-     hasEmpty = true;
   }
 
-  if(hasEmpty) {
-    return Swal.fire({ icon: 'error', title: 'حقول ناقصة', text: 'يرجى ملء جميع الحقول الملونة بالأحمر.' });
+  // 3. التحقق من المؤسسة (منطق خاص لأنها قد تكون قائمة أو حقل نصي)
+  // الشرط: إذا لم يكن هناك كود مؤسسة (hidden) ولا يوجد خيار محدد في القائمة
+  const isSchoolSelected = (schoolSelect && schoolSelect.value !== "") || (codeField.value !== "");
+  
+  if (!isSchoolSelected) {
+    institutionArea.style.border = "2px solid #dc3545"; 
+    institutionArea.style.borderRadius = "4px";
+    if (!firstErrorField) firstErrorField = schoolSelect || institutionArea;
   }
 
-  const birthDate = new Date(diz.value);
-  if(isNaN(birthDate.getFullYear()) || birthDate.getFullYear() > 2005) {
-      diz.classList.add("input-error");
-      return Swal.fire({ icon: 'warning', title: 'تاريخ الميلاد غير صحيح' });
+  // إذا وجدنا حقولاً فارغة
+  if (firstErrorField) {
+    // التركيز على أول حقل خطأ
+    if(firstErrorField.focus) firstErrorField.focus(); 
+    return Swal.fire({ 
+      icon: 'error', 
+      title: 'حقول ناقصة', 
+      text: 'يرجى ملء جميع الحقول الملونة بالأحمر.',
+      timer: 2000,
+      showConfirmButton: false
+    });
   }
+
+  // 4. التحقق من صحة البيانات (تاريخ، هاتف، رقم وطني)
+  const birthDate = new Date(fields.diz.value);
+  if(isNaN(birthDate.getFullYear()) || birthDate.getFullYear() > new Date().getFullYear() - 18) {
+      fields.diz.classList.add("input-error");
+      return Swal.fire({ icon: 'warning', title: 'تاريخ الميلاد غير منطقي' });
+  }
+
   const phoneRegex = /^(05|06|07)[0-9]{8}$/;
-  if(!phoneRegex.test(phone.value)) {
-      phone.classList.add("input-error");
-      return Swal.fire({ icon: 'warning', title: 'الهاتف غير صحيح' });
-  }
-  if(nin.value.length !== 18) {
-      nin.classList.add("input-error");
-      return Swal.fire({ icon: 'warning', title: 'رقم التعريف الوطني غير صحيح' });
+  if(!phoneRegex.test(fields.phone.value)) {
+      fields.phone.classList.add("input-error");
+      return Swal.fire({ icon: 'warning', title: 'رقم الهاتف غير صحيح', text: 'يجب أن يتكون من 10 أرقام ويبدأ بـ 05، 06، أو 07' });
   }
 
+  if(fields.nin.value.length !== 18) {
+      fields.nin.classList.add("input-error");
+      return Swal.fire({ icon: 'warning', title: 'رقم التعريف الوطني غير صحيح', text: 'يجب أن يتكون من 18 رقم' });
+  }
+
+  // --- تجهيز البيانات للإرسال ---
   const p = new URLSearchParams();
   p.append("ccp", document.getElementById("ccpField").value);
   p.append("ass", document.getElementById("assField").value);
@@ -842,24 +866,26 @@ async function submitRegistration() {
   p.append("adm", document.getElementById("admField").value);
   p.append("gr", document.getElementById("grField").value);
   p.append("job", document.getElementById("jobField").value);
-  p.append("fmn", fmn.value);
-  p.append("frn", frn.value);
-  p.append("diz", diz.value);
-  p.append("phone", phone.value);
-  p.append("nin", nin.value);
-  p.append("level", level.value);
-  p.append("daaira", daaira.value);
-  p.append("baladiya", baladiya.value);
+  p.append("fmn", fields.fmn.value);
+  p.append("frn", fields.frn.value);
+  p.append("diz", fields.diz.value);
+  p.append("phone", fields.phone.value);
+  p.append("nin", fields.nin.value);
+  p.append("level", fields.level.value);
+  p.append("daaira", fields.daaira.value);
+  p.append("baladiya", fields.baladiya.value);
   p.append("schoolCode", codeField.value);
   
-  const sel = document.querySelector("#institutionArea select");
-  if (sel) {
-      p.append("schoolName", sel.options[sel.selectedIndex].text);
+  // تحديد اسم المؤسسة
+  if (schoolSelect) {
+      p.append("schoolName", schoolSelect.options[schoolSelect.selectedIndex].text);
   } else {
-      // 🛑 في حالة المديرية، الاسم هو نفسه الكود أو نص ثابت
-      p.append("schoolName", "مديرية التربية لولاية توقرت");
+      // في حالة المديرية أو الحقول النصية الثابتة
+      const readonlyInput = institutionArea.querySelector("input");
+      p.append("schoolName", readonlyInput ? readonlyInput.value : codeField.value);
   }
 
+  // منطق التحديث أو التسجيل الجديد
   const action = currentEmployeeData ? "update" : "register";
   p.set("action", action);
   p.set("confirmed", "false"); 
@@ -872,11 +898,10 @@ async function submitRegistration() {
   
   p.append("date_confirm", "");
 
-  if (currentEmployeeData && currentEmployeeData.confirmed_by) {
-      p.append("confirmed_by", currentEmployeeData.confirmed_by);
-  }
-  if (currentEmployeeData && currentEmployeeData.reviewer_phone) {
-      p.append("reviewer_phone", currentEmployeeData.reviewer_phone);
+  // الحفاظ على بيانات المؤكد إذا كانت موجودة
+  if (currentEmployeeData) {
+      if(currentEmployeeData.confirmed_by) p.append("confirmed_by", currentEmployeeData.confirmed_by);
+      if(currentEmployeeData.reviewer_phone) p.append("reviewer_phone", currentEmployeeData.reviewer_phone);
   }
 
   Swal.fire({ title: 'جاري الحفظ...', didOpen:()=>Swal.showLoading(), allowOutsideClick: false });
@@ -884,10 +909,12 @@ async function submitRegistration() {
   try {
     const res = await fetch(scriptURL, { method: "POST", body: p });
     const result = await res.json();
+    
     if(result.result === "success") {
       let newData = {};
       for(let [k,v] of p.entries()) newData[k] = v;
       
+      // دمج البيانات القديمة المفقودة في النموذج (مثل المؤكد)
       if (currentEmployeeData) {
           if(!newData.confirmed_by) newData.confirmed_by = currentEmployeeData.confirmed_by || "";
           if(!newData.reviewer_phone) newData.reviewer_phone = currentEmployeeData.reviewer_phone || "";
@@ -898,9 +925,11 @@ async function submitRegistration() {
     } else {
       Swal.fire("خطأ", result.message, "error");
     }
-  } catch(e) { Swal.fire("خطأ", "فشل الحفظ", "error"); }
+  } catch(e) { 
+    console.error(e);
+    Swal.fire("خطأ", "فشل الاتصال بالسيرفر", "error"); 
+  }
 }
-
 // 8️⃣ الطباعة
 // 8️⃣ الطباعة (معدلة لعدم الخروج من النظام)
 function printA4(d) {
@@ -936,6 +965,31 @@ function updBal() {
   const b = document.getElementById("baladiyaField");
   b.innerHTML = '<option value="">-- اختر --</option>';
   if(d && baladiyaMap[d]) baladiyaMap[d].forEach(o=>{let op=document.createElement("option");op.text=o;op.value=o;b.add(op)});
+}
+
+// --- دالة لتفريغ حقول الدائرة والبلدية والمؤسسة ---
+function resetGeoFields() {
+  const daaira = document.getElementById("daairaField");
+  const baladiya = document.getElementById("baladiyaField");
+  const area = document.getElementById("institutionArea");
+  const codeField = document.getElementById("institutionCodeField");
+
+  // إعادة الحقول للوضع الافتراضي
+  daaira.value = "";
+  daaira.disabled = false; // التأكد من تفعيلها في حال كانت مقفلة
+  
+  baladiya.innerHTML = '<option value="">-- اختر --</option>';
+  baladiya.value = "";
+  baladiya.disabled = false;
+
+  // تفريغ مكان العمل
+  area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
+  codeField.value = "";
+
+  // إزالة التلوين الأحمر (الأخطاء) إن وجد
+  removeError(daaira);
+  removeError(baladiya);
+  area.style.border = "none";
 }
 
 // 🛑🛑🛑 دالة تحديث مكان العمل المعدلة بالكامل 🛑🛑🛑
