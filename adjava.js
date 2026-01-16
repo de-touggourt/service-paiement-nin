@@ -574,7 +574,7 @@ window.openDirectRegister = function() {
 window.openEditModal = function(index) {
   const d = allData[index];
   
-  // دالة مساعدة داخلية لتنسيق التاريخ والوقت بشكل جميل (YYYY-MM-DD HH:mm:ss)
+  // دالة لتنسيق الوقت والتاريخ بشكل واضح
   const getFormattedDate = () => {
       const now = new Date();
       const year = now.getFullYear();
@@ -600,25 +600,27 @@ window.openEditModal = function(index) {
         window.initModalData(d);
     },
     preConfirm: () => {
-        // 1. جلب البيانات من الحقول
+        // 1. جلب البيانات من النموذج
         let formData = window.getFormDataFromModal();
         
-        // 2. الحصول على الوقت الحالي بالتنسيق المحسن
+        // 2. تحديد التوقيت الحالي
         const currentDateTime = getFormattedDate();
 
-        // --- أ: تحديث تاريخ التعديل (دائماً يرسل) ---
+        // =========================================================
+        // أولاً: تحديث تاريخ التعديل (يتم في كلتا الحالتين إجبارياً)
+        // =========================================================
         formData.date_edit = currentDateTime;
 
-        // --- ب: بيانات المسؤول الثابتة ---
+        // ثانياً: بيانات المسؤول الثابتة
         formData.confirmed_by = "مصلحة الرواتب";
         formData.reviewer_phone = "0666666666";
 
-        // --- ج: شرط تاريخ التأكيد ---
+        // ثالثاً: منطق تاريخ التأكيد (شرطي فقط)
         if (formData.confirmed === "true") {
-            // إذا كان مؤكداً: نرسل تاريخ التأكيد الجديد
+            // حالة مؤكد: نضع تاريخ التأكيد
             formData.date_confirm = currentDateTime;
         } else {
-            // إذا كان غير مؤكد: نرسل قيمة فارغة (لمسح أي تاريخ قديم)
+            // حالة غير مؤكد: نمسح تاريخ التأكيد (فارغ)
             formData.date_confirm = ""; 
         }
         
