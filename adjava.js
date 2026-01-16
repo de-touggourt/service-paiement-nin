@@ -574,7 +574,7 @@ window.openDirectRegister = function() {
 window.openEditModal = function(index) {
   const d = allData[index];
   
-  // دالة لتنسيق الوقت والتاريخ بشكل واضح
+  // دالة لتنسيق الوقت والتاريخ (YYYY-MM-DD HH:mm:ss)
   const getFormattedDate = () => {
       const now = new Date();
       const year = now.getFullYear();
@@ -600,27 +600,27 @@ window.openEditModal = function(index) {
         window.initModalData(d);
     },
     preConfirm: () => {
-        // 1. جلب البيانات من النموذج
+        // 1. جلب البيانات من الحقول الظاهرة في النافذة
         let formData = window.getFormDataFromModal();
         
-        // 2. تحديد التوقيت الحالي
+        // 2. حساب التوقيت الحالي
         const currentDateTime = getFormattedDate();
 
         // =========================================================
-        // أولاً: تحديث تاريخ التعديل (يتم في كلتا الحالتين إجبارياً)
+        // ✅ تصحيح هام: تاريخ التعديل يتم تحديثه دائماً وبشكل إجباري
         // =========================================================
-        formData.date_edit = currentDateTime;
+        formData.date_edit = currentDateTime; 
 
-        // ثانياً: بيانات المسؤول الثابتة
+        // 3. إضافة بيانات مصلحة الرواتب (ثابتة)
         formData.confirmed_by = "مصلحة الرواتب";
         formData.reviewer_phone = "0666666666";
 
-        // ثالثاً: منطق تاريخ التأكيد (شرطي فقط)
+        // 4. التعامل مع تاريخ التأكيد (بناءً على الحالة فقط)
         if (formData.confirmed === "true") {
-            // حالة مؤكد: نضع تاريخ التأكيد
+            // إذا كانت الحالة "مؤكد": نحدث تاريخ التأكيد أيضاً
             formData.date_confirm = currentDateTime;
         } else {
-            // حالة غير مؤكد: نمسح تاريخ التأكيد (فارغ)
+            // إذا كانت الحالة "غير مؤكد": نمسح تاريخ التأكيد
             formData.date_confirm = ""; 
         }
         
@@ -628,6 +628,7 @@ window.openEditModal = function(index) {
     }
   }).then((res) => {
     if(res.isConfirmed) {
+      // إرسال البيانات (التي تتضمن الآن date_edit في كل الحالات)
       window.handleSave(res.value, "update_admin");
     }
   });
