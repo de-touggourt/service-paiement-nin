@@ -147,12 +147,8 @@
     .badge-confirmed { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .badge-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 
-    .actions-cell { 
-      display: flex; 
-      gap: 8px; 
-      justify-content: center; /* هذا السطر هو المسؤول عن التوسط */
-      align-items: center;     /* لضمان المحاذاة العمودية أيضاً */
-    }
+
+.actions-cell { display: flex; gap: 10px; }
 
     .action-btn {
       width: 26px; height: 26px; border-radius: 5px; border: none; cursor: pointer;
@@ -186,13 +182,37 @@
       font-size: 14px; color: var(--secondary-color); font-weight: 700;
       margin: 15px 0 10px; border-bottom: 2px solid #eee; padding-bottom: 5px;
     }
-    .edit-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .edit-form-grid { 
+        display: grid; 
+        /* هذا السطر يجعل العمود لا يقل عن 240 بكسل، وإلا سينزل للسطر التالي ليأخذ العرض كاملاً */
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+        gap: 15px; 
+    }
     
     .edit-form-group label { display: block; font-size: 12px; font-weight: 700; color: #666; margin-bottom: 4px; }
     .edit-form-group input, .edit-form-group select {
-      width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 6px;
-      font-size: 13px; height: 35px;
+      width: 100%; 
+      padding: 0 12px;         /* مساحة داخلية مريحة */
+      border: 1px solid #ced4da; 
+      border-radius: 8px; 
+      font-size: 14px;         /* تكبير الخط قليلاً للقراءة */
+      font-weight: 600;        /* جعل الخط سميكاً قليلاً للوضوح */
+      height: 42px;            /* زيادة الارتفاع من 35 إلى 42 */
+      line-height: 40px;       /* توسيط النص عمودياً */
+      color: #333;             /* لون نص داكن وواضح */
+      background-color: #fcfcfc;
+      transition: all 0.3s ease;
     }
+
+    /* تحسين شكل الحقل عند الكتابة فيه */
+    .edit-form-group input:focus, .edit-form-group select:focus { 
+        border-color: var(--primary-color); 
+        background-color: #fff;
+        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1); /* توهج خفيف */
+        outline: none; 
+    }
+
     .full-width { grid-column: span 2; }
 
     /* ============================================================ */
