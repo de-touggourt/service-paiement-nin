@@ -1140,7 +1140,10 @@ window.printPendingList = function() {
             confPhone = schoolConfirmerMap[row.schoolName].phone;
         }
 
-        const confirmerStr = confName ? `<span style="font-weight:bold;">${confName}</span> <br> <span style="font-size:11px; color:#555;">${confPhone || ''}</span>` : '-';
+        // --- التعديل هنا: إضافة dir="ltr" و display:inline-block لرقم الهاتف ---
+        const confirmerStr = confName ? 
+            `<span style="font-weight:bold;">${confName}</span> <br> <span dir="ltr" style="font-size:11px; color:#555; display:inline-block;">${confPhone || ''}</span>` 
+            : '-';
 
         // الوظيفة فقط هنا أيضاً
         return `
