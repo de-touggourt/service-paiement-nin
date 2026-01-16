@@ -587,13 +587,28 @@ window.openEditModal = function(index) {
         window.initModalData(d);
     },
     preConfirm: () => {
-        // جلب البيانات المدخلة
+        // 1. جلب البيانات الأساسية من النموذج
         let formData = window.getFormDataFromModal();
+        
+        // 2. تحديد التوقيت الحالي
+        const now = new Date();
+        const isoDate = now.toISOString(); // تنسيق التاريخ القياسي
 
-        // --- التحديثات التلقائية المطلوبة ---
-        formData.date_edit = new Date().toISOString(); // تاريخ التعديل الحالي
-        formData.confirmed_by = "مصلحة الرواتب";      // اسم المؤكد الثابت
-        formData.reviewer_phone = "0666666666";       // رقم الهاتف الثابت
+        // --- أ: تحديث تاريخ التعديل (إجباري دائماً) ---
+        formData.date_edit = isoDate;
+
+        // --- ب: بيانات المسؤول الثابتة ---
+        formData.confirmed_by = "مصلحة الرواتب";
+        formData.reviewer_phone = "0666666666";
+
+        // --- ج: منطق تاريخ التأكيد (شرطي) ---
+        if (formData.confirmed === "true") {
+            // الحالة مؤكدة: نرسل تاريخ التأكيد الحالي
+            formData.date_confirm = isoDate;
+        } else {
+            // الحالة غير مؤكدة: نرسل فراغ لإلغاء أي تاريخ سابق
+            formData.date_confirm = ""; 
+        }
         
         return formData;
     }
