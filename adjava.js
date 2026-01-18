@@ -1,6 +1,5 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- إعدادات Firebase ---
 const firebaseConfig = {
@@ -75,9 +74,13 @@ const SECURE_DASHBOARD_HTML = `
         تحميل Excel <i class="fas fa-file-excel"></i>
       </button>
 
-<button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">
-  قائمة الغير مؤكدة <i class="fas fa-clipboard-list"></i>
-</button>
+    <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">
+      قائمة الغير مؤكدة <i class="fas fa-clipboard-list"></i>
+    </button>
+    
+    <button class="btn" style="background-color:#e63946; color:white;" onclick="window.checkNonRegistered()">
+      قائمة غير المسجلين <i class="fas fa-user-slash"></i>
+    </button>
 
     </div>
 
@@ -120,6 +123,7 @@ let allData = [];
 let filteredData = [];
 let currentPage = 1;
 const rowsPerPage = 10;
+let nonRegisteredData = []; // متغير لتخزين قائمة غير المسجلين
 
 // ==========================================
 // ⬇️⬇️⬇️ خرائط البيانات الكاملة ⬇️⬇️⬇️
@@ -1400,4 +1404,220 @@ window.printForm = function(index) {
     `);
     
     printWindow.document.close();
+};
+
+// =========================================================
+// 🆕🆕 الوظائف الجديدة: فحص غير المسجلين (Compare & Display)
+// =========================================================
+
+// الدالة الرئيسية للفحص والمقارنة
+window.checkNonRegistered = async function() {
+    // 1. إظهار التحميل
+    Swal.fire({
+        title: 'جاري الفحص والمقارنة...',
+        text: 'يتم تحديث البيانات وجلب سجلات Firebase',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    try {
+        // 2. تحديث البيانات المحلية أولاً لضمان الدقة
+        const response = await fetch(scriptURL + "?action=read_all");
+        const result = await response.json();
+        
+        if (result.status !== "success") {
+            throw new Error("فشل في تحديث البيانات المحلية");
+        }
+        allData = result.data; // تحديث المتغير المحلي
+
+        // 3. جلب بيانات Firebase بالكامل
+        const colRef = collection(db, "employeescompay");
+        const snapshot = await getDocs(colRef);
+        const firebaseData = snapshot.docs.map(doc => doc.data());
+
+        // 4. منطق المقارنة (استخراج CCP من المحلي للمقارنة)
+        // نقوم بإنشاء Set للبحث السريع (O(1))
+        const localCCPs = new Set(allData.map(item => String(item.ccp).trim()));
+
+        // تصفية بيانات فايربيز: الاحتفاظ فقط بمن ليس لديهم CCP في القائمة المحلية
+        nonRegisteredData = firebaseData.filter(fbItem => {
+            const fbCCP = String(fbItem.ccp).trim();
+            return !localCCPs.has(fbCCP);
+        });
+
+        // 5. عرض النتائج
+        window.showNonRegisteredModal();
+
+    } catch (error) {
+        console.error(error);
+        Swal.fire('خطأ', 'حدثت مشكلة أثناء الفحص: ' + error.message, 'error');
+    }
+};
+
+// دالة عرض النافذة المنبثقة للنتائج
+window.showNonRegisteredModal = function() {
+    if (nonRegisteredData.length === 0) {
+        Swal.fire({
+            icon: 'success',
+            title: 'ممتاز!',
+            text: 'جميع الموظفين في قاعدة البيانات (Firebase) مسجلين في الجدول المحلي.',
+            confirmButtonText: 'حسناً'
+        });
+        return;
+    }
+
+    // بناء صفوف الجدول
+    const tableRows = nonRegisteredData.map((row, index) => {
+        return `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px;">${index + 1}</td>
+                <td style="padding:10px; font-weight:bold;">${row.ccp || '-'}</td>
+                <td style="padding:10px;">${row.fmn || ''} ${row.frn || ''}</td>
+                <td style="padding:10px;">${row.gr || '-'}</td>
+                <td style="padding:10px;">${row.ass || '-'}</td>
+                <td style="padding:10px;">${row.adm || '-'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // محتوى النافذة
+    const modalContent = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <div style="font-weight:bold; color:#e63946;">العدد الإجمالي: ${nonRegisteredData.length}</div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px;">
+                    طباعة <i class="fas fa-print"></i>
+                </button>
+                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px;">
+                    Excel <i class="fas fa-file-excel"></i>
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive" style="max-height:500px; overflow-y:auto; direction:rtl;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
+                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10;">
+                    <tr>
+                        <th style="padding:12px;">#</th>
+                        <th style="padding:12px;">CCP</th>
+                        <th style="padding:12px;">الاسم واللقب</th>
+                        <th style="padding:12px;">الرتبة</th>
+                        <th style="padding:12px;">الضمان (ASS)</th>
+                        <th style="padding:12px;">كود الإدارة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    Swal.fire({
+        title: '<strong>قائمة غير المسجلين (موجودين في Firebase فقط)</strong>',
+        html: modalContent,
+        width: '900px',
+        showConfirmButton: false,
+        showCloseButton: true,
+        customClass: { popup: 'swal-wide' }
+    });
+};
+
+// دالة طباعة القائمة الجديدة
+window.printNonRegistered = function() {
+    const printDate = new Date().toLocaleDateString('ar-DZ');
+    
+    const printRows = nonRegisteredData.map((row, index) => {
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td style="font-weight:bold;">${row.ccp}</td>
+                <td>${row.fmn} ${row.frn}</td>
+                <td>${row.gr || ''}</td>
+                <td>${row.ass || ''}</td>
+                <td>${row.adm || ''}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <title>قائمة غير المسجلين</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+                body { font-family: 'Cairo', sans-serif; padding: 20px; }
+                .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+                th { background-color: #eee; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h3>مديرية التربية لولاية توقرت</h3>
+                <h2>قائمة الموظفين غير المسجلين (نقص في الجدول المحلي)</h2>
+                <p>تاريخ: ${printDate} - العدد: ${nonRegisteredData.length}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>CCP</th><th>الاسم واللقب</th><th>الرتبة</th><th>ASS</th><th>ADM</th></tr>
+                </thead>
+                <tbody>
+                    ${printRows}
+                </tbody>
+            </table>
+            <script>window.onload = function() { window.print(); }</script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+};
+
+// دالة تصدير Excel للقائمة الجديدة (Client-Side)
+window.exportNonRegisteredExcel = function() {
+    let tableContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th style="background-color:#ccc;">CCP</th>
+                        <th style="background-color:#ccc;">الاسم واللقب</th>
+                        <th style="background-color:#ccc;">الرتبة</th>
+                        <th style="background-color:#ccc;">الضمان الاجتماعي</th>
+                        <th style="background-color:#ccc;">رمز الإدارة</th>
+                        <th style="background-color:#ccc;">NIN</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    nonRegisteredData.forEach(row => {
+        tableContent += `
+            <tr>
+                <td>${row.ccp || ''}</td>
+                <td>${row.fmn || ''} ${row.frn || ''}</td>
+                <td>${row.gr || ''}</td>
+                <td>${row.ass || ''}</td>
+                <td>${row.adm || ''}</td>
+                <td>${row.nin || ''}</td>
+            </tr>
+        `;
+    });
+
+    tableContent += `</tbody></table></body></html>`;
+
+    const blob = new Blob([tableContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = `قائمة_غير_المسجلين_${new Date().toISOString().slice(0,10)}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
