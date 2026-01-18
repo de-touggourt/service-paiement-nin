@@ -78,8 +78,8 @@ const SECURE_DASHBOARD_HTML = `
       قائمة الغير مؤكدة <i class="fas fa-clipboard-list"></i>
     </button>
     
-    <button class="btn" style="background-color:#e63946; color:white;" onclick="window.checkNonRegistered()">
-      قائمة غير المسجلين <i class="fas fa-user-slash"></i>
+    <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">
+      تقرير التسجيل <i class="fas fa-clipboard-list"></i>
     </button>
 
     </div>
@@ -1407,7 +1407,7 @@ window.printForm = function(index) {
 };
 
 // =========================================================
-// 🆕 تعديل دقيق: فحص غير المسجلين مع توحيد صيغة البيانات
+// 🆕 تعديل دقيق: فحص غير المسجلين مع توحيد صيغة البيانات + تصغير النافذة
 // =========================================================
 
 // الدالة الرئيسية للفحص والمقارنة
@@ -1487,26 +1487,27 @@ window.showNonRegisteredModal = function(stats) {
     const headerStats = `
         <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
             <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
-                <div style="font-size:12px; color:#1565c0;">إجمالي Firebase</div>
+                <div style="font-size:12px; color:#1565c0;">إجمالي الموظفين</div>
                 <div style="font-size:20px; font-weight:bold; color:#0d47a1;">${stats.totalFirebase}</div>
             </div>
             <div style="background:#e8f5e9; padding:10px; border-radius:8px; flex:1; border:1px solid #a5d6a7;">
-                <div style="font-size:12px; color:#2e7d32;">المسجلين محلياً</div>
+                <div style="font-size:12px; color:#2e7d32;">المسجلين حالياً</div>
                 <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalLocal}</div>
             </div>
             <div style="background:#ffebee; padding:10px; border-radius:8px; flex:1; border:1px solid #ef9a9a;">
-                <div style="font-size:12px; color:#c62828;">غير المسجلين (الفرق)</div>
+                <div style="font-size:12px; color:#c62828;">الغير المسجلين</div>
                 <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
             </div>
         </div>
     `;
 
     // محتوى النافذة الكامل
+    // التعديل: تقليص max-height من 450px إلى 50vh لضمان ظهور زر الإغلاق في الشاشات الصغيرة
     const modalContent = `
         ${headerStats}
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <div style="font-weight:bold;">قائمة الموظفين الناقصين:</div>
+            <div style="font-weight:bold;">قائمة الموظفين الغير مسجلين بعد:</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px;">
                     طباعة القائمة <i class="fas fa-print"></i>
@@ -1517,11 +1518,11 @@ window.showNonRegisteredModal = function(stats) {
             </div>
         </div>
 
-        <div class="table-responsive" style="max-height:450px; overflow-y:auto; direction:rtl;">
+        <div class="table-responsive" style="max-height:50vh; overflow-y:auto; direction:rtl;">
             <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
                 <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10;">
                     <tr>
-                        <th style="padding:12px;">#</th>
+                        <th style="padding:12px;">الرقم</th>
                         <th style="padding:12px;">CCP</th>
                         <th style="padding:12px;">الاسم واللقب</th>
                         <th style="padding:12px;">الرتبة</th>
@@ -1546,7 +1547,7 @@ window.showNonRegisteredModal = function(stats) {
     });
 };
 
-// دالة طباعة القائمة الجديدة
+// دالة طباعة القائمة الجديدة (معدلة لتكون عمودية فقط)
 window.printNonRegistered = function() {
     const printDate = new Date().toLocaleDateString('ar-DZ');
     
@@ -1570,6 +1571,13 @@ window.printNonRegistered = function() {
             <title>قائمة غير المسجلين</title>
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+                
+                /* فرض الطباعة العمودية */
+                @page { 
+                    size: portrait; 
+                    margin: 10mm; 
+                }
+                
                 body { font-family: 'Cairo', sans-serif; padding: 20px; }
                 .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
@@ -1580,7 +1588,7 @@ window.printNonRegistered = function() {
         <body>
             <div class="header">
                 <h3>مديرية التربية لولاية توقرت</h3>
-                <h2>قائمة الموظفين غير المسجلين (نقص في الجدول المحلي)</h2>
+                <h2>قائمة الموظفين غير المسجلين</h2>
                 <p>تاريخ: ${printDate} - العدد: ${nonRegisteredData.length}</p>
             </div>
             <table>
@@ -1617,7 +1625,7 @@ window.exportNonRegisteredExcel = function() {
                         <th style="background-color:#ccc;">الرتبة</th>
                         <th style="background-color:#ccc;">الضمان الاجتماعي</th>
                         <th style="background-color:#ccc;">رمز الإدارة</th>
-                        <th style="background-color:#ccc;">NIN</th>
+                        
                     </tr>
                 </thead>
                 <tbody>
