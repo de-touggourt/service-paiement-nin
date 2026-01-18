@@ -123,7 +123,7 @@ let allData = [];
 let filteredData = [];
 let currentPage = 1;
 const rowsPerPage = 10;
-let nonRegisteredData = []; // متغير لتخزين قائمة غير المسجلين
+let nonRegisteredData = []; 
 
 // ==========================================
 // ⬇️⬇️⬇️ خرائط البيانات الكاملة ⬇️⬇️⬇️
@@ -567,7 +567,7 @@ window.openDirectRegister = function() {
     // نرسل الرسالة كل نصف ثانية لمدة 5 ثوانٍ لضمان أن الصفحة الجديدة قد اكتمل تحميلها واستلمت الرسالة
     let attempts = 0;
     const interval = setInterval(() => {
-        // "Dir55@tggt" هو المفتاح السري الذي سنرسله
+        //  هو المفتاح السري الذي سنرسله
         // النجمة "*" تعني السماح بالإرسال لأي نطاق (يمكنك تحديد النطاق بدقة لمزيد من الأمان)
         popup.postMessage("AUTH_Dir55@tggt", "*"); 
         
@@ -1415,7 +1415,7 @@ window.checkNonRegistered = async function() {
     // 1. إظهار التحميل
     Swal.fire({
         title: 'جاري الفحص والمقارنة...',
-        text: 'يتم تحديث البيانات وجلب سجلات Firebase',
+        text: 'يتم تحديث البيانات وجلب سجلات Database',
         allowOutsideClick: false,
         didOpen: () => {
             Swal.showLoading();
@@ -1462,7 +1462,7 @@ window.showNonRegisteredModal = function() {
         Swal.fire({
             icon: 'success',
             title: 'ممتاز!',
-            text: 'جميع الموظفين في قاعدة البيانات (Firebase) مسجلين في الجدول المحلي.',
+            text: 'جميع الموظفين في قاعدة البيانات (Database) مسجلين في الجدول المحلي.',
             confirmButtonText: 'حسناً'
         });
         return;
@@ -1500,10 +1500,10 @@ window.showNonRegisteredModal = function() {
                 <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10;">
                     <tr>
                         <th style="padding:12px;">#</th>
-                        <th style="padding:12px;">CCP</th>
+                        <th style="padding:12px;">رقم الحساب الجاري (CCP)</th>
                         <th style="padding:12px;">الاسم واللقب</th>
-                        <th style="padding:12px;">الرتبة</th>
-                        <th style="padding:12px;">الضمان (ASS)</th>
+                        <th style="padding:12px;">كود الرتبة</th>
+                        <th style="padding:12px;">الضمان الإجتماعي (ASS)</th>
                         <th style="padding:12px;">كود الإدارة</th>
                     </tr>
                 </thead>
@@ -1515,7 +1515,7 @@ window.showNonRegisteredModal = function() {
     `;
 
     Swal.fire({
-        title: '<strong>قائمة غير المسجلين (موجودين في Firebase فقط)</strong>',
+        title: '<strong>قائمة غير المسجلين (موجودين في Database فقط)</strong>',
         html: modalContent,
         width: '900px',
         showConfirmButton: false,
@@ -1557,13 +1557,16 @@ window.printNonRegistered = function() {
         </head>
         <body>
             <div class="header">
+                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                <h3>وزارة التربية الوطنية</h3>
                 <h3>مديرية التربية لولاية توقرت</h3>
-                <h2>قائمة الموظفين غير المسجلين (نقص في الجدول المحلي)</h2>
+                <h3>مصلحة تسيير نفقات المستخدمين</h3>
+                <h2>قائمة الموظفين الغير المسجلين بعد</h2>
                 <p>تاريخ: ${printDate} - العدد: ${nonRegisteredData.length}</p>
             </div>
             <table>
                 <thead>
-                    <tr><th>#</th><th>CCP</th><th>الاسم واللقب</th><th>الرتبة</th><th>ASS</th><th>ADM</th></tr>
+                    <tr><th>الرقم</th><th>CCP</th><th>الاسم واللقب</th><th>الرتبة</th><th>ASS</th><th>ADM</th></tr>
                 </thead>
                 <tbody>
                     ${printRows}
@@ -1576,12 +1579,15 @@ window.printNonRegistered = function() {
     printWindow.document.close();
 };
 
-// دالة تصدير Excel للقائمة الجديدة (Client-Side)
+// دالة تصدير Excel للقائمة الجديدة (Client-Side) - تم التعديل لفرض النص
 window.exportNonRegisteredExcel = function() {
     let tableContent = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head>
             <meta charset="UTF-8">
+            <style>
+                td { mso-number-format:"\@"; } /* إجبار جميع الخلايا على أن تكون نصاً */
+            </style>
         </head>
         <body>
             <table border="1">
@@ -1599,14 +1605,15 @@ window.exportNonRegisteredExcel = function() {
     `;
 
     nonRegisteredData.forEach(row => {
+        // إضافة style='mso-number-format:"\@"' لكل خلية بشكل صريح
         tableContent += `
             <tr>
-                <td>${row.ccp || ''}</td>
-                <td>${row.fmn || ''} ${row.frn || ''}</td>
-                <td>${row.gr || ''}</td>
-                <td>${row.ass || ''}</td>
-                <td>${row.adm || ''}</td>
-                <td>${row.nin || ''}</td>
+                <td style='mso-number-format:"\@";'>${row.ccp || ''}</td>
+                <td style='mso-number-format:"\@";'>${row.fmn || ''} ${row.frn || ''}</td>
+                <td style='mso-number-format:"\@";'>${row.gr || ''}</td>
+                <td style='mso-number-format:"\@";'>${row.ass || ''}</td>
+                <td style='mso-number-format:"\@";'>${row.adm || ''}</td>
+                <td style='mso-number-format:"\@";'>${row.nin || ''}</td>
             </tr>
         `;
     });
