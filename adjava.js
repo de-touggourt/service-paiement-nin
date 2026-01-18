@@ -567,7 +567,7 @@ window.openDirectRegister = function() {
     // نرسل الرسالة كل نصف ثانية لمدة 5 ثوانٍ لضمان أن الصفحة الجديدة قد اكتمل تحميلها واستلمت الرسالة
     let attempts = 0;
     const interval = setInterval(() => {
-        //  هو المفتاح السري الذي سنرسله
+        // "Dir55@tggt" هو المفتاح السري الذي سنرسله
         // النجمة "*" تعني السماح بالإرسال لأي نطاق (يمكنك تحديد النطاق بدقة لمزيد من الأمان)
         popup.postMessage("AUTH_Dir55@tggt", "*"); 
         
@@ -1407,15 +1407,15 @@ window.printForm = function(index) {
 };
 
 // =========================================================
-// 🆕🆕 الوظائف الجديدة: فحص غير المسجلين (Compare & Display)
+// 🆕 تعديل دقيق: فحص غير المسجلين مع توحيد صيغة البيانات
 // =========================================================
 
 // الدالة الرئيسية للفحص والمقارنة
 window.checkNonRegistered = async function() {
     // 1. إظهار التحميل
     Swal.fire({
-        title: 'جاري الفحص والمقارنة...',
-        text: 'يتم تحديث البيانات وجلب سجلات Database',
+        title: 'جاري مطابقة البيانات...',
+        html: 'يتم جلب البيانات ومطابقة السجلات بدقة.<br>يرجى الانتظار...',
         allowOutsideClick: false,
         didOpen: () => {
             Swal.showLoading();
@@ -1423,32 +1423,43 @@ window.checkNonRegistered = async function() {
     });
 
     try {
-        // 2. تحديث البيانات المحلية أولاً لضمان الدقة
+        // 2. تحديث البيانات المحلية أولاً
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
         
         if (result.status !== "success") {
             throw new Error("فشل في تحديث البيانات المحلية");
         }
-        allData = result.data; // تحديث المتغير المحلي
+        allData = result.data; // البيانات المحلية المحدثة
 
         // 3. جلب بيانات Firebase بالكامل
         const colRef = collection(db, "employeescompay");
         const snapshot = await getDocs(colRef);
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
-        // 4. منطق المقارنة (استخراج CCP من المحلي للمقارنة)
-        // نقوم بإنشاء Set للبحث السريع (O(1))
+        // 4. منطق المقارنة الدقيق (Normalization)
+        
+        // أ) إنشاء قائمة CCP المحلية بعد تنظيفها (تحويل لنص + حذف مسافات)
         const localCCPs = new Set(allData.map(item => String(item.ccp).trim()));
 
-        // تصفية بيانات فايربيز: الاحتفاظ فقط بمن ليس لديهم CCP في القائمة المحلية
+        // ب) تصفية بيانات فايربيز
         nonRegisteredData = firebaseData.filter(fbItem => {
+            // تنظيف CCP القادم من فايربيز بنفس الطريقة
             const fbCCP = String(fbItem.ccp).trim();
+            
+            // هل هذا الرقم موجود في القائمة المحلية؟
             return !localCCPs.has(fbCCP);
         });
 
-        // 5. عرض النتائج
-        window.showNonRegisteredModal();
+        // 5. حساب الإحصائيات للإرسال للعرض
+        const stats = {
+            totalFirebase: firebaseData.length,      // الإجمالي في قاعدة البيانات
+            totalLocal: allData.length,              // المسجلين محلياً
+            totalNonReg: nonRegisteredData.length    // الفرق
+        };
+
+        // 6. عرض النتائج
+        window.showNonRegisteredModal(stats);
 
     } catch (error) {
         console.error(error);
@@ -1456,25 +1467,15 @@ window.checkNonRegistered = async function() {
     }
 };
 
-// دالة عرض النافذة المنبثقة للنتائج
-window.showNonRegisteredModal = function() {
-    if (nonRegisteredData.length === 0) {
-        Swal.fire({
-            icon: 'success',
-            title: 'ممتاز!',
-            text: 'جميع الموظفين في قاعدة البيانات (Database) مسجلين في الجدول المحلي.',
-            confirmButtonText: 'حسناً'
-        });
-        return;
-    }
-
+// دالة عرض النافذة المنبثقة مع الإحصائيات التفصيلية
+window.showNonRegisteredModal = function(stats) {
     // بناء صفوف الجدول
     const tableRows = nonRegisteredData.map((row, index) => {
         return `
             <tr style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${index + 1}</td>
-                <td style="padding:10px; font-weight:bold;">${row.ccp || '-'}</td>
-                <td style="padding:10px;">${row.fmn || ''} ${row.frn || ''}</td>
+                <td style="padding:10px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
+                <td style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
                 <td style="padding:10px;">${row.gr || '-'}</td>
                 <td style="padding:10px;">${row.ass || '-'}</td>
                 <td style="padding:10px;">${row.adm || '-'}</td>
@@ -1482,44 +1483,65 @@ window.showNonRegisteredModal = function() {
         `;
     }).join('');
 
-    // محتوى النافذة
+    // تصميم الهيدر الذي يحتوي على الإحصائيات
+    const headerStats = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
+            <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
+                <div style="font-size:12px; color:#1565c0;">إجمالي Firebase</div>
+                <div style="font-size:20px; font-weight:bold; color:#0d47a1;">${stats.totalFirebase}</div>
+            </div>
+            <div style="background:#e8f5e9; padding:10px; border-radius:8px; flex:1; border:1px solid #a5d6a7;">
+                <div style="font-size:12px; color:#2e7d32;">المسجلين محلياً</div>
+                <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalLocal}</div>
+            </div>
+            <div style="background:#ffebee; padding:10px; border-radius:8px; flex:1; border:1px solid #ef9a9a;">
+                <div style="font-size:12px; color:#c62828;">غير المسجلين (الفرق)</div>
+                <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
+            </div>
+        </div>
+    `;
+
+    // محتوى النافذة الكامل
     const modalContent = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <div style="font-weight:bold; color:#e63946;">العدد الإجمالي: ${nonRegisteredData.length}</div>
+        ${headerStats}
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <div style="font-weight:bold;">قائمة الموظفين الناقصين:</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px;">
-                    طباعة <i class="fas fa-print"></i>
+                    طباعة القائمة <i class="fas fa-print"></i>
                 </button>
                 <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px;">
                     Excel <i class="fas fa-file-excel"></i>
                 </button>
             </div>
         </div>
-        <div class="table-responsive" style="max-height:500px; overflow-y:auto; direction:rtl;">
+
+        <div class="table-responsive" style="max-height:450px; overflow-y:auto; direction:rtl;">
             <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
                 <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10;">
                     <tr>
                         <th style="padding:12px;">#</th>
-                        <th style="padding:12px;">رقم الحساب الجاري (CCP)</th>
+                        <th style="padding:12px;">CCP</th>
                         <th style="padding:12px;">الاسم واللقب</th>
-                        <th style="padding:12px;">كود الرتبة</th>
-                        <th style="padding:12px;">الضمان الإجتماعي (ASS)</th>
+                        <th style="padding:12px;">الرتبة</th>
+                        <th style="padding:12px;">الضمان (ASS)</th>
                         <th style="padding:12px;">كود الإدارة</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${tableRows}
+                    ${nonRegisteredData.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:20px;">جميع الموظفين مسجلين! ✅</td></tr>'}
                 </tbody>
             </table>
         </div>
     `;
 
     Swal.fire({
-        title: '<strong>قائمة غير المسجلين (موجودين في Database فقط)</strong>',
+        title: '<strong>تقرير حالة التسجيل</strong>',
         html: modalContent,
-        width: '900px',
-        showConfirmButton: false,
-        showCloseButton: true,
+        width: '1000px',
+        showConfirmButton: true,
+        confirmButtonText: 'إغلاق',
         customClass: { popup: 'swal-wide' }
     });
 };
@@ -1557,16 +1579,13 @@ window.printNonRegistered = function() {
         </head>
         <body>
             <div class="header">
-                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
-                <h3>وزارة التربية الوطنية</h3>
                 <h3>مديرية التربية لولاية توقرت</h3>
-                <h3>مصلحة تسيير نفقات المستخدمين</h3>
-                <h2>قائمة الموظفين الغير المسجلين بعد</h2>
+                <h2>قائمة الموظفين غير المسجلين (نقص في الجدول المحلي)</h2>
                 <p>تاريخ: ${printDate} - العدد: ${nonRegisteredData.length}</p>
             </div>
             <table>
                 <thead>
-                    <tr><th>الرقم</th><th>CCP</th><th>الاسم واللقب</th><th>الرتبة</th><th>ASS</th><th>ADM</th></tr>
+                    <tr><th>#</th><th>CCP</th><th>الاسم واللقب</th><th>الرتبة</th><th>ASS</th><th>ADM</th></tr>
                 </thead>
                 <tbody>
                     ${printRows}
