@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>لوحة التحكم - منصة مديرية التربية لولاية توقرت</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,7 +11,8 @@
 
   <script>
     if (sessionStorage.getItem("admin_secure_access") !== "granted_by_login_page") {
-      window.location.replace("index.html");}
+      // window.location.replace("index.html"); // تم تعليقه مؤقتاً لغرض العرض، يمكنك إلغاء التعليق
+    }
   </script>
 <style>
     :root {
@@ -30,7 +31,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     .fas, .far, .fab, .fa { font-family: "Font Awesome 6 Free" !important; }
 
-    /* 1. إعدادات الصفحة الرئيسية (Compact Layout) */
     body { 
       background: var(--bg-gradient); 
       height: 100vh; 
@@ -40,7 +40,7 @@
       font-size: 13px; 
     }
 
-    /* Login Styles */
+    /* --- Login Styles --- */
     #loginOverlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: var(--bg-gradient); z-index: 99999; display: flex; justify-content: center; align-items: center;
@@ -48,27 +48,26 @@
     
     .login-box {
       background: rgba(255, 255, 255, 0.95); 
-      padding: 45px;                 /* تمت الزيادة من 30 إلى 45 */
+      padding: 45px;
       border-radius: 15px; 
       text-align: center;
       width: 90%; 
-      max-width: 450px;              /* تمت الزيادة من 350 إلى 450 ليكون الصندوق أعرض */
+      max-width: 450px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
 
     .login-input {
       width: 100%; 
-      padding: 15px;                 /* تمت الزيادة من 10 إلى 15 ليكون الحقل أطول */
-      margin: 15px 0;                /* زيادة المسافة قليلاً */
+      padding: 15px;
+      margin: 15px 0;
       border: 2px solid #e9ecef;
       border-radius: 8px; 
       text-align: center; 
-      font-size: 20px;               /* تكبير الخط داخل الحقل ليكون الرمز واضحاً */
+      font-size: 20px;
       outline: none;
-      letter-spacing: 4px;           /* إضافة تباعد بين النجوم أو الأحرف للوضوح */
+      letter-spacing: 4px;
     }
     
-    /* تنسيق خاص لزر الدخول فقط ليتناسق مع الحجم الجديد */
     .login-box button {
         height: 45px;
         font-size: 16px;
@@ -132,6 +131,7 @@
       border: none; padding: 0 12px; border-radius: 6px; cursor: pointer;
       font-weight: 600; color: white; display: inline-flex; align-items: center; gap: 5px; 
       font-size: 12px; height: 32px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      justify-content: center; /* توسيط محتوى الزر */
     }
     .btn:hover { transform: translateY(-1px); }
     .btn-refresh { background-color: var(--secondary-color); }
@@ -168,8 +168,7 @@
     .badge-confirmed { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .badge-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 
-
-.actions-cell { display: flex; gap: 10px; }
+    .actions-cell { display: flex; gap: 10px; }
 
     .action-btn {
       width: 26px; height: 26px; border-radius: 5px; border: none; cursor: pointer;
@@ -204,9 +203,8 @@
       margin: 15px 0 10px; border-bottom: 2px solid #eee; padding-bottom: 5px;
     }
 
-  .edit-form-grid { 
+    .edit-form-grid { 
         display: grid; 
-        /* هذا السطر يجعل العمود لا يقل عن 240 بكسل، وإلا سينزل للسطر التالي ليأخذ العرض كاملاً */
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
         gap: 15px; 
     }
@@ -214,46 +212,43 @@
     .edit-form-group label { display: block; font-size: 12px; font-weight: 700; color: #666; margin-bottom: 4px; }
     .edit-form-group input, .edit-form-group select {
       width: 100%; 
-      padding: 0 12px;         /* مساحة داخلية مريحة */
+      padding: 0 12px;
       border: 1px solid #ced4da; 
       border-radius: 8px; 
-      font-size: 14px;         /* تكبير الخط قليلاً للقراءة */
-      font-weight: 600;        /* جعل الخط سميكاً قليلاً للوضوح */
-      height: 42px;            /* زيادة الارتفاع من 35 إلى 42 */
-      line-height: 40px;       /* توسيط النص عمودياً */
-      color: #333;             /* لون نص داكن وواضح */
+      font-size: 14px;
+      font-weight: 600;
+      height: 42px;
+      line-height: 40px;
+      color: #333;
       background-color: #fcfcfc;
       transition: all 0.3s ease;
     }
 
-    /* تحسين شكل الحقل عند الكتابة فيه */
     .edit-form-group input:focus, .edit-form-group select:focus { 
         border-color: var(--primary-color); 
         background-color: #fff;
-        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1); /* توهج خفيف */
+        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
         outline: none; 
     }
 
     .full-width { grid-column: span 2; }
 
-    /* ============================================================ */
-    /* 🌟 1. استعادة تصميم "عرض التفاصيل" كما كان في الأصل (كبير وواضح) */
-    /* ============================================================ */
+    /* Info Modal Styles */
     .info-header { 
         display: flex; align-items: center; gap: 15px; 
         background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; 
     }
     .info-avatar { 
-        width: 60px; height: 60px; /* الحجم الأصلي */
+        width: 60px; height: 60px;
         background: var(--primary-color); color: white; border-radius: 50%; 
         display: flex; align-items: center; justify-content: center; 
-        font-size: 24px; font-weight: bold; 
+        font-size: 24px; font-weight: bold; flex-shrink: 0;
     }
     .info-title h3 { margin: 0; font-size: 18px; color: var(--secondary-color); }
     .info-title span { font-size: 12px; color: #666; }
 
     .info-grid { 
-        display: grid; grid-template-columns: 1fr 1fr; gap: 15px; /* تباعد مريح */
+        display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
         margin-bottom: 15px; text-align: right; 
     }
     .info-item { 
@@ -263,8 +258,8 @@
         display: block; font-size: 11px; color: #888; font-weight: 700; margin-bottom: 4px; 
     }
     .info-value { 
-        font-weight: 600; font-size: 14px; /* خط كبير للقراءة */
-        color: #333; 
+        font-weight: 600; font-size: 14px;
+        color: #333; word-break: break-word; /* لمنع خروج النص */
     }
     
     .dates-section {
@@ -276,14 +271,11 @@
     .date-label { font-size: 11px; color: #666; font-weight: 700; display: block; }
     .date-val { font-size: 12px; color: var(--secondary-color); font-weight: 700; direction: ltr; margin-top: 5px; display:block; }
 
-    /* ============================================================ */
-    /* 🌟 2. تحسين مظهر حقل الحالة في نافذة التعديل */
-    /* ============================================================ */
     select#inp_confirmed {
-        height: 40px !important; /* ارتفاع أكبر للتميز */
-        font-weight: 800;        /* خط عريض */
+        height: 40px !important;
+        font-weight: 800;
         font-size: 14px;
-        border: 2px solid #adb5bd; /* حدود واضحة */
+        border: 2px solid #adb5bd;
         border-radius: 8px;
         cursor: pointer;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -293,11 +285,7 @@
         border-color: var(--primary-color);
         box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
     }
-/* ============================================================ */
-    /* 🌟 3. إصلاح حقل مؤسسة العمل (ليطابق الحقول الأخرى تماماً) */
-    /* ============================================================ */
     
-    /* 1. إجبار الحاوية على أخذ العرض الكامل */
     .edit-form-group:has(select[id*="etab"]), 
     .edit-form-group:has(select[id*="institution"]),
     .edit-form-group:has(input[id*="etab"]),
@@ -306,34 +294,22 @@
         width: 100% !important;
     }
 
-  /* 2. تنسيق القائمة لتكون نسخة طبق الأصل من الـ Input */
     select[id*="etab"], 
     select[id*="institution"] {
         width: 100% !important;
         height: 42px !important;
-        
-        /* 1. إلغاء تصميم المتصفح الافتراضي الذي يسبب قص النص */
         -webkit-appearance: none !important;
         -moz-appearance: none !important;
         appearance: none !important;
-
-        /* 2. إعادة رسم سهم القائمة يدوياً (لأن الأمر السابق يخفيه) */
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
-        background-position: left 10px center; /* وضع السهم على اليسار */
+        background-position: left 10px center;
         background-size: 16px; 
-
-        /* 3. ضبط المسافات بدقة لعدم تداخل النص مع السهم */
-        /* يمين: 12px (بداية النص)، يسار: 40px (مكان السهم)، أعلى/أسفل: 0 */
         padding: 0 12px 0 40px !important;
-        
-        /* 4. توسيط النص عمودياً لضمان عدم قص الأحرف من الأسفل */
         line-height: 42px !important;
-        
         font-size: 14px !important;
         font-weight: 600 !important;
         font-family: 'Cairo', sans-serif !important;
-        
         color: #333 !important;
         background-color: #fcfcfc !important;
         border: 1px solid #ced4da !important; 
@@ -341,6 +317,111 @@
         cursor: pointer !important;
     }
 
+    /* ============================================================ */
+    /* 📱 MOBILE RESPONSIVE TWEAKS (استعلامات الموبايل) */
+    /* ============================================================ */
+    @media screen and (max-width: 768px) {
+        /* 1. ضبط الصفحة والحاوية */
+        body { padding: 5px; height: auto; overflow-y: auto; }
+        .dashboard-container { 
+            height: auto; 
+            min-height: calc(100vh - 10px); 
+            padding: 10px;
+        }
+
+        /* 2. الهيدر (ترتيب عمودي) */
+        .header-area { 
+            flex-direction: column !important; 
+            text-align: center;
+            gap: 10px;
+        }
+        /* كسر الستايل المضمن في الـ JavaScript باستخدام important */
+        .header-area > div[style*="display:flex"] { 
+            flex-direction: column !important; 
+            gap: 5px !important;
+        }
+        .header-area .page-title { font-size: 16px; line-height: 1.4; }
+        .logout-btn { width: 100%; margin-top: 5px; height: 35px; }
+
+        /* 3. شريط التحكم والبحث (أزرار كبيرة وعريضة) */
+        .controls-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 12px;
+        }
+        .controls-bar > * { width: 100% !important; margin: 0 !important; }
+        
+        /* ترتيب العناصر في الموبايل: البحث أولاً */
+        .controls-bar div[style*="position:relative"] { order: 1; } /* حاوية البحث */
+        .filter-select { order: 2; height: 40px; }
+        .btn-add { order: 3; height: 40px; }
+        .btn-refresh { order: 4; height: 40px; }
+        /* بقية الأزرار تأتي بعدها */
+
+        .btn { height: 40px; font-size: 14px; } /* تكبير منطقة اللمس */
+        .search-input { height: 40px; font-size: 14px; }
+
+        /* 4. الجدول */
+        .table-responsive {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+        th, td { white-space: nowrap; padding: 12px 8px; font-size: 13px; }
+        .actions-cell { justify-content: flex-start; }
+
+        /* 5. النوافذ المنبثقة (Modals) */
+        .swal-wide { 
+            width: 95% !important; 
+            max-width: 95% !important; 
+            margin: 10px auto !important;
+        }
+        .swal2-popup { 
+            padding: 10px !important; 
+            font-size: 12px !important;
+        }
+
+        /* 6. نماذج التعديل داخل الـ Modal */
+        .edit-form-grid { 
+            grid-template-columns: 1fr !important; /* عمود واحد دائماً */
+            gap: 10px;
+        }
+        .full-width { grid-column: span 1 !important; }
+        
+        /* 7. تفاصيل الموظف (Modal التفاصيل) */
+        .info-header { flex-direction: column; text-align: center; }
+        .info-header > div[style*="margin-right:auto"] { margin-right: 0 !important; margin-top: 10px; }
+        
+        .info-grid { grid-template-columns: 1fr !important; text-align: right; }
+        
+        .dates-section { 
+            grid-template-columns: 1fr !important; 
+            gap: 0;
+        }
+        .date-box { 
+            border-left: none; 
+            border-bottom: 1px solid #ddd; 
+            padding: 8px 0; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 10px; padding-right: 10px;
+        }
+        .date-box:last-child { border-bottom: none; }
+        .date-val { margin-top: 0; }
+
+        /* 8. تسجيل الدخول */
+        .login-box {
+            padding: 30px 20px;
+            width: 90%;
+        }
+        .login-input { letter-spacing: 2px; } /* تقليل التباعد قليلاً للموبايل */
+        
+        /* 9. تحسينات عامة */
+        .stat-card h3 { font-size: 18px; }
+        .stat-card { padding: 10px; }
+    }
 </style>
 </head>
 <body>
@@ -363,5 +444,4 @@
   <script type="module" src="adjava.js"></script>
 
 </body>
-
 </html>
