@@ -430,9 +430,7 @@
 
   <script src="injava.js"></script>
 
-<script src="injava.js"></script>
 
-<!-- سكريبت التحديث التلقائي + غلق وفتح التسجيل -->
 <script>
   const CURRENT_VERSION = "1.0.0";
   const VERSION_FILE = "version.json";
@@ -460,25 +458,41 @@
       }
     } catch (e) {}
   }
+async function checkRegistrationStatus() {
+  try {
+    const res = await fetch(SETTINGS_FILE + "?t=" + Date.now(), {
+      cache: "no-store"
+    });
 
-  async function checkRegistrationStatus() {
-    try {
-      const res = await fetch(SETTINGS_FILE + "?t=" + Date.now(), { cache: "no-store" });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.registrationOpen === false) {
-        document.getElementById("interfaceCard").style.display = "none";
-        Swal.fire({
-          icon: "warning",
-          title: "التسجيل مغلق",
-          text: data.message || "التسجيل متوقف حالياً",
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          showConfirmButton: false
-        });
-      }
-    } catch (e) {}
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    if (data.registrationOpen === false) {
+      window.REGISTRATION_LOCKED = true;
+
+      // إخفاء أي واجهة حالية
+      document.getElementById("interfaceCard").style.display = "none";
+
+      // إيقاف أي حقن لاحق
+      document.body.classList.add("registration-locked");
+
+      Swal.fire({
+        icon: "warning",
+        title: "التسجيل مغلق",
+        text: data.message || "التسجيل متوقف حالياً",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false
+      });
+    } else {
+      window.REGISTRATION_LOCKED = false;
+    }
+  } catch (e) {
+    console.log("فشل التحقق من حالة التسجيل");
   }
+}
+
 
   setInterval(checkPlatformUpdate, CHECK_INTERVAL);
   setInterval(checkRegistrationStatus, CHECK_INTERVAL);
