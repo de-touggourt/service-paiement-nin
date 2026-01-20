@@ -1,13 +1,13 @@
+// الحماية الأولية عند التحميل
 if (window.REGISTRATION_LOCKED) return;
+
 // ============================================================
 // كود استقبال الإشارة السرية (postMessage)
 // ============================================================
 window.addEventListener("message", (event) => {
     // 1. التحقق من محتوى الرسالة
-    // يجب أن تطابق الرسالة المرسلة من لوحة التحكم تماماً
     if (event.data === "AUTH_Dir55@tggt") {
         
-        // ✅ وصلت الإشارة الصحيحة من لوحة التحكم!
         const overlay = document.getElementById("systemLoginOverlay");
         const container = document.getElementById("interfaceCard");
         
@@ -16,13 +16,11 @@ window.addEventListener("message", (event) => {
 
         // حقن الواجهة
         if(container && typeof SECURE_INTERFACE_HTML !== 'undefined') {
-            // نتأكد أننا لم نقم بالحقن مسبقاً
             if (!container.classList.contains("show-content")) {
                 container.innerHTML = SECURE_INTERFACE_HTML;
                 container.classList.add("show-content");
                 container.style.display = "block";
 
-                // تفعيل زر Enter
                 const ccpInp = document.getElementById("ccpInput");
                 if(ccpInp) {
                     ccpInp.addEventListener("keypress", function(e) {
@@ -30,7 +28,6 @@ window.addEventListener("message", (event) => {
                     });
                 }
                 
-                // رسالة نجاح
                 const Toast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
                 Toast.fire({ icon: 'success', title: 'تم الاتصال الآمن بلوحة التحكم' });
             }
@@ -40,8 +37,6 @@ window.addEventListener("message", (event) => {
 
 
 // --- الثوابت المخفية (HTML المحمي) ---
-// هذا الكود لن يظهر في المتصفح كعناصر إلا بعد كلمة المرور الصحيحة
-
 const SECURE_INTERFACE_HTML = `
     <div class="page-header" id="mainHeader">
       <div class="header-text">
@@ -180,7 +175,6 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzd
 
 // --- خريطة الرتب (كما هي تماماً) ---
 const gradeMap = {
-    
     "1006": "أستاذ إبتدائي (متعاقد)",
     "1007": "أستاذ تعليم إبتدائي قسم أول",
     "1008": "أستاذ تعليم إبتدائي قسم ثان",
@@ -199,7 +193,7 @@ const gradeMap = {
     "5019": "أستاذ تعليم ثانوي",
     "5020": "أستاذ تعليم ثانوي (متعاقد)",
     "5021": "أستاذ تعليم ثانوي مستخلف",
-    "5022": "أستاذ مميز في التعليم الثانوي", // تم دمج الكودين 5022
+    "5022": "أستاذ مميز في التعليم الثانوي",
     "5023": "أستاذ التعليم الثانوي قسم ثان",
     "5024": "أستاذ التعليم الثانوي قسم أول",
     "6001": "مدير ثانوية",
@@ -465,6 +459,16 @@ function resetInterface() {
 
 // 1️⃣ الفحص
 async function checkEmployee() {
+  // 🛑 حماية إضافية: إذا كان النظام مغلقاً، نمنع البحث من الأساس 🛑
+  if (window.REGISTRATION_LOCKED) {
+    return Swal.fire({
+      icon: 'error',
+      title: 'التسجيل مغلق',
+      text: 'لا يمكن الدخول الآن، النظام قيد الصيانة.',
+      allowOutsideClick: false
+    });
+  }
+
   const rawInput = document.getElementById("ccpInput").value.trim();
   const cleanInput = rawInput.replace(/\D/g, ''); 
 
@@ -845,6 +849,19 @@ function fillForm(fbData, savedData) {
 
 // 7️⃣ إرسال التسجيل أو التعديل (مصححة)
 async function submitRegistration() {
+  // 🛑🛑🛑 الحماية القصوى: التحقق قبل الإرسال 🛑🛑🛑
+  if (window.REGISTRATION_LOCKED) {
+     Swal.fire({
+         icon: 'error',
+         title: 'عذراً',
+         text: 'تم إغلاق التسجيل، لا يمكن حفظ البيانات الآن.',
+         allowOutsideClick: false
+     }).then(() => {
+         location.reload(); // إعادة تحميل لفرض شاشة القفل
+     });
+     return; // إيقاف العملية فوراً
+  }
+
   // تعريف الحقول المطلوبة
   const fields = {
     fmn: document.getElementById("fmnField"),
@@ -999,7 +1016,6 @@ async function submitRegistration() {
   }
 }
 
-// 8️⃣ الطباعة
 // 8️⃣ الطباعة (معدلة لعدم الخروج من النظام)
 function printA4(d) {
   const table = document.getElementById("printTable");
@@ -1127,6 +1143,3 @@ function updateWorkPlace() {
   else if((l === 'متوسط' || l === 'ثانوي') && d && window.institutionsByDaaira) mkSel(window.institutionsByDaaira[d][l]||[]);
   else area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
 }
-
-
-
