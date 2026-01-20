@@ -1,3 +1,4 @@
+if (window.REGISTRATION_LOCKED) return;
 // ============================================================
 // كود استقبال الإشارة السرية (postMessage)
 // ============================================================
@@ -1126,5 +1127,6 @@ function updateWorkPlace() {
   else if((l === 'متوسط' || l === 'ثانوي') && d && window.institutionsByDaaira) mkSel(window.institutionsByDaaira[d][l]||[]);
   else area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
 }
+
 
 
