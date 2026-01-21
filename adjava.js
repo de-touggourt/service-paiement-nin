@@ -88,7 +88,26 @@ const SECURE_DASHBOARD_HTML = `
 
     </div>
 
-
+    <div style="margin: 0 0 15px 0; display:flex; gap:10px; align-items:center; background:#fff; padding:15px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <span style="font-weight:bold; color:#495057; font-size:14px; min-width:80px;"><i class="fas fa-filter"></i> فرز حسب:</span>
+        
+        <select id="filter_daaira" class="filter-select" style="flex:1;" onchange="window.updateFilterBaladiya()">
+            <option value="">-- كل الدوائر --</option>
+            <option value="توقرت">توقرت</option>
+            <option value="تماسين">تماسين</option>
+            <option value="المقارين">المقارين</option>
+            <option value="الحجيرة">الحجيرة</option>
+            <option value="الطيبات">الطيبات</option>
+        </select>
+        
+        <select id="filter_baladiya" class="filter-select" style="flex:1;" onchange="window.updateFilterSchools()">
+            <option value="">-- كل البلديات --</option>
+        </select>
+        
+        <select id="filter_school" class="filter-select" style="flex:2;" onchange="window.applyFilters()">
+            <option value="">-- كل المؤسسات --</option>
+        </select>
+    </div>
     <div class="table-container">
       <div class="table-responsive">
         <table id="dataTable">
@@ -261,11 +280,82 @@ window.loadData = async function() {
   }
 };
 
+// ==========================================
+// 🆕 دوال تحديث قوائم الفلترة المتقدمة
+// ==========================================
+
+window.updateFilterBaladiya = function() {
+    const d = document.getElementById("filter_daaira").value;
+    const b = document.getElementById("filter_baladiya");
+    
+    // إعادة تعيين البلدية
+    b.innerHTML = '<option value="">-- كل البلديات --</option>';
+    
+    if(d && baladiyaMap[d]) {
+        baladiyaMap[d].forEach(o => {
+            let op = document.createElement("option");
+            op.text = o; 
+            op.value = o; 
+            b.add(op);
+        });
+    }
+    
+    // تحديث المؤسسات وتطبيق الفلتر
+    window.updateFilterSchools();
+};
+
+window.updateFilterSchools = function() {
+    const d = document.getElementById("filter_daaira").value;
+    const b = document.getElementById("filter_baladiya").value;
+    const s = document.getElementById("filter_school");
+    
+    s.innerHTML = '<option value="">-- كل المؤسسات --</option>';
+    
+    let schoolsList = [];
+
+    // 1. إضافة المدارس الابتدائية حسب البلدية المختارة
+    if (b && primarySchoolsByBaladiya[b]) {
+        schoolsList = schoolsList.concat(primarySchoolsByBaladiya[b]);
+    }
+    
+    // 2. إضافة المتوسطات والثانويات حسب الدائرة المختارة
+    if (d && institutionsByDaaira[d]) {
+        if(institutionsByDaaira[d]["متوسط"]) {
+            schoolsList = schoolsList.concat(institutionsByDaaira[d]["متوسط"]);
+        }
+        if(institutionsByDaaira[d]["ثانوي"]) {
+            schoolsList = schoolsList.concat(institutionsByDaaira[d]["ثانوي"]);
+        }
+    }
+    
+    // إضافة "مديرية التربية" كخيار دائم
+    let dirOption = document.createElement("option");
+    dirOption.text = "مديرية التربية";
+    dirOption.value = "مديرية التربية";
+    s.add(dirOption);
+
+    // ملء القائمة
+    schoolsList.forEach(sch => {
+        let op = document.createElement("option");
+        op.text = sch.name;
+        op.value = sch.name;
+        s.add(op);
+    });
+
+    window.applyFilters();
+};
+
 window.applyFilters = function() {
     const query = document.getElementById("searchInput").value.toLowerCase();
     const statusFilter = document.getElementById("statusFilter").value;
 
+    // ✅ جلب قيم الفلترة المتقدمة
+    const fDaaira = document.getElementById("filter_daaira") ? document.getElementById("filter_daaira").value : "";
+    const fBaladiya = document.getElementById("filter_baladiya") ? document.getElementById("filter_baladiya").value : "";
+    const fSchool = document.getElementById("filter_school") ? document.getElementById("filter_school").value : "";
+
     filteredData = allData.filter(row => {
+        // 1. البحث النصي
         const matchesSearch = (
             (row.fmn && row.fmn.includes(query)) ||
             (row.frn && row.frn.includes(query)) ||
@@ -274,6 +364,7 @@ window.applyFilters = function() {
             (row.schoolName && row.schoolName.includes(query))
         );
 
+        // 2. فلتر الحالة
         let matchesStatus = true;
         const isConfirmed = String(row.confirmed).toLowerCase() === "true";
 
@@ -283,7 +374,12 @@ window.applyFilters = function() {
             matchesStatus = !isConfirmed;
         }
 
-        return matchesSearch && matchesStatus;
+        // 3. ✅ الفلاتر المتقدمة (الدائرة، البلدية، المؤسسة)
+        let matchesDaaira = fDaaira === "" || row.daaira === fDaaira;
+        let matchesBaladiya = fBaladiya === "" || row.baladiya === fBaladiya;
+        let matchesSchool = fSchool === "" || row.schoolName === fSchool;
+
+        return matchesSearch && matchesStatus && matchesDaaira && matchesBaladiya && matchesSchool;
     });
 
     currentPage = 1;
