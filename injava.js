@@ -5,16 +5,12 @@ if (window.REGISTRATION_LOCKED) return;
 // كود استقبال الإشارة السرية (postMessage)
 // ============================================================
 window.addEventListener("message", (event) => {
-    // 1. التحقق من محتوى الرسالة
     if (event.data === "AUTH_Dir55@tggt") {
-        
         const overlay = document.getElementById("systemLoginOverlay");
         const container = document.getElementById("interfaceCard");
         
-        // إخفاء القفل
         if(overlay) overlay.style.display = 'none';
 
-        // حقن الواجهة
         if(container && typeof SECURE_INTERFACE_HTML !== 'undefined') {
             if (!container.classList.contains("show-content")) {
                 container.innerHTML = SECURE_INTERFACE_HTML;
@@ -56,6 +52,11 @@ const SECURE_INTERFACE_HTML = `
       <div id="loginSection">
         <input type="text" id="ccpInput" placeholder="أدخل رقم الحساب البريدي بدون المفتاح" oninput="valNum(this)">
         <button class="btn-main" id="loginBtn" onclick="checkEmployee()">تسجيل الدخول</button>
+        
+        <button class="btn-main" onclick="openAdminModal()" 
+                style="background: #fff; color: #2575fc; border: 2px solid #2575fc; margin-top: 10px; font-weight:bold;">
+          <i class="fas fa-file-alt"></i> استخراج القوائم والاستمارات
+        </button>
       </div>
     </div>
 
@@ -171,9 +172,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // 🛑🛑🛑 استبدل هذا الرابط برابط السكريبت الخاص بك 🛑🛑🛑
-const scriptURL = "https://script.google.com/macros/s/AKfycbzNj9HvaFQ7C36FdA57UMsHoNVOLparameter is either empty or invalid.VFvh6ww/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbyXEdCPd-rrImLFLZObPXbeELUqj71mknOOFB7sjMCh6JQE-L7yMIsgFlFXrA5-VTUjRg/exec";
 
-// --- خريطة الرتب (كما هي تماماً) ---
+// --- خريطة الرتب ---
 const gradeMap = {
     "1006": "أستاذ إبتدائي (متعاقد)",
     "1007": "أستاذ تعليم إبتدائي قسم أول",
@@ -394,14 +395,11 @@ async function verifySystemLogin() {
       // 1. الدخول العادي
       if (String(passInput) === String(userPass)) {
         
-        // --- هنا يحدث الحقن ---
-        // نقوم بحقن كود HTML داخل الحاوية الآن فقط
         container.innerHTML = SECURE_INTERFACE_HTML;
-        container.classList.add("show-content"); // تفعيل الأنيميشن
+        container.classList.add("show-content"); 
         
-        overlay.style.display = 'none'; // إخفاء القفل
+        overlay.style.display = 'none'; 
         
-        // إعادة تهيئة حدث الضغط على Enter في الصفحة الجديدة المحقونة
         const ccpInp = document.getElementById("ccpInput");
         if(ccpInp) {
             ccpInp.addEventListener("keypress", function(event) {
@@ -420,10 +418,7 @@ async function verifySystemLogin() {
       } 
       // 2. الدخول كمسؤول
       else if (String(passInput) === String(adminPass)) {
-        // --- إضافة تصريح المرور الآمن ---
         sessionStorage.setItem("admin_secure_access", "granted_by_login_page");
-        
-        // التوجيه للوحة التحكم
         window.location.href = ADMIN_DASHBOARD_URL;
       } else {
         Swal.fire({icon: 'error', title: 'خطأ', text: 'كلمة المرور غير صحيحة، حاول مرة أخرى', confirmButtonColor: '#dc3545'});
@@ -459,16 +454,6 @@ function resetInterface() {
 
 // 1️⃣ الفحص
 async function checkEmployee() {
-  // 🛑 حماية إضافية: إذا كان النظام مغلقاً، نمنع البحث من الأساس 🛑
-  if (window.REGISTRATION_LOCKED) {
-    return Swal.fire({
-      icon: 'error',
-      title: 'التسجيل مغلق',
-      text: 'لا يمكن الدخول الآن، النظام قيد الصيانة.',
-      allowOutsideClick: false
-    });
-  }
-
   const rawInput = document.getElementById("ccpInput").value.trim();
   const cleanInput = rawInput.replace(/\D/g, ''); 
 
@@ -608,13 +593,10 @@ function showReviewModal(data, context) {
 }
 
 // 3️⃣ دالة إدخال المؤكد
-
 function showConfirmerInput(data) {
-    // محاولة جلب البيانات المحفوظة في الجلسة السابقة
     const sessionName = sessionStorage.getItem("saved_confirmer_name") || "";
     const sessionPhone = sessionStorage.getItem("saved_confirmer_phone") || "";
 
-    // الأولوية للبيانات الموجودة في الملف، ثم البيانات المحفوظة في الجلسة
     const prevName = data.confirmed_by || sessionName;
     let prevPhone = (data.reviewer_phone || sessionPhone).replace(/\D/g, '');
     
@@ -643,7 +625,6 @@ function showConfirmerInput(data) {
         cancelButtonColor: '#6c757d',
         allowOutsideClick: false,
         didOpen: () => {
-            // التركيز التلقائي: إذا كان الاسم فارغاً نركز عليه، وإلا نركز على زر التأكيد
             const nameInput = document.getElementById('swal-name');
             if(!nameInput.value) {
                 nameInput.focus();
@@ -665,7 +646,6 @@ function showConfirmerInput(data) {
         }
     }).then((res) => {
         if(res.isConfirmed) {
-            // 🟢 هنا يتم الحفظ في الجلسة 🟢
             sessionStorage.setItem("saved_confirmer_name", res.value.name);
             sessionStorage.setItem("saved_confirmer_phone", res.value.phone);
 
@@ -777,7 +757,7 @@ async function confirmData(data) {
   }
 }
 
-// 6️⃣ التعبئة (مصححة)
+// 6️⃣ التعبئة
 function fillForm(fbData, savedData) {
   document.getElementById("interfaceCard").classList.add("expanded-mode");
   document.getElementById("mainHeader").style.display = "none";
@@ -804,29 +784,21 @@ function fillForm(fbData, savedData) {
     
     document.getElementById("ninField").value = savedData.nin || '';
     
-    // تعيين الأطوار والبلديات
     document.getElementById("levelField").value = savedData.level || "";
     document.getElementById("daairaField").value = savedData.daaira || "";
     
-    // تحديث البلديات
     updBal(); 
     
     setTimeout(() => {
-        // تعيين البلدية
         document.getElementById("baladiyaField").value = savedData.baladiya || "";
-        
-        // بناء مكان العمل
         updateWorkPlace();
         
         setTimeout(() => {
             const select = document.querySelector("#institutionArea select");
-            // ✅ التصحيح هنا: نتحقق إذا كان هناك قائمة منسدلة نقوم بتحديثها
-            // أما إذا كان حقل نصي (مديرية التربية) فلا نتدخل لأن updateWorkPlace قامت بالواجب
             if(select) {
                 select.value = savedData.schoolCode || savedData.schoolName;
                 document.getElementById("institutionCodeField").value = savedData.schoolCode || "";
             } else {
-                // إذا لم نجد قائمة، نتأكد أن الكود المخفي لا يتم مسحه إذا كان فارغاً
                 if(savedData.level === "مديرية التربية") {
                      document.getElementById("institutionCodeField").value = "مديرية التربية";
                 }
@@ -834,7 +806,6 @@ function fillForm(fbData, savedData) {
         }, 100);
     }, 100);
   } else {
-    // تصفير الحقول عند التسجيل الجديد
     document.getElementById("phoneField").value = "";
     document.getElementById("ninField").value = "";
     document.getElementById("levelField").value = "";
@@ -847,22 +818,8 @@ function fillForm(fbData, savedData) {
 }
 
 
-// 7️⃣ إرسال التسجيل أو التعديل (مصححة)
+// 7️⃣ إرسال التسجيل
 async function submitRegistration() {
-  // 🛑🛑🛑 الحماية القصوى: التحقق قبل الإرسال 🛑🛑🛑
-  if (window.REGISTRATION_LOCKED) {
-     Swal.fire({
-         icon: 'error',
-         title: 'عذراً',
-         text: 'تم إغلاق التسجيل، لا يمكن حفظ البيانات الآن.',
-         allowOutsideClick: false
-     }).then(() => {
-         location.reload(); // إعادة تحميل لفرض شاشة القفل
-     });
-     return; // إيقاف العملية فوراً
-  }
-
-  // تعريف الحقول المطلوبة
   const fields = {
     fmn: document.getElementById("fmnField"),
     frn: document.getElementById("frnField"),
@@ -877,18 +834,14 @@ async function submitRegistration() {
   const codeField = document.getElementById("institutionCodeField");
   const schoolSelect = document.querySelector("#institutionArea select");
   const institutionArea = document.getElementById("institutionArea");
-  // ✅ إضافة: جلب الحقل النصي (في حالة المديرية)
   const readonlyInput = institutionArea.querySelector("input");
 
-  // 1. تنظيف الأخطاء السابقة
   Object.values(fields).forEach(el => el.classList.remove("input-error"));
   institutionArea.style.border = "none";
 
   let firstErrorField = null;
 
-  // 2. التحقق من الحقول الأساسية
   for (const [key, field] of Object.entries(fields)) {
-    // نستثني الدائرة والبلدية من التحقق إذا كانت الحالة مديرية التربية لأنها قد تكون معطلة (disabled)
     if ((key === 'daaira' || key === 'baladiya') && fields.level.value === "مديرية التربية") {
         continue; 
     }
@@ -899,8 +852,6 @@ async function submitRegistration() {
     }
   }
 
-  // 3. التحقق من المؤسسة (منطق معدل)
-  // ✅ التصحيح: القبول إذا كان هناك قائمة مختارة، أو كود مخفي، أو حقل نصي ظاهر به قيمة
   const isSchoolSelected = (schoolSelect && schoolSelect.value !== "") || 
                            (codeField.value !== "") || 
                            (readonlyInput && readonlyInput.value !== "");
@@ -911,7 +862,6 @@ async function submitRegistration() {
     if (!firstErrorField) firstErrorField = schoolSelect || institutionArea;
   }
 
-  // إذا وجدنا حقولاً فارغة
   if (firstErrorField) {
     if(firstErrorField.focus && typeof firstErrorField.focus === 'function') firstErrorField.focus(); 
     return Swal.fire({ 
@@ -923,7 +873,6 @@ async function submitRegistration() {
     });
   }
 
-  // 4. التحقق من صحة البيانات
   const birthDate = new Date(fields.diz.value);
   if(isNaN(birthDate.getFullYear()) || birthDate.getFullYear() > new Date().getFullYear() - 18) {
       fields.diz.classList.add("input-error");
@@ -941,7 +890,6 @@ async function submitRegistration() {
       return Swal.fire({ icon: 'warning', title: 'رقم التعريف الوطني غير صحيح', text: 'يجب أن يتكون من 18 رقم' });
   }
 
-  // --- تجهيز البيانات للإرسال ---
   const p = new URLSearchParams();
   p.append("ccp", document.getElementById("ccpField").value);
   p.append("ass", document.getElementById("assField").value);
@@ -958,8 +906,6 @@ async function submitRegistration() {
   p.append("daaira", fields.daaira.value);
   p.append("baladiya", fields.baladiya.value);
   
-  // تحديد كود المؤسسة واسمها
-  // إذا كان الكود فارغاً ولكن يوجد حقل نصي (حالة المديرية)، نضع قيمة افتراضية للكود
   let finalCode = codeField.value;
   if(!finalCode && readonlyInput && readonlyInput.value.includes("مديرية")) {
       finalCode = "مديرية التربية";
@@ -1016,7 +962,7 @@ async function submitRegistration() {
   }
 }
 
-// 8️⃣ الطباعة (معدلة لعدم الخروج من النظام)
+// 8️⃣ الطباعة الفردية
 function printA4(d) {
   const table = document.getElementById("printTable");
   document.getElementById("p_date").innerText = new Date().toLocaleDateString('ar-DZ');
@@ -1039,8 +985,6 @@ function printA4(d) {
 
   window.print();
   
-  // 🛑 التعديل هنا: استخدام resetInterface بدلاً من reload 🛑
-  // هذا يعيدك للبحث عن موظف جديد دون طلب كلمة المرور
   setTimeout(() => resetInterface(), 500); 
 }
 
@@ -1052,69 +996,52 @@ function updBal() {
   if(d && baladiyaMap[d]) baladiyaMap[d].forEach(o=>{let op=document.createElement("option");op.text=o;op.value=o;b.add(op)});
 }
 
-// --- دالة لتفريغ حقول الدائرة والبلدية والمؤسسة ---
 function resetGeoFields() {
   const daaira = document.getElementById("daairaField");
   const baladiya = document.getElementById("baladiyaField");
   const area = document.getElementById("institutionArea");
   const codeField = document.getElementById("institutionCodeField");
 
-  // إعادة الحقول للوضع الافتراضي
   daaira.value = "";
-  daaira.disabled = false; // التأكد من تفعيلها في حال كانت مقفلة
+  daaira.disabled = false;
   
   baladiya.innerHTML = '<option value="">-- اختر --</option>';
   baladiya.value = "";
   baladiya.disabled = false;
 
-  // تفريغ مكان العمل
   area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
   codeField.value = "";
 
-  // إزالة التلوين الأحمر (الأخطاء) إن وجد
   removeError(daaira);
   removeError(baladiya);
   area.style.border = "none";
 }
 
-// 🛑🛑🛑 دالة تحديث مكان العمل المعدلة بالكامل 🛑🛑🛑
 function updateWorkPlace() {
   const l = document.getElementById("levelField").value;
   const daaira = document.getElementById("daairaField");
   const baladiya = document.getElementById("baladiyaField");
   const area = document.getElementById("institutionArea");
   
-  // 1. إعادة تفعيل الحقول أولاً (إرجاعها للحالة الطبيعية)
-  // هذا ضروري لكي يتمكن المستخدم من التعديل إذا غير رأيه واختار طوراً آخر
   daaira.disabled = false;
   baladiya.disabled = false;
-  
-  // تنظيف منطقة المؤسسة
   area.innerHTML = ''; 
 
-  // 🛑 حالة مديرية التربية 🛑
   if (l === "مديرية التربية") {
-    // تعيين القيم تلقائياً
     daaira.value = "توقرت";
-    updBal(); // تحديث قائمة البلديات بناء على الدائرة
+    updBal(); 
     baladiya.value = "توقرت";
-
-    // قفل الحقول لمنع التعديل
     daaira.disabled = true;
     baladiya.disabled = true;
 
-    // تعيين مكان العمل
     area.innerHTML = '<input type="text" class="readonly-field" value="مديرية التربية لولاية توقرت" readonly style="background-color: #e9ecef;">';
     document.getElementById("institutionCodeField").value = "مديرية التربية";
 
-    // إزالة رسائل الخطأ الحمراء إن وجدت
     removeError(daaira);
     removeError(baladiya);
-    
-    return; // الخروج من الدالة
+    return; 
   }
 
-  // --- الكود الأصلي لباقي الأطوار ---
   const mkSel = (lst) => {
     let s = document.createElement("select");
     s.innerHTML = '<option value="">-- اختر --</option>';
@@ -1142,5 +1069,631 @@ function updateWorkPlace() {
   if(l === 'ابتدائي' && b && window.primarySchoolsByBaladiya) mkSel(window.primarySchoolsByBaladiya[b]||[]);
   else if((l === 'متوسط' || l === 'ثانوي') && d && window.institutionsByDaaira) mkSel(window.institutionsByDaaira[d][l]||[]);
   else area.innerHTML = '<input readonly placeholder="..." class="readonly-field">';
-
 }
+
+
+// ============================================================
+// +++ وظائف الإدارة الجديدة (Admin Functions) +++
+// ============================================================
+
+// 1. فتح نافذة الفلاتر (Modal)
+// ============================================================
+// +++ وظائف الإدارة الجديدة (Admin Functions) - المعدلة للحماية +++
+// ============================================================
+
+// ============================================================
+// +++ وظائف الإدارة الجديدة (Admin Functions) - المحسنة +++
+// ============================================================
+
+// 1. فتح نافذة التحقق من المدير (مع توحيد تنسيق 10 أرقام)
+function openAdminModal() {
+  const popupHtml = `
+    <div style="font-family: 'Cairo', sans-serif; direction: rtl;">
+      <div style="margin-bottom: 20px; color: #555;">
+        <i class="fas fa-user-shield" style="font-size: 50px; color: #2575fc; margin-bottom: 10px;"></i>
+        <h3 style="margin: 0; font-size: 18px; font-weight: bold;">بوابة استخراج الوثائق</h3>
+        <p style="font-size: 13px; color: #777; margin-top: 5px;">يرجى إثبات الهوية للوصول إلى بيانات المؤسسة</p>
+      </div>
+      
+      <div style="position: relative; margin-bottom: 10px;">
+        <input type="text" id="adminCcpInput" 
+          maxlength="10" 
+          placeholder="رقم الحساب (مثال: 0000012345)" 
+          class="swal2-input" 
+          style="text-align: center; font-weight: bold; font-size: 18px; letter-spacing: 2px; width: 80%; margin: 0 auto; display: block;"
+          oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+      </div>
+      
+      <div style="font-size: 12px; color: #888;">
+        * النظام سيقوم بضبط الأصفار تلقائياً لتطابق قاعدة البيانات
+      </div>
+    </div>
+  `;
+
+  Swal.fire({
+    html: popupHtml,
+    showCancelButton: true,
+    confirmButtonText: 'تحقق ودخول',
+    cancelButtonText: 'إلغاء',
+    confirmButtonColor: '#2575fc',
+    cancelButtonColor: '#6c757d',
+    showLoaderOnConfirm: true,
+    width: '450px',
+    didOpen: () => {
+        const input = document.getElementById('adminCcpInput');
+        if(input) input.focus();
+        
+        input.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                Swal.clickConfirm();
+            }
+        });
+    },
+    preConfirm: () => {
+      const rawCcp = document.getElementById('adminCcpInput').value;
+      
+      if (!rawCcp) {
+        Swal.showValidationMessage('يرجى إدخال رقم الحساب البريدي');
+        return false;
+      }
+      
+      // === التعديل هنا: توحيد التنسيق إلى 10 أرقام ===
+      
+      // 1. تنظيف الرقم من أي رموز وحذف الأصفار من البداية
+      let cleanStr = rawCcp.replace(/\D/g, '').replace(/^0+/, '');
+      
+      // 2. تعبئة الرقم بأصفار من اليسار ليصبح طوله 10 أرقام
+      const finalCcpToCheck = cleanStr.padStart(10, '0');
+
+      // مثال: أدخل 123 -> يرسل 0000000123
+      // مثال: أدخل 00123 -> يرسل 0000000123
+      
+      // التحقق من السيرفر
+      return fetch(scriptURL, {
+        method: 'POST',
+        body: new URLSearchParams({ action: 'check_existing', ccp: finalCcpToCheck })
+      })
+      .then(response => {
+        if (!response.ok) throw new Error(response.statusText);
+        return response.json();
+      })
+      .then(data => {
+        if (data.result !== 'exists') {
+          throw new Error('هذا الحساب غير مسجل كمسؤول أو البيانات غير صحيحة');
+        }
+        return data.data; // إرجاع بيانات المدير
+      })
+      .catch(error => {
+        Swal.showValidationMessage(`${error}`);
+      });
+    },
+    allowOutsideClick: () => !Swal.isLoading()
+  }).then((result) => {
+    if (result.isConfirmed) {
+      showRestrictedAdminPanel(result.value);
+    }
+  });
+}
+
+// 2. عرض لوحة الاستخراج (مقفلة ومنسقة)
+function showRestrictedAdminPanel(empData) {
+  const schoolName = empData.schoolName || "غير محدد";
+  const daaira = empData.daaira || "";
+  const baladiya = empData.baladiya || "";
+  const level = empData.level || "";
+  const directorName = `${empData.fmn} ${empData.frn}`;
+
+  // تنسيق CSS للحقول المقفلة
+  const lockedStyle = `
+    background: #f1f3f4; 
+    border: 1px solid #ced4da; 
+    color: #495057; 
+    font-weight: 600; 
+    cursor: not-allowed;
+    text-align: center;
+    font-size: 14px;
+    height: 40px;
+    margin-bottom: 12px;
+  `;
+
+  const popupHtml = `
+    <div style="font-family: 'Cairo', sans-serif; direction: rtl; text-align: right;">
+      
+      <div style="background: linear-gradient(45deg, #2575fc, #6a11cb); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="font-size: 12px; opacity: 0.9;">مرحباً بالسيد(ة) المدير(ة):</div>
+        <div style="font-size: 18px; font-weight: bold; margin-top: 5px;">${directorName}</div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <div style="flex: 1;">
+            <label style="font-size: 12px; font-weight:bold; color:#555;">الطور:</label>
+            <input type="text" value="${level}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
+        </div>
+        <div style="flex: 1;">
+            <label style="font-size: 12px; font-weight:bold; color:#555;">الدائرة:</label>
+            <input type="text" value="${daaira}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
+        </div>
+      </div>
+
+      <label style="font-size: 12px; font-weight:bold; color:#555;">البلدية:</label>
+      <input type="text" value="${baladiya}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
+
+      <label style="font-size: 12px; font-weight:bold; color:#2575fc;">المؤسسة (مثبتة):</label>
+      <div style="position: relative;">
+        <input type="text" value="${schoolName}" class="swal2-input" 
+               style="${lockedStyle}; width: 100%; background: #e8f0fe; border-color: #2575fc; color: #1a73e8;" 
+               disabled readonly>
+        <i class="fas fa-lock" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #2575fc;"></i>
+      </div>
+      
+      <div style="text-align: center; margin-top: 10px; font-size: 11px; color: #dc3545;">
+        <i class="fas fa-info-circle"></i> لا يمكن تغيير المؤسسة لضمان سرية البيانات.
+      </div>
+    </div>
+  `;
+
+  Swal.fire({
+    title: '', // العنوان مدمج في التصميم
+    html: popupHtml,
+    showCancelButton: true,
+    showDenyButton: true,
+    confirmButtonText: '<i class="fas fa-print"></i> طباعة الاستمارات',
+    denyButtonText: '<i class="fas fa-list"></i> عرض القائمة',
+    cancelButtonText: 'خروج',
+    confirmButtonColor: '#333',     // لون زر الاستمارات (داكن/رسمي)
+    denyButtonColor: '#28a745',     // لون زر القائمة (أخضر)
+    cancelButtonColor: '#d33',
+    width: '500px',
+    padding: '20px',
+    preConfirm: () => {
+        return { action: 'forms', school: schoolName };
+    },
+    preDeny: () => {
+        return { action: 'list', school: schoolName };
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      fetchAndHandleData(result.value.school, 'forms');
+    } else if (result.isDenied) {
+      fetchAndHandleData(result.value.school, 'list');
+    }
+  });
+}
+
+// 2. تحديث القوائم المنسدلة (Logic للفلاتر)
+function updateAdminBaladiya() {
+    const daaira = document.getElementById("adminDaaira").value;
+    const baladiyaSelect = document.getElementById("adminBaladiya");
+    baladiyaSelect.innerHTML = '<option value="">-- اختر البلدية --</option>';
+    
+    if (daaira && baladiyaMap[daaira]) {
+        baladiyaMap[daaira].forEach(b => {
+            let opt = document.createElement("option");
+            opt.value = b;
+            opt.text = b;
+            baladiyaSelect.add(opt);
+        });
+    }
+}
+
+function updateAdminSchools() {
+    const level = document.getElementById("adminLevel").value;
+    const daaira = document.getElementById("adminDaaira").value;
+    const baladiya = document.getElementById("adminBaladiya").value;
+    const schoolSelect = document.getElementById("adminSchool");
+    
+    schoolSelect.innerHTML = '<option value="">-- اختر المؤسسة --</option>';
+    
+    let schools = [];
+
+    if (level === 'ابتدائي' && baladiya && window.primarySchoolsByBaladiya) {
+        schools = window.primarySchoolsByBaladiya[baladiya] || [];
+    } else if ((level === 'متوسط' || level === 'ثانوي') && daaira && window.institutionsByDaaira) {
+        schools = window.institutionsByDaaira[daaira] ? (window.institutionsByDaaira[daaira][level] || []) : [];
+    }
+
+    schools.forEach(s => {
+        let opt = document.createElement("option");
+        opt.value = s.name;
+        opt.text = s.name;
+        schoolSelect.add(opt);
+    });
+}
+
+function updateAdminFilters() {
+    document.getElementById("adminDaaira").value = "";
+    document.getElementById("adminBaladiya").value = "";
+    document.getElementById("adminSchool").innerHTML = '<option value="">-- اختر المؤسسة --</option>';
+}
+
+// 3. جلب البيانات من السيرفر (Google Sheet)
+async function fetchAndHandleData(schoolName, mode) {
+    Swal.fire({ title: 'جاري جلب البيانات...', didOpen: () => Swal.showLoading() });
+
+    try {
+        const params = new URLSearchParams();
+        // محاولة طلب الفلترة من السيرفر مباشرة
+        params.append("action", "get_by_school"); 
+        params.append("schoolName", schoolName);
+
+        const res = await fetch(scriptURL, { method: "POST", body: params });
+        const json = await res.json();
+        Swal.close();
+
+        let data = [];
+        if (json.result === "success") {
+            data = json.data; 
+        } else {
+             if(json.data) data = json.data; 
+        }
+        
+        // فلترة إضافية في المتصفح للتأكد
+        const filteredData = data.filter(emp => emp.schoolName === schoolName);
+
+        if (filteredData.length === 0) {
+            Swal.fire("تنبيه", "لا يوجد موظفين مسجلين في هذه المؤسسة", "info");
+            return;
+        }
+
+        if (mode === 'forms') {
+            generateBulkForms(filteredData, schoolName);
+        } else {
+            generateEmployeesTable(filteredData, schoolName);
+        }
+
+    } catch (e) {
+        console.error(e);
+        Swal.fire("خطأ", "حدث خطأ أثناء جلب البيانات", "error");
+    }
+}
+
+// 4. عرض القائمة (الجدول) - بتنسيق أزرار جديد وضغط الجدول
+function generateEmployeesTable(data, schoolName) {
+    // 1. حساب الإحصائيات
+    const total = data.length;
+    const confirmedCount = data.filter(e => (e.confirmed === true || String(e.confirmed).toLowerCase() === "true")).length;
+    const unconfirmedCount = total - confirmedCount;
+
+    // 2. بناء الأسطر
+    let rows = '';
+    data.forEach((emp, index) => {
+        const isConfirmed = (emp.confirmed === true || String(emp.confirmed).toLowerCase() === "true");
+        
+        const statusBadge = isConfirmed 
+            ? `<span style="background-color:#d4edda; color:#155724; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; border: 1px solid #c3e6cb;">مؤكد</span>` 
+            : `<span style="background-color:#f8d7da; color:#721c24; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; border: 1px solid #f5c6cb;">غير مؤكد</span>`;
+
+        rows += `
+            <tr onclick="showEmployeeDetails('${emp.ccp}')" style="cursor:pointer; transition:all 0.1s ease; border-bottom: 1px solid #eee;">
+                <td style="font-weight:bold;">${index + 1}</td>
+                <td style="font-family: monospace; color:#555;">${emp.nin || '-'}</td>
+                <td style="color:#2c3e50; font-weight:600;">${emp.fmn}</td>
+                <td style="color:#2c3e50; font-weight:600;">${emp.frn}</td>
+                <td>${fmtDate(emp.diz)}</td>
+                <td style="font-size:11px;">${getJob(emp.gr)}</td>
+                <td>${statusBadge}</td>
+            </tr>
+        `;
+    });
+
+    // 3. بناء الهيكل (CSS محسن للأزرار وضغط الجدول)
+    const tableHtml = `
+        <style>
+            .stat-card { background: #f8f9fa; padding: 5px 10px; border-radius: 6px; border: 1px solid #e9ecef; margin: 0 3px; display: inline-block; font-size: 12px; }
+            .stat-num { font-weight: bold; font-size: 13px; margin-right: 3px; }
+            
+            .modern-table { width: 100%; border-collapse: collapse; text-align: right; direction: rtl; font-family: 'Cairo', sans-serif; }
+            .modern-table thead th { background: #2575fc; color: white; padding: 8px 5px; font-weight: normal; font-size: 12px; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+            .modern-table tbody td { padding: 6px 5px; font-size: 11.5px; white-space: nowrap; }
+            .modern-table tbody tr:hover { background-color: #f1f3f5 !important; }
+            .modern-table tbody tr:nth-child(even) { background-color: #fbfbfb; }
+
+            .custom-btn-group { margin: 10px 0; display: flex; justify-content: center; gap: 8px; }
+            .action-btn { padding: 6px 15px; font-size: 12px; border-radius: 5px; border: none; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: 'Cairo', sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.1s; }
+            .action-btn:hover { transform: translateY(-1px); }
+            
+            .btn-excel { background-color: #28a745; }
+            .btn-print { background-color: #343a40; }
+        </style>
+
+        <div style="text-align:center; margin-bottom:10px;">
+            <h3 style="color:#2575fc; margin-bottom: 8px; font-size: 16px; font-family: 'Cairo', sans-serif;">${schoolName}</h3>
+            
+            <div style="margin-bottom: 10px;">
+                <div class="stat-card" style="border-right: 3px solid #2575fc;">إجمالي: <span class="stat-num" style="color: #2575fc;">${total}</span></div>
+                <div class="stat-card" style="border-right: 3px solid #28a745;">المؤكد: <span class="stat-num" style="color: #28a745;">${confirmedCount}</span></div>
+                <div class="stat-card" style="border-right: 3px solid #dc3545;">غير المؤكد: <span class="stat-num" style="color: #dc3545;">${unconfirmedCount}</span></div>
+            </div>
+
+            <div class="custom-btn-group">
+                <button onclick="printCurrentTable('${schoolName}')" class="action-btn btn-print">
+                    <i class="fas fa-print"></i> طباعة القائمة
+                </button>
+                <button onclick="exportTableToExcel('empTable', '${schoolName}')" class="action-btn btn-excel">
+                    <i class="fas fa-file-excel"></i> تحميل Excel
+                </button>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto; overflow-y:auto; max-height:65vh; border-radius: 6px; border: 1px solid #ddd;">
+            <table id="empTable" class="modern-table">
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="15%">رقم التعريف</th>
+                        <th width="15%">اللقب</th>
+                        <th width="15%">الاسم</th>
+                        <th width="10%">تاريخ الميلاد</th>
+                        <th width="25%">الرتبة</th>
+                        <th width="15%">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+
+    window.currentListContext = data;
+
+    Swal.fire({
+        title: '',
+        html: tableHtml,
+        width: 'auto',
+        maxWidth: '90%',
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: '#fff',
+        padding: '15px'
+    });
+}
+
+// عرض تفاصيل موظف من الجدول (معدلة لتوجيه غير المؤكدين للتأكيد)
+function showEmployeeDetails(ccp) {
+    const emp = window.currentListContext.find(e => e.ccp == ccp || e.empId == ccp);
+    if(emp) {
+        currentEmployeeData = emp;
+        const isConfirmed = (emp.confirmed === true || String(emp.confirmed).toLowerCase() === "true");
+
+        if (isConfirmed) {
+            showConfirmedModal(emp);
+        } else {
+            showReviewModal(emp, "admin_review");
+        }
+    }
+}
+
+// 5. الطباعة المجمعة للاستمارات (معدلة: تطبع المؤكدين فقط)
+function generateBulkForms(data, schoolName) {
+    const confirmedOnly = data.filter(d => d.confirmed === true || String(d.confirmed).toLowerCase() === "true");
+
+    if (confirmedOnly.length === 0) {
+        return Swal.fire({
+            icon: 'warning',
+            title: 'تنبيه',
+            text: 'لا توجد استمارات مؤكدة للطباعة في هذه المؤسسة.',
+            confirmButtonColor: '#2575fc'
+        });
+    }
+
+    const printContainer = document.getElementById("printContainer");
+    const originalContent = printContainer.innerHTML;
+    
+    let bulkContent = '';
+    const dateStr = new Date().toLocaleDateString('ar-DZ');
+
+    confirmedOnly.forEach(d => {
+        bulkContent += `
+        <div class="print-page" style="page-break-after: always; padding-top:20px;">
+            <div class="print-official-header">
+              <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" alt="شعار" class="print-logo-img">
+              <div class="print-titles-official">
+                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                <h3>وزارة التربية الوطنية</h3>
+                <h3>مديرية التربية لولاية توقرت</h3>
+                <h3>مصلحة تسيير نفقات المستخدمين</h3>
+              </div>
+              <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" alt="شعار" class="print-logo-img">
+            </div>
+
+            <div class="print-form-title-box">
+              <h2 class="print-main-title">استمارة معلومات الموظف</h2>
+              <div class="print-date">تاريخ الاستخراج: ${dateStr}</div>
+            </div>
+
+            <table class="data-table">
+                <tr><th>اللقب</th><td>${d.fmn}</td></tr>
+                <tr><th>الاسم</th><td>${d.frn}</td></tr>
+                <tr><th>تاريخ الميلاد</th><td>${fmtDate(d.diz)}</td></tr>
+                <tr><th>رقم الحساب البريدي (CCP)</th><td>${d.ccp}</td></tr>
+                <tr><th>رقم الضمان الاجتماعي</th><td>${d.ass}</td></tr>
+                <tr><th>الرتبة</th><td>${getJob(d.gr)}</td></tr>
+                <tr><th>مكان العمل</th><td>${d.schoolName}</td></tr>
+                <tr><th>الدائرة / البلدية</th><td>${d.daaira} / ${d.baladiya}</td></tr>
+                <tr><th>رقم الهاتف</th><td style="text-align: right;"><span dir="ltr">${d.phone}</span></td></tr>
+                <tr><th>رقم التعريف الوطني (NIN)</th><td>${d.nin}</td></tr>
+            </table>
+
+            <div class="auth-box">
+              <div class="auth-title">✅ مصادقة المعلومات:</div>
+              <div class="auth-details">
+                <span>اسم المؤكد: <b>${d.confirmed_by || '---'}</b></span>
+                <span style="border-left: 2px solid #ccc; margin: 0 10px;"></span>
+                <span>رقم الهاتف: <b dir="ltr">${d.reviewer_phone || '---'}</b></span>
+              </div>
+            </div>
+
+            <div class="signature-section">
+              <div class="signature-box"><strong>إمضاء المعني</strong><small>أصرح بصحة المعلومات</small></div>
+              <div class="signature-box"><strong>إمضاء وختم الإدارة</strong><small>مصادق عليه</small></div>
+            </div>
+        </div>
+        `;
+    });
+
+    printContainer.innerHTML = bulkContent;
+    window.print();
+    setTimeout(() => {
+        printContainer.innerHTML = originalContent;
+    }, 1000);
+}
+
+// 6. وظيفة الطباعة للجدول (معدلة: إخفاء غير المؤكدين + تكبير الجدول)
+function printCurrentTable(schoolName) {
+    const data = window.currentListContext;
+    if (!data || data.length === 0) return;
+
+    // 1. الفلترة: استبعاد غير المؤكدين
+    const confirmedOnly = data.filter(d => d.confirmed === true || String(d.confirmed).toLowerCase() === "true");
+
+    if (confirmedOnly.length === 0) {
+        return Swal.fire("تنبيه", "لا توجد قائمة مؤكدة للطباعة", "warning");
+    }
+
+    // الحصول على التواريخ والبيانات
+    const dateObj = new Date();
+    const currentYear = dateObj.getFullYear();
+    const dateStr = dateObj.toLocaleDateString('ar-DZ'); 
+    const baladiya = (confirmedOnly[0] && confirmedOnly[0].baladiya) ? confirmedOnly[0].baladiya : "................";
+
+    // بناء صفوف الجدول (باستخدام القائمة المفلترة)
+    let rowsHtml = '';
+    confirmedOnly.forEach((emp, index) => {
+        rowsHtml += `
+            <tr>
+                <td style="text-align:center;">${index + 1}</td>
+                <td style="text-align:center;">${emp.nin || ''}</td>
+                <td>${emp.fmn}</td>
+                <td>${emp.frn}</td>
+                <td style="text-align:center;">${fmtDate(emp.diz)}</td>
+                <td>${getJob(emp.gr)}</td>
+                <td></td> </tr>
+        `;
+    });
+
+    // تصميم الصفحة (A4 Landscape)
+    const printContent = `
+        <style>
+            @page { 
+                size: A4 landscape; /* اتجاه أفقي */
+                margin: 10mm; 
+            }
+            body { 
+                font-family: 'Amiri', 'Traditional Arabic', serif; 
+                direction: rtl; 
+                -webkit-print-color-adjust: exact; 
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse; 
+                margin-top: 10px;
+            }
+            th, td {
+                border: 1px solid #000; 
+                padding: 8px 5px; /* تكبير الحشو */
+                white-space: nowrap; 
+                font-size: 14px; /* تكبير الخط */
+            }
+            th {
+                background-color: #f0f0f0;
+                font-weight: bold;
+                text-align: center;
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+            /* تنسيق العناوين لتملأ الصفحة */
+            .header-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 30px;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            .title-box {
+                text-align: center;
+                margin: 20px 0;
+            }
+            .title-box h2 {
+                text-decoration: underline;
+                font-size: 24px;
+                margin: 10px 0;
+            }
+        </style>
+
+        <div class="print-page">
+            
+            <div style="text-align: center; font-weight: bold; font-size: 18px; margin-bottom: 35px; line-height: 1.6;">
+                <div>الجمهورية الجزائرية الديمقراطية الشعبية</div>
+                <div>وزارة التربية الوطنية</div>
+            </div>
+
+            <div style="text-align: right; font-size: 15px; font-weight: bold; margin-bottom: 15px;">
+                <div style="margin-bottom: 5px;">مديرية التربية لولاية توقرت</div>
+                <div style="margin-bottom: 5px;">المؤسسة: ${schoolName}</div>
+                <div>الرقم: ....... / ${currentYear}</div>
+            </div>
+
+            <div class="title-box">
+                <h2>قائمة موظفي المؤسسة</h2>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">الرقم</th>
+                        <th style="width: 15%;">رقم التعريف الوطني</th>
+                        <th style="width: 15%;">اللقب</th>
+                        <th style="width: 15%;">الاسم</th>
+                        <th style="width: 10%;">تاريخ الميلاد</th>
+                        <th style="width: 25%;">الرتبة</th>
+                        <th style="width: 15%;">الملاحظة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <div style="margin-top: 40px; display: flex; justify-content: flex-end; padding-left: 50px;">
+                <div style="text-align: left; font-weight: bold; font-size: 16px;">
+                    <p style="margin-bottom: 15px;">حرر بـ : ${baladiya}     في: ${dateStr}</p>
+                    <p>المدير(ة):</p>
+                </div>
+            </div>
+
+        </div>
+    `;
+
+    // عملية الطباعة
+    const printContainer = document.getElementById("printContainer");
+    const originalContent = printContainer.innerHTML;
+    
+    printContainer.innerHTML = printContent;
+    window.print();
+
+    setTimeout(() => {
+        printContainer.innerHTML = originalContent;
+    }, 1000);
+}
+
+// 7. تصدير إلى Excel
+function exportTableToExcel(tableId, filename = 'export') {
+    const table = document.getElementById(tableId);
+    let html = table.outerHTML;
+
+    // إصلاح الترميز العربي
+    const blob = new Blob(['\ufeff', html], {
+        type: "application/vnd.ms-excel;charset=utf-8"
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename + ".xls";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+
+
