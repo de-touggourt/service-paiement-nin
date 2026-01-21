@@ -17,6 +17,136 @@ const db = getFirestore(app);
 
 // --- الكود المخفي (HTML) ---
 const SECURE_DASHBOARD_HTML = `
+  <style>
+    /* --- تنسيقات شريط الفلترة المحسن --- */
+    .filter-bar-container {
+        display: flex;
+        gap: 15px;
+        align-items: flex-end; /* محاذاة العناصر للأسفل لتتناسق مع Labels */
+        background: #fff;
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        border: 1px solid #f1f3f5;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 130px; /* ضمان حجم مناسب في الشاشات الصغيرة */
+    }
+    
+    .filter-group label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        font-family: 'Cairo', sans-serif;
+        font-size: 13px;
+        color: #333;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        appearance: none; /* إزالة السهم الافتراضي للمتصفح (اختياري) */
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: left 10px center;
+        background-size: 16px;
+        padding-left: 30px;
+    }
+
+    .filter-select:focus {
+        border-color: #4361ee;
+        background-color: #fff;
+        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+        outline: none;
+    }
+
+    /* --- تنسيق عداد النتائج --- */
+    .result-counter-wrapper {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding-bottom: 2px;
+    }
+
+    .result-counter {
+        background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        color: #fff;
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 14px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        height: 42px; /* نفس ارتفاع الـ Inputs تقريباً */
+    }
+
+    /* --- تحسين تنسيق الجدول --- */
+    #dataTable {
+        width: 100%;
+        border-collapse: separate; 
+        border-spacing: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    #dataTable thead tr {
+        background-color: #212529; /* لون داكن قوي */
+        color: #ffffff;
+        text-align: right;
+    }
+
+    #dataTable thead th {
+        padding: 16px 15px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border-bottom: 4px solid #ffca2c; /* لمسة لونية صفراء مميزة */
+        white-space: nowrap;
+    }
+
+    #dataTable tbody tr {
+        transition: background-color 0.2s;
+        border-bottom: 1px solid #f1f1f1;
+        background: #fff;
+    }
+
+    #dataTable tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.002); /* تأثير تكبير بسيط جداً */
+    }
+    
+    #dataTable td {
+        padding: 14px 15px;
+        border-bottom: 1px solid #e9ecef;
+        vertical-align: middle;
+        color: #495057;
+    }
+    
+    /* تنسيق خاص للأزرار داخل الجدول */
+    .actions-cell {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+    }
+  </style>
+
   <div class="dashboard-container" style="display:block;">
     <div class="header-area">
       <div style="display:flex; align-items:center; gap:15px;">
@@ -46,81 +176,90 @@ const SECURE_DASHBOARD_HTML = `
       </div>
     </div>
 
-    <div class="controls-bar">
+    <div class="controls-bar" style="margin-bottom:10px;">
       <div style="position:relative; flex-grow:1;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
         <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
       </div>
 
-      <select id="statusFilter" class="filter-select" onchange="window.applyFilters()">
+      <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="max-width:180px;">
         <option value="all">عرض الجميع</option>
         <option value="confirmed">✅ المؤكدة فقط</option>
         <option value="pending">⏳ الغير مؤكدة فقط</option>
       </select>
 
-    <button class="btn btn-add" onclick="window.openDirectRegister()">
-    تسجيل جديد <i class="fas fa-plus"></i>
-    </button>
-
-    <button class="btn btn-refresh" onclick="window.loadData()">
-        تحديث <i class="fas fa-sync-alt"></i>
-      </button>
-
-    <button class="btn btn-firebase" onclick="window.openFirebaseModal()">
-      إضافة موظف <i class="fas fa-database"></i>
-      </button>
-      
-      <button class="btn btn-excel" onclick="window.downloadExcel()">
-        تحميل Excel <i class="fas fa-file-excel"></i>
-      </button>
-
-    <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">
-      قائمة الغير مؤكدة <i class="fas fa-clipboard-list"></i>
-    </button>
-    
-    <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">
-      تقرير التسجيل <i class="fas fa-clipboard-list"></i>
-    </button>
-
-<button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">
-  طباعة الاستمارات <i class="fas fa-print"></i>
-</button>
-
+      <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد <i class="fas fa-plus"></i></button>
+      <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
+      <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة موظف <i class="fas fa-database"></i></button>
+      <button class="btn btn-excel" onclick="window.downloadExcel()">Excel <i class="fas fa-file-excel"></i></button>
+      <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة <i class="fas fa-clipboard-list"></i></button>
+      <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل <i class="fas fa-clipboard-list"></i></button>
+      <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات <i class="fas fa-print"></i></button>
     </div>
 
-    <div style="margin: 0 0 15px 0; display:flex; gap:10px; align-items:center; background:#fff; padding:15px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <span style="font-weight:bold; color:#495057; font-size:14px; min-width:80px;"><i class="fas fa-filter"></i> فرز حسب:</span>
+    <div class="filter-bar-container">
+        <div style="width:100%; font-size:14px; color:#2b2d42; margin-bottom:5px; font-weight:bold; display:flex; align-items:center; gap:5px;">
+            <i class="fas fa-filter" style="color:#4361ee;"></i> فرز متقدم للبيانات:
+        </div>
+
+        <div class="filter-group">
+            <label>الطور</label>
+            <select id="filter_level" class="filter-select" onchange="window.updateFilterSchools()">
+                <option value="">-- كل الأطوار --</option>
+                <option value="ابتدائي">ابتدائي</option>
+                <option value="متوسط">متوسط</option>
+                <option value="ثانوي">ثانوي</option>
+                <option value="مديرية التربية">مديرية التربية</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>الدائرة</label>
+            <select id="filter_daaira" class="filter-select" onchange="window.updateFilterBaladiya()">
+                <option value="">-- كل الدوائر --</option>
+                <option value="توقرت">توقرت</option>
+                <option value="تماسين">تماسين</option>
+                <option value="المقارين">المقارين</option>
+                <option value="الحجيرة">الحجيرة</option>
+                <option value="الطيبات">الطيبات</option>
+            </select>
+        </div>
         
-        <select id="filter_daaira" class="filter-select" style="flex:1;" onchange="window.updateFilterBaladiya()">
-            <option value="">-- كل الدوائر --</option>
-            <option value="توقرت">توقرت</option>
-            <option value="تماسين">تماسين</option>
-            <option value="المقارين">المقارين</option>
-            <option value="الحجيرة">الحجيرة</option>
-            <option value="الطيبات">الطيبات</option>
-        </select>
+        <div class="filter-group">
+            <label>البلدية</label>
+            <select id="filter_baladiya" class="filter-select" onchange="window.updateFilterSchools()">
+                <option value="">-- كل البلديات --</option>
+            </select>
+        </div>
         
-        <select id="filter_baladiya" class="filter-select" style="flex:1;" onchange="window.updateFilterSchools()">
-            <option value="">-- كل البلديات --</option>
-        </select>
-        
-        <select id="filter_school" class="filter-select" style="flex:2;" onchange="window.applyFilters()">
-            <option value="">-- كل المؤسسات --</option>
-        </select>
+        <div class="filter-group" style="flex: 1.5;">
+            <label>المؤسسة</label>
+            <select id="filter_school" class="filter-select" onchange="window.applyFilters()">
+                <option value="">-- كل المؤسسات --</option>
+            </select>
+        </div>
+
+        <div class="result-counter-wrapper">
+            <div class="result-counter" id="filterCounterWrapper">
+                <i class="fas fa-list-ol"></i>
+                <span id="filterCount">0</span>
+            </div>
+        </div>
     </div>
+
     <div class="table-container">
       <div class="table-responsive">
         <table id="dataTable">
           <thead>
             <tr>
-              <th>CCP</th>
-              <th>الاسم واللقب</th>
-              <th>الرتبة / الوظيفة</th>
-              <th>مكان العمل</th>
-              <th>رقم الهاتف</th>
-              <th>الحالة</th>
-              <th>آخر تحديث</th>
-              <th>إجراءات</th>
+              <th width="10%">CCP</th>
+              <th width="18%">الاسم واللقب</th>
+              <th width="15%">الرتبة / الوظيفة</th>
+              <th width="20%">مكان العمل</th>
+              <th width="12%">رقم الهاتف</th>
+              <th width="10%">الحالة</th>
+              <th width="10%">آخر تحديث</th>
+              <th width="5%">إجراءات</th>
             </tr>
           </thead>
           <tbody id="tableBody">
@@ -305,43 +444,85 @@ window.updateFilterBaladiya = function() {
 };
 
 window.updateFilterSchools = function() {
-    const d = document.getElementById("filter_daaira").value;
-    const b = document.getElementById("filter_baladiya").value;
+    // 1. جلب القيم الحالية
+    const fLevel = document.getElementById("filter_level").value;
+    const fDaaira = document.getElementById("filter_daaira").value;
+    const fBaladiya = document.getElementById("filter_baladiya").value;
     const s = document.getElementById("filter_school");
     
     s.innerHTML = '<option value="">-- كل المؤسسات --</option>';
     
     let schoolsList = [];
 
-    // 1. إضافة المدارس الابتدائية حسب البلدية المختارة
-    if (b && primarySchoolsByBaladiya[b]) {
-        schoolsList = schoolsList.concat(primarySchoolsByBaladiya[b]);
-    }
+    // 2. منطق جلب المدارس بناءً على الطور والموقع
     
-    // 2. إضافة المتوسطات والثانويات حسب الدائرة المختارة
-    if (d && institutionsByDaaira[d]) {
-        if(institutionsByDaaira[d]["متوسط"]) {
-            schoolsList = schoolsList.concat(institutionsByDaaira[d]["متوسط"]);
+    // أ) الطور الابتدائي (مرتبط بالبلدية)
+    if (fLevel === "" || fLevel === "ابتدائي") {
+        // إذا تم تحديد بلدية، نأتي بمدارسها فقط
+        if (fBaladiya && primarySchoolsByBaladiya[fBaladiya]) {
+            schoolsList = schoolsList.concat(primarySchoolsByBaladiya[fBaladiya]);
+        } 
+        // إذا لم تحدد بلدية ولكن حددت دائرة، نأتي ببلديات الدائرة ثم مدارسهم
+        else if (!fBaladiya && fDaaira && baladiyaMap[fDaaira]) {
+            baladiyaMap[fDaaira].forEach(bal => {
+                if(primarySchoolsByBaladiya[bal]) {
+                    schoolsList = schoolsList.concat(primarySchoolsByBaladiya[bal]);
+                }
+            });
         }
-        if(institutionsByDaaira[d]["ثانوي"]) {
-            schoolsList = schoolsList.concat(institutionsByDaaira[d]["ثانوي"]);
+        // إذا لم يحدد شيء، يمكن جلب الكل (اختياري)
+        else if (fLevel === "ابتدائي" && !fDaaira && !fBaladiya) {
+            // في حالة اختيار "ابتدائي" فقط بدون مكان، نجمع كل الابتدائيات
+            Object.values(primarySchoolsByBaladiya).forEach(arr => {
+                schoolsList = schoolsList.concat(arr);
+            });
         }
     }
-    
-    // إضافة "مديرية التربية" كخيار دائم
-    let dirOption = document.createElement("option");
-    dirOption.text = "مديرية التربية";
-    dirOption.value = "مديرية التربية";
-    s.add(dirOption);
 
-    // ملء القائمة
-    schoolsList.forEach(sch => {
+    // ب) الطور المتوسط والثانوي (مرتبط بالدائرة)
+    if (fLevel === "" || fLevel === "متوسط" || fLevel === "ثانوي") {
+        const levelsToGet = (fLevel === "") ? ["متوسط", "ثانوي"] : [fLevel];
+        
+        // إذا حددت دائرة
+        if (fDaaira && institutionsByDaaira[fDaaira]) {
+            levelsToGet.forEach(lvl => {
+                if (institutionsByDaaira[fDaaira][lvl]) {
+                    schoolsList = schoolsList.concat(institutionsByDaaira[fDaaira][lvl]);
+                }
+            });
+        }
+        // إذا لم تحدد دائرة ولكن حددت الطور (نجلب كل مدارس الولاية لهذا الطور)
+        else if (!fDaaira && fLevel !== "") {
+            Object.values(institutionsByDaaira).forEach(daairaObj => {
+                levelsToGet.forEach(lvl => {
+                    if (daairaObj[lvl]) schoolsList = schoolsList.concat(daairaObj[lvl]);
+                });
+            });
+        }
+    }
+    
+    // ج) مديرية التربية
+    if (fLevel === "" || fLevel === "مديرية التربية") {
+         let dirOption = { name: "مديرية التربية" };
+         // إضافة المديرية فقط إذا كنا في توقرت أو لم نحدد دائرة
+         if (!fDaaira || fDaaira === "توقرت") {
+             schoolsList.push(dirOption);
+         }
+    }
+
+    // 3. إزالة التكرار (إن وجد) وترتيب القائمة
+    const uniqueSchools = [...new Map(schoolsList.map(item => [item.name, item])).values()];
+    uniqueSchools.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+    // 4. ملء القائمة
+    uniqueSchools.forEach(sch => {
         let op = document.createElement("option");
         op.text = sch.name;
         op.value = sch.name;
         s.add(op);
     });
 
+    // تطبيق الفلتر فوراً عند تغيير القوائم
     window.applyFilters();
 };
 
@@ -349,10 +530,11 @@ window.applyFilters = function() {
     const query = document.getElementById("searchInput").value.toLowerCase();
     const statusFilter = document.getElementById("statusFilter").value;
 
-    // ✅ جلب قيم الفلترة المتقدمة
-    const fDaaira = document.getElementById("filter_daaira") ? document.getElementById("filter_daaira").value : "";
-    const fBaladiya = document.getElementById("filter_baladiya") ? document.getElementById("filter_baladiya").value : "";
-    const fSchool = document.getElementById("filter_school") ? document.getElementById("filter_school").value : "";
+    // ✅ جلب قيم الفلترة المتقدمة (بما في ذلك الطور الجديد)
+    const fLevel = document.getElementById("filter_level").value;
+    const fDaaira = document.getElementById("filter_daaira").value;
+    const fBaladiya = document.getElementById("filter_baladiya").value;
+    const fSchool = document.getElementById("filter_school").value;
 
     filteredData = allData.filter(row => {
         // 1. البحث النصي
@@ -374,13 +556,29 @@ window.applyFilters = function() {
             matchesStatus = !isConfirmed;
         }
 
-        // 3. ✅ الفلاتر المتقدمة (الدائرة، البلدية، المؤسسة)
+        // 3. ✅ الفلاتر المتقدمة (شاملة الطور)
+        let matchesLevel = fLevel === "" || row.level === fLevel;
         let matchesDaaira = fDaaira === "" || row.daaira === fDaaira;
         let matchesBaladiya = fBaladiya === "" || row.baladiya === fBaladiya;
         let matchesSchool = fSchool === "" || row.schoolName === fSchool;
 
-        return matchesSearch && matchesStatus && matchesDaaira && matchesBaladiya && matchesSchool;
+        return matchesSearch && matchesStatus && matchesLevel && matchesDaaira && matchesBaladiya && matchesSchool;
     });
+
+    // ✅ تحديث عداد النتائج في الواجهة
+    const countEl = document.getElementById("filterCount");
+    if(countEl) {
+        countEl.innerText = filteredData.length;
+        // تغيير لون الخلفية إذا كان العدد 0 للتنبيه
+        const wrapper = document.getElementById("filterCounterWrapper");
+        if(filteredData.length === 0) {
+            wrapper.style.background = "#e63946";
+            wrapper.style.color = "#fff";
+        } else {
+            wrapper.style.background = "linear-gradient(135deg, #4361ee, #3a0ca3)";
+            wrapper.style.color = "#fff";
+        }
+    }
 
     currentPage = 1;
     window.renderCurrentPage();
