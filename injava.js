@@ -1102,7 +1102,7 @@ function openAdminModal() {
           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
       </div>
       <div style="font-size: 12px;font-weight: bold; color: #FF0000;">
-        *  ملاحظة: الموظف الغير مؤكدة معلوماته لايظهر في قائمة الموظفين والاستمارات إلا بعد تأكيد المعلومات
+        *  ملاحظة: الموظف الغير مؤكدة معلوماته لايظهر في قائمة الموظفين والإستمارات إلا بعد تأكيد المعلومات
       </div>
     </div>
   `;
@@ -1411,7 +1411,7 @@ function generateEmployeesTable(data, schoolName) {
                 </button>
             </div>
             <div style="font-size: 14px;font-weight: bold; color: #FF0000;">
-        *  ملاحظة: يمكنك الضغط على الموظف الغير مؤكد لعرض بياناته و تاكيده من خلال القائمة.
+        *  ملاحظة: يمكنك الضغط على الموظف الغير مؤكدة بياناته و تأكيدها من خلال قائمة الموظفين.
       </div>
         </div>
 
@@ -1694,6 +1694,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
