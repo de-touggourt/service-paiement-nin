@@ -1102,9 +1102,6 @@ function openAdminModal() {
           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
       </div>
       
-      <div style="font-size: 12px; color: #888;">
-        * النظام سيقوم بضبط الأصفار تلقائياً لتطابق قاعدة البيانات
-      </div>
     </div>
   `;
 
@@ -1198,7 +1195,7 @@ function showRestrictedAdminPanel(empData) {
     <div style="font-family: 'Cairo', sans-serif; direction: rtl; text-align: right;">
       
       <div style="background: linear-gradient(45deg, #2575fc, #6a11cb); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <div style="font-size: 12px; opacity: 0.9;">مرحباً بالسيد(ة) المدير(ة):</div>
+        <div style="font-size: 12px; opacity: 0.9;">مرحباً بالسيد(ة) المدير(ة) أو المسؤول(ة):</div>
         <div style="font-size: 18px; font-weight: bold; margin-top: 5px;">${directorName}</div>
       </div>
 
@@ -1692,6 +1689,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
