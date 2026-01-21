@@ -82,6 +82,10 @@ const SECURE_DASHBOARD_HTML = `
       تقرير التسجيل <i class="fas fa-clipboard-list"></i>
     </button>
 
+<button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">
+  طباعة الاستمارات <i class="fas fa-print"></i>
+</button>
+
     </div>
 
 
@@ -1654,4 +1658,325 @@ window.exportNonRegisteredExcel = function() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+};
+
+// ==========================================
+// 🖨️ نظام الطباعة المجمعة (Batch Print)
+// ==========================================
+
+// 1. فتح نافذة خيارات الطباعة
+window.openBatchPrintModal = function() {
+    let daairaOptions = '<option value="">-- الجميع --</option>';
+    ["توقرت", "تماسين", "المقارين", "الحجيرة", "الطيبات"].forEach(d => {
+        daairaOptions += `<option value="${d}">${d}</option>`;
+    });
+
+    Swal.fire({
+        title: '<strong>طباعة الاستمارات المجمعة</strong>',
+        html: `
+            <div style="text-align: right; font-size: 14px; padding: 10px;">
+                <div class="edit-form-group" style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">1. اختر الدائرة (اختياري)</label>
+                    <select id="print_daaira" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                        ${daairaOptions}
+                    </select>
+                </div>
+                
+                <div class="edit-form-group" style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">2. اختر البلدية (اختياري)</label>
+                    <select id="print_baladiya" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                        <option value="">-- الجميع --</option>
+                    </select>
+                </div>
+
+                <div class="edit-form-group" style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">3. اختر الطور (اختياري)</label>
+                    <select id="print_level" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                        <option value="">-- الجميع --</option>
+                        <option value="ابتدائي">ابتدائي</option>
+                        <option value="متوسط">متوسط</option>
+                        <option value="ثانوي">ثانوي</option>
+                        <option value="مديرية التربية">مديرية التربية</option>
+                    </select>
+                </div>
+
+                <div class="edit-form-group" style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">4. اختر المؤسسة (اتركه فارغاً لطباعة الكل)</label>
+                    <select id="print_school" class="filter-select" style="width:100%; padding:8px;">
+                        <option value="">-- كل المؤسسات (مع فواصل) --</option>
+                    </select>
+                </div>
+                
+                <div style="background:#e3f2fd; padding:10px; border-radius:5px; font-size:12px; color:#0d47a1;">
+                    <i class="fas fa-info-circle"></i> ملاحظة: إذا لم تختر مؤسسة محددة، سيتم طباعة جميع موظفي المؤسسات المفلترة (حسب الدائرة/البلدية) مع وضع ورقة فاصلة باسم كل مؤسسة.
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'بدء الطباعة <i class="fas fa-print"></i>',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#0d6efd',
+        width: '600px',
+        preConfirm: () => {
+            return {
+                daaira: document.getElementById('print_daaira').value,
+                baladiya: document.getElementById('print_baladiya').value,
+                level: document.getElementById('print_level').value,
+                school: document.getElementById('print_school').value
+            };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.executeBatchPrint(result.value);
+        }
+    });
+};
+
+// 2. تحديث القوائم المنسدلة داخل نافذة الطباعة (مستقلة عن نافذة التعديل)
+window.updatePrintFilters = function() {
+    const d = document.getElementById("print_daaira").value;
+    const bSelect = document.getElementById("print_baladiya");
+    const l = document.getElementById("print_level").value;
+    const sSelect = document.getElementById("print_school");
+
+    // تحديث البلديات إذا تغيرت الدائرة
+    if (d && baladiyaMap[d]) {
+        // حفظ القيمة الحالية إذا كانت موجودة
+        const currentBaladiya = bSelect.value;
+        bSelect.innerHTML = '<option value="">-- الجميع --</option>';
+        baladiyaMap[d].forEach(bal => {
+            bSelect.add(new Option(bal, bal));
+        });
+        // إعادة تحديد البلدية إذا كانت لا تزال صالحة
+        if ([...bSelect.options].some(o => o.value === currentBaladiya)) {
+            bSelect.value = currentBaladiya;
+        }
+    } else if (!d) {
+        bSelect.innerHTML = '<option value="">-- الجميع --</option>';
+    }
+
+    const b = bSelect.value;
+
+    // تحديث المؤسسات
+    sSelect.innerHTML = '<option value="">-- كل المؤسسات (مع فواصل) --</option>';
+    
+    // منطق جلب المؤسسات (نفس المنطق القديم لكن مجمع)
+    let schools = [];
+
+    if (l === "مديرية التربية") {
+        schools = [{name: "مديرية التربية"}];
+    } else if (l === "ابتدائي" && b && primarySchoolsByBaladiya[b]) {
+        schools = primarySchoolsByBaladiya[b];
+    } else if ((l === "متوسط" || l === "ثانوي") && d && institutionsByDaaira[d] && institutionsByDaaira[d][l]) {
+        schools = institutionsByDaaira[d][l];
+    } else {
+        // حالة خاصة: إذا لم يحدد الطور بدقة، نحاول جلب المتاح حسب الدائرة/البلدية
+        // هذه خطوة إضافية لتحسين التجربة (يمكن تجاهلها إذا أردت الالتزام بالصرامة)
+    }
+
+    schools.forEach(sch => {
+        sSelect.add(new Option(sch.name, sch.name));
+    });
+};
+
+// 3. تنفيذ الطباعة وبناء HTML
+window.executeBatchPrint = function(filters) {
+    // 1. تصفية البيانات حسب اختيارات المستخدم
+    let printData = allData.filter(row => {
+        const matchDaaira = !filters.daaira || row.daaira === filters.daaira;
+        const matchBaladiya = !filters.baladiya || row.baladiya === filters.baladiya;
+        const matchLevel = !filters.level || row.level === filters.level;
+        const matchSchool = !filters.school || row.schoolName === filters.school;
+        return matchDaaira && matchBaladiya && matchLevel && matchSchool;
+    });
+
+    if (printData.length === 0) {
+        Swal.fire('تنبيه', 'لا توجد بيانات مطابقة للخيارات المحددة', 'warning');
+        return;
+    }
+
+    // 2. تجميع البيانات حسب المؤسسة
+    // Group By School Name
+    const groupedData = printData.reduce((acc, curr) => {
+        const school = curr.schoolName || "غير محدد";
+        if (!acc[school]) acc[school] = [];
+        acc[school].push(curr);
+        return acc;
+    }, {});
+
+    // ترتيب أسماء المؤسسات أبجدياً
+    const sortedSchools = Object.keys(groupedData).sort();
+
+    // 3. بناء محتوى الطباعة
+    let printContentHTML = '';
+    const printDate = new Date().toLocaleDateString('ar-DZ');
+
+    sortedSchools.forEach((schoolName, index) => {
+        const employees = groupedData[schoolName];
+        
+        // أ) إضافة صفحة فاصلة (Cover Page) للمؤسسة
+        // تظهر فقط إذا كنا نطبع أكثر من مؤسسة (أي لم يحدد المستخدم مؤسسة واحدة)
+        // أو يمكن إظهارها دائماً كغلاف
+        if (!filters.school) {
+            printContentHTML += `
+                <div class="school-separator-page">
+                    <div class="separator-content">
+                        <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
+                        <h2>مديرية التربية لولاية توقرت</h2>
+                        <div style="margin: 50px 0; font-size: 80px; color: #333;">🏫</div>
+                        <h1 style="font-size: 32px; margin: 20px 0; border: 3px solid #000; padding: 20px;">${schoolName}</h1>
+                        <h3>عدد الموظفين: ${employees.length}</h3>
+                        <p>تاريخ الاستخراج: ${printDate}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ب) إضافة استمارات الموظفين
+        employees.forEach(emp => {
+            printContentHTML += window.generateSingleFormHTML(emp);
+        });
+    });
+
+    // 4. فتح نافذة الطباعة
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html lang="ar" dir="rtl">
+        <head>
+            <title>طباعة مجمعة - ${printDate}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+            <style>
+                /* إعدادات الصفحة العامة */
+                @page { size: A4; margin: 0; }
+                body { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; background: #eee; }
+                
+                /* تنسيق الصفحة الفاصلة (غلاف المؤسسة) */
+                .school-separator-page {
+                    width: 210mm;
+                    height: 296mm; /* A4 كاملة */
+                    background: white;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    page-break-after: always; /* دائماً صفحة جديدة بعدها */
+                    page-break-before: always;
+                }
+                .separator-content { border: 5px double #000; padding: 50px; width: 80%; }
+
+                /* تنسيق الاستمارة (نسخة طبق الأصل من printForm) */
+                .form-page-container {
+                    width: 210mm;
+                    min-height: 296mm;
+                    background: white;
+                    padding: 10mm 15mm;
+                    margin: 0 auto;
+                    box-sizing: border-box;
+                    page-break-after: always; /* كل استمارة في صفحة */
+                    position: relative;
+                }
+
+                /* --- CSS القديم للاستمارة --- */
+                .print-official-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; padding-bottom: 10px; border-bottom: 3px double #000; }
+                .print-logo-img { width: 100px; height: auto; object-fit: contain; }
+                .print-titles-official { text-align: center; flex-grow: 1; }
+                .print-titles-official h3 { margin: 2px 0; font-size: 14px; font-weight: 700; color: #000; }
+                .print-form-title-box { border: 2px solid #000; border-radius: 6px; padding: 5px; margin: 10px 0 15px 0; text-align: center; background-color: #f9f9f9 !important; -webkit-print-color-adjust: exact; }
+                .print-main-title { margin: 0; font-size: 18px; font-weight: 800; color: #000; text-decoration: underline; text-underline-offset: 4px; }
+                .print-date { margin-top: 5px; font-size: 11px; font-weight: 600; }
+                .data-table { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 13px; border: 2px solid #000; }
+                .data-table th { background-color: #eee !important; -webkit-print-color-adjust: exact; padding: 5px 8px; border: 1px solid #000; width: 35%; text-align: right; font-weight: 800; }
+                .data-table td { padding: 5px 8px; border: 1px solid #000; font-weight: 600; color: #000; text-align: right; }
+                .auth-box { border: 2px solid #000; padding: 8px; margin: 15px 0; background-color: #fff !important; font-size: 13px; text-align: center; }
+                .auth-title { display: block; font-weight: 800; margin-bottom: 5px; font-size: 14px; }
+                .auth-details { display: flex; justify-content: center; gap: 20px; }
+                .signature-section { margin-top: 30px; display: flex; justify-content: space-between; padding: 0 20px; }
+                .signature-box { text-align: center; border: 1px dashed #000; padding: 10px; width: 200px; height: 100px; }
+                .signature-box strong { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 800; }
+                .signature-box small { display: block; font-size: 11px; font-weight: 600; }
+
+                /* إخفاء العناصر غير المرغوبة عند الطباعة */
+                @media print {
+                    body { background: white; }
+                    .no-print { display: none !important; }
+                    .form-page-container, .school-separator-page { margin: 0; width: 100%; height: 100%; border: none; }
+                }
+                
+                .print-btn-float { position: fixed; bottom: 20px; left: 20px; background: #333; color: white; padding: 15px 30px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            </style>
+        </head>
+        <body>
+            <button class="print-btn-float no-print" onclick="window.print()">🖨️ طباعة الكل (${printData.length} موظف)</button>
+            ${printContentHTML}
+            <script>
+                // تأخير بسيط لضمان تحميل الصور (إن وجدت)
+                window.onload = function() { setTimeout(function() { window.print(); }, 1000); }
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+};
+
+// 4. دالة مساعدة لتوليد HTML الاستمارة الواحدة (بدون فتح نافذة)
+window.generateSingleFormHTML = function(d) {
+    const printDate = new Date().toLocaleDateString('ar-DZ');
+    const birthDate = d.diz ? window.fmtDate(d.diz) : "---";
+    const confirmerName = d.confirmed_by || "---";
+    const confirmerPhone = d.reviewer_phone || "---";
+    const jobTitle = d.job || d.gr || "---";
+
+    return `
+    <div class="form-page-container">
+        <div class="print-official-header">
+            <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" alt="شعار" class="print-logo-img">
+            <div class="print-titles-official">
+                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                <h3>وزارة التربية الوطنية</h3>
+                <h3>مديرية التربية لولاية توقرت</h3>
+                <h3>مصلحة تسيير نفقات المستخدمين</h3>
+            </div>
+            <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" alt="شعار" class="print-logo-img">
+        </div>
+
+        <div class="print-form-title-box">
+            <h2 class="print-main-title">استمارة معلومات الموظف</h2>
+            <div class="print-date">تاريخ الاستخراج: <span>${printDate}</span></div>
+        </div>
+
+        <table class="data-table">
+            <tr><th>اللقب</th><td>${d.fmn}</td></tr>
+            <tr><th>الاسم</th><td>${d.frn}</td></tr>
+            <tr><th>تاريخ الميلاد</th><td>${birthDate}</td></tr>
+            <tr><th>رقم الحساب البريدي (CCP)</th><td>${d.ccp}</td></tr>
+            <tr><th>رقم الضمان الاجتماعي</th><td>${d.ass}</td></tr>
+            <tr><th>الرتبة / الوظيفة</th><td>${jobTitle}</td></tr>
+            <tr><th>مكان العمل</th><td>${d.schoolName || ''}</td></tr>
+            <tr><th>الدائرة / البلدية</th><td>${d.daaira || ''} / ${d.baladiya || ''}</td></tr>
+            <tr><th>رقم الهاتف</th><td style="text-align: right;"><span dir="ltr">${d.phone}</span></td></tr>
+            <tr><th>رقم التعريف الوطني (NIN)</th><td>${d.nin || ''}</td></tr>
+        </table>
+
+        <div class="auth-box">
+            <div class="auth-title">✅ مصادقة المعلومات:</div>
+            <div class="auth-details">
+                <span>اسم المؤكد: <span style="font-weight:bold;">${confirmerName}</span></span>
+                <span style="border-left: 2px solid #ccc; margin: 0 10px;"></span>
+                <span>رقم الهاتف: <span dir="ltr" style="font-weight:bold;">${confirmerPhone}</span></span>
+            </div>
+        </div>
+
+        <div class="signature-section">
+            <div class="signature-box">
+                <strong>إمضاء المعني</strong>
+                <small>أصرح بصحة المعلومات</small>
+            </div>
+            <div class="signature-box">
+                <strong>إمضاء وختم الإدارة</strong>
+                <small>مصادق عليه</small>
+            </div>
+        </div>
+    </div>
+    `;
 };
