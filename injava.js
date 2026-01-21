@@ -1410,13 +1410,16 @@ function generateEmployeesTable(data, schoolName) {
                     <i class="fas fa-file-excel"></i> تحميل Excel
                 </button>
             </div>
+            <div style="font-size: 14px;font-weight: bold; color: #FF0000;">
+        *  ملاحظة: يمكنك الضغط على الموظف الغير مؤكد لعرض بياناته و تاكيده من خلال القائمة.
+      </div>
         </div>
 
         <div style="overflow-x:auto; overflow-y:auto; max-height:65vh; border-radius: 6px; border: 1px solid #ddd;">
             <table id="empTable" class="modern-table">
                 <thead>
                     <tr>
-                        <th width="5%">#</th>
+                        <th width="5%">الرقم</th>
                         <th width="15%">رقم التعريف</th>
                         <th width="15%">اللقب</th>
                         <th width="15%">الاسم</th>
@@ -1691,6 +1694,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
