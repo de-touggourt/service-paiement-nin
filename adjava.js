@@ -1781,7 +1781,7 @@ window.updatePrintFilters = function() {
 
 // 3. تنفيذ الطباعة وبناء HTML
 window.executeBatchPrint = function(filters) {
-    // 1. تصفية البيانات حسب اختيارات المستخدم
+    // 1. تصفية البيانات
     let printData = allData.filter(row => {
         const matchDaaira = !filters.daaira || row.daaira === filters.daaira;
         const matchBaladiya = !filters.baladiya || row.baladiya === filters.baladiya;
@@ -1796,7 +1796,6 @@ window.executeBatchPrint = function(filters) {
     }
 
     // 2. تجميع البيانات حسب المؤسسة
-    // Group By School Name
     const groupedData = printData.reduce((acc, curr) => {
         const school = curr.schoolName || "غير محدد";
         if (!acc[school]) acc[school] = [];
@@ -1804,41 +1803,86 @@ window.executeBatchPrint = function(filters) {
         return acc;
     }, {});
 
-    // ترتيب أسماء المؤسسات أبجدياً
     const sortedSchools = Object.keys(groupedData).sort();
-
-    // 3. بناء محتوى الطباعة
-    let printContentHTML = '';
     const printDate = new Date().toLocaleDateString('ar-DZ');
+    let printContentHTML = '';
 
-    sortedSchools.forEach((schoolName, index) => {
+    // 3. بناء المحتوى
+    sortedSchools.forEach((schoolName) => {
         const employees = groupedData[schoolName];
         
-        // أ) إضافة صفحة فاصلة (Cover Page) للمؤسسة
-        // تظهر فقط إذا كنا نطبع أكثر من مؤسسة (أي لم يحدد المستخدم مؤسسة واحدة)
-        // أو يمكن إظهارها دائماً كغلاف
-        if (!filters.school) {
-            printContentHTML += `
-                <div class="school-separator-page">
-                    <div class="separator-content">
-                        <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
-                        <h2>مديرية التربية لولاية توقرت</h2>
-                        <div style="margin: 50px 0; font-size: 80px; color: #333;">🏫</div>
-                        <h1 style="font-size: 32px; margin: 20px 0; border: 3px solid #000; padding: 20px;">${schoolName}</h1>
-                        <h3>عدد الموظفين: ${employees.length}</h3>
-                        <p>تاريخ الاستخراج: ${printDate}</p>
-                    </div>
+        // --- حساب الإحصائيات ---
+        const total = employees.length;
+        const confirmedList = employees.filter(e => String(e.confirmed).toLowerCase() === "true");
+        const unconfirmedList = employees.filter(e => String(e.confirmed).toLowerCase() !== "true");
+        
+        const confirmedCount = confirmedList.length;
+        const unconfirmedCount = unconfirmedList.length;
+
+        // --- تجهيز قائمة أسماء غير المؤكدين ---
+        let unconfirmedNamesHTML = '';
+        if (unconfirmedCount > 0) {
+            unconfirmedNamesHTML = `
+                <div class="unconfirmed-box">
+                    <div class="unconfirmed-title">⚠️ قائمة الموظفين غير المؤكدين (${unconfirmedCount})</div>
+                    <ul class="unconfirmed-list">
+                        ${unconfirmedList.map(e => `<li>▪ ${e.fmn} ${e.frn} (${e.job || 'بدون وظيفة'})</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        } else {
+            unconfirmedNamesHTML = `
+                <div class="all-confirmed-msg">
+                    ✅ جميع موظفي المؤسسة مؤكدين
                 </div>
             `;
         }
 
-        // ب) إضافة استمارات الموظفين
+        // --- (أ) الصفحة الفاصلة (محدثة) ---
+        // تظهر دائماً كغلاف للمؤسسة
+        printContentHTML += `
+            <div class="school-separator-page">
+                <div class="separator-border">
+                    <div class="header-section">
+                        <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
+                        <h2>مديرية التربية لولاية توقرت</h2>
+                    </div>
+                    
+                    <div class="school-name-box">
+                        <h1>${schoolName}</h1>
+                    </div>
+
+                    <div class="stats-container">
+                        <div class="stat-item total">
+                            <span class="stat-label">الإجمالي</span>
+                            <span class="stat-val">${total}</span>
+                        </div>
+                        <div class="stat-item confirmed">
+                            <span class="stat-label">المؤكدة</span>
+                            <span class="stat-val">${confirmedCount}</span>
+                        </div>
+                        <div class="stat-item pending">
+                            <span class="stat-label">غير المؤكدة</span>
+                            <span class="stat-val">${unconfirmedCount}</span>
+                        </div>
+                    </div>
+
+                    ${unconfirmedNamesHTML}
+
+                    <div class="footer-section">
+                        <p>تاريخ الاستخراج: ${printDate}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // --- (ب) استمارات الموظفين ---
         employees.forEach(emp => {
             printContentHTML += window.generateSingleFormHTML(emp);
         });
     });
 
-    // 4. فتح نافذة الطباعة
+    // 4. نافذة الطباعة (CSS محدث لضمان التوسط)
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html lang="ar" dir="rtl">
@@ -1846,38 +1890,129 @@ window.executeBatchPrint = function(filters) {
             <title>طباعة مجمعة - ${printDate}</title>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
             <style>
-                /* إعدادات الصفحة العامة */
                 @page { size: A4; margin: 0; }
                 body { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; background: #eee; }
                 
-                /* تنسيق الصفحة الفاصلة (غلاف المؤسسة) */
+                /* تنسيق الصفحة الفاصلة لضمان التوسط في كل الصفحات */
                 .school-separator-page {
                     width: 210mm;
-                    height: 296mm; /* A4 كاملة */
+                    height: 296mm; /* ارتفاع A4 كامل */
                     background: white;
+                    position: relative;
+                    display: flex;
+                    justify-content: center; /* توسيط أفقي */
+                    align-items: center;     /* توسيط عمودي */
+                    page-break-after: always;
+                    overflow: hidden;
+                    box-sizing: border-box;
+                    margin: 0 auto; /* ضمان التوسط في المعاينة */
+                }
+
+                .separator-border {
+                    width: 90%;
+                    height: 90%;
+                    border: 5px double #333;
+                    padding: 20px;
+                    text-align: center;
                     display: flex;
                     flex-direction: column;
-                    justify-content: center;
+                    justify-content: flex-start; /* المحتوى يبدأ من الأعلى */
                     align-items: center;
-                    text-align: center;
-                    page-break-after: always; /* دائماً صفحة جديدة بعدها */
-                    page-break-before: always;
+                    box-sizing: border-box;
                 }
-                .separator-content { border: 5px double #000; padding: 50px; width: 80%; }
 
-                /* تنسيق الاستمارة (نسخة طبق الأصل من printForm) */
+                .header-section h1, .header-section h2 { margin: 5px 0; color: #555; font-size: 16px; }
+                
+                .school-name-box {
+                    margin: 30px 0 20px 0;
+                    padding: 20px;
+                    border: 2px solid #000;
+                    background-color: #f8f9fa;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                .school-name-box h1 { font-size: 28px; font-weight: 800; margin: 0; }
+
+                /* تنسيق الإحصائيات */
+                .stats-container {
+                    display: flex;
+                    justify-content: center;
+                    gap: 15px;
+                    width: 100%;
+                    margin-bottom: 25px;
+                }
+                .stat-item {
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    border-radius: 8px;
+                    width: 30%;
+                    text-align: center;
+                }
+                .stat-label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+                .stat-val { display: block; font-size: 24px; font-weight: 800; }
+                
+                .stat-item.total { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
+                .stat-item.confirmed { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+                .stat-item.pending { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
+
+                /* تنسيق قائمة غير المؤكدين */
+                .unconfirmed-box {
+                    width: 100%;
+                    border: 2px dashed #d9534f;
+                    background-color: #fffdfd;
+                    border-radius: 8px;
+                    padding: 10px;
+                    text-align: right;
+                    flex-grow: 1; /* يأخذ المساحة المتبقية */
+                    overflow: hidden;
+                }
+                .unconfirmed-title {
+                    font-weight: bold; color: #d9534f; border-bottom: 1px solid #eee; 
+                    padding-bottom: 5px; margin-bottom: 10px; text-align: center;
+                }
+                .unconfirmed-list {
+                    list-style: none; padding: 0; margin: 0;
+                    column-count: 2; /* تقسيم الأسماء لعمودين */
+                    column-gap: 20px;
+                    font-size: 13px;
+                }
+                .unconfirmed-list li { margin-bottom: 5px; border-bottom: 1px solid #f0f0f0; }
+
+                .all-confirmed-msg {
+                    margin-top: 50px;
+                    padding: 20px;
+                    font-size: 20px;
+                    color: #28a745;
+                    font-weight: bold;
+                    border: 2px solid #28a745;
+                    border-radius: 10px;
+                }
+
+                .footer-section { margin-top: auto; font-size: 12px; color: #777; }
+
+                /* استمارة الموظف العادية */
                 .form-page-container {
                     width: 210mm;
-                    min-height: 296mm;
+                    height: 296mm;
                     background: white;
                     padding: 10mm 15mm;
                     margin: 0 auto;
                     box-sizing: border-box;
-                    page-break-after: always; /* كل استمارة في صفحة */
-                    position: relative;
+                    page-break-after: always;
                 }
 
-                /* --- CSS القديم للاستمارة --- */
+                @media print {
+                    body { background: white; }
+                    .no-print { display: none !important; }
+                    /* إجبار المتصفح على احترام الأبعاد */
+                    .school-separator-page, .form-page-container { 
+                        width: 210mm; height: 296mm; 
+                        page-break-after: always;
+                    }
+                }
+                .print-btn-float { position: fixed; bottom: 20px; left: 20px; background: #333; color: white; padding: 15px 30px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; font-size: 16px; z-index: 999; }
+                
+                /* بقية تنسيقات الاستمارة القديمة (ضرورية للعرض) */
                 .print-official-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; padding-bottom: 10px; border-bottom: 3px double #000; }
                 .print-logo-img { width: 100px; height: auto; object-fit: contain; }
                 .print-titles-official { text-align: center; flex-grow: 1; }
@@ -1895,22 +2030,12 @@ window.executeBatchPrint = function(filters) {
                 .signature-box { text-align: center; border: 1px dashed #000; padding: 10px; width: 200px; height: 100px; }
                 .signature-box strong { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 800; }
                 .signature-box small { display: block; font-size: 11px; font-weight: 600; }
-
-                /* إخفاء العناصر غير المرغوبة عند الطباعة */
-                @media print {
-                    body { background: white; }
-                    .no-print { display: none !important; }
-                    .form-page-container, .school-separator-page { margin: 0; width: 100%; height: 100%; border: none; }
-                }
-                
-                .print-btn-float { position: fixed; bottom: 20px; left: 20px; background: #333; color: white; padding: 15px 30px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
             </style>
         </head>
         <body>
-            <button class="print-btn-float no-print" onclick="window.print()">🖨️ طباعة الكل (${printData.length} موظف)</button>
+            <button class="print-btn-float no-print" onclick="window.print()">🖨️ طباعة الكل</button>
             ${printContentHTML}
             <script>
-                // تأخير بسيط لضمان تحميل الصور (إن وجدت)
                 window.onload = function() { setTimeout(function() { window.print(); }, 1000); }
             </script>
         </body>
