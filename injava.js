@@ -1,5 +1,3 @@
-// الحماية الأولية عند التحميل
-if (window.REGISTRATION_LOCKED) return;
 
 // ============================================================
 // كود استقبال الإشارة السرية (postMessage)
@@ -1694,6 +1692,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
