@@ -50,10 +50,10 @@ const SECURE_DASHBOARD_HTML = `
 
     <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
       
-      <div style="position:relative; width: 80px;">
+       <div style="position:relative; flex-grow:1;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
-        <input type="text" id="searchInput" class="search-input" style="padding-right:40px; width:100%;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
-    </div>
+        <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
+      </div>
 
       <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
         <option value="all">عرض الكل</option>
@@ -2200,6 +2200,7 @@ window.updateDashMaps = function() {
         fSchool.add(op);
     });
 };
+
 
 
 
