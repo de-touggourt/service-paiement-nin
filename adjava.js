@@ -17,6 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // --- الكود المخفي (HTML) ---
+// --- الكود المخفي (HTML) ---
 const SECURE_DASHBOARD_HTML = `
   <div class="dashboard-container" style="display:block;">
     <div class="header-area">
@@ -47,22 +48,43 @@ const SECURE_DASHBOARD_HTML = `
       </div>
     </div>
 
-    <div class="controls-bar" style="flex-wrap: wrap; gap: 5px;">
-      <div style="position:relative; flex-grow:1; min-width: 200px;">
+    <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
+      
+      <div style="position:relative; flex-grow:1; min-width: 250px;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
-        <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
+        <input type="text" id="searchInput" class="search-input" style="padding-right:40px; width:100%;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
       </div>
 
-      <select id="filter_level" class="filter-select" onchange="window.updateDashMaps(); window.applyFilters()">
-        <option value="">-- كل الأطوار --</option>
+      <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
+        <option value="all">عرض الكل</option>
+        <option value="confirmed">✅ المؤكدة</option>
+        <option value="pending">⏳ الانتظار</option>
+      </select>
+
+      <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل <i class="fas fa-plus"></i></button>
+      <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
+      <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة <i class="fas fa-database"></i></button>
+      <button class="btn btn-excel" onclick="window.downloadExcel()">Excel <i class="fas fa-file-excel"></i></button>
+      <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">الغير مؤكدة <i class="fas fa-clipboard-list"></i></button>
+      <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">التقرير <i class="fas fa-clipboard-list"></i></button>
+      <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة <i class="fas fa-print"></i></button>
+    </div>
+
+    <div style="background-color:#f1f3f5; padding:12px; border-radius:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; border:1px solid #dee2e6;">
+      <div style="font-weight:bold; color:#495057; font-size:14px; margin-left:10px;">
+        <i class="fas fa-map-marker-alt" style="color:#d63384;"></i> تصفية حسب الموقع:
+      </div>
+
+      <select id="filter_level" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps(); window.applyFilters()">
+        <option value="">-- الطور --</option>
         <option value="ابتدائي">ابتدائي</option>
         <option value="متوسط">متوسط</option>
         <option value="ثانوي">ثانوي</option>
         <option value="مديرية التربية">مديرية التربية</option>
       </select>
 
-      <select id="filter_daaira" class="filter-select" onchange="window.updateDashMaps(); window.applyFilters()">
-        <option value="">-- كل الدوائر --</option>
+      <select id="filter_daaira" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps(); window.applyFilters()">
+        <option value="">-- الدائرة --</option>
         <option value="توقرت">توقرت</option>
         <option value="تماسين">تماسين</option>
         <option value="المقارين">المقارين</option>
@@ -70,50 +92,19 @@ const SECURE_DASHBOARD_HTML = `
         <option value="الطيبات">الطيبات</option>
       </select>
 
-      <select id="filter_baladiya" class="filter-select" onchange="window.updateDashMaps(); window.applyFilters()">
-        <option value="">-- كل البلديات --</option>
+      <select id="filter_baladiya" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps(); window.applyFilters()">
+        <option value="">-- البلدية --</option>
       </select>
 
-      <select id="filter_school" class="filter-select" style="max-width: 150px;" onchange="window.applyFilters()">
-        <option value="">-- كل المؤسسات --</option>
+      <select id="filter_school" class="filter-select" style="flex:2; min-width:200px;" onchange="window.applyFilters()">
+        <option value="">-- المؤسسة --</option>
       </select>
-
-      <select id="statusFilter" class="filter-select" onchange="window.applyFilters()">
-        <option value="all">الكل</option>
-        <option value="confirmed">✅ المؤكدة</option>
-        <option value="pending">⏳ الانتظار</option>
-      </select>
-
-    <button class="btn btn-add" onclick="window.openDirectRegister()">
-    تسجيل جديد <i class="fas fa-plus"></i>
-    </button>
-
-    <button class="btn btn-refresh" onclick="window.loadData()">
-        تحديث <i class="fas fa-sync-alt"></i>
-      </button>
-
-    <button class="btn btn-firebase" onclick="window.openFirebaseModal()">
-      إضافة موظف <i class="fas fa-database"></i>
-      </button>
       
-      <button class="btn btn-excel" onclick="window.downloadExcel()">
-        تحميل Excel <i class="fas fa-file-excel"></i>
+      <button onclick="document.getElementById('filter_level').value=''; document.getElementById('filter_daaira').value=''; window.updateDashMaps(); window.applyFilters();" 
+              style="border:none; background:transparent; color:#e63946; font-weight:bold; cursor:pointer;" title="إلغاء الفلاتر">
+         <i class="fas fa-times"></i> مسح
       </button>
-
-    <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">
-      قائمة الغير مؤكدة <i class="fas fa-clipboard-list"></i>
-    </button>
-    
-    <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">
-      تقرير التسجيل <i class="fas fa-clipboard-list"></i>
-    </button>
-
-<button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">
-  طباعة الاستمارات <i class="fas fa-print"></i>
-</button>
-
     </div>
-
 
     <div class="table-container">
       <div class="table-responsive">
@@ -136,7 +127,7 @@ const SECURE_DASHBOARD_HTML = `
         </table>
       </div>
       
-     <div class="pagination-container" id="paginationControls" style="display:flex;">
+      <div class="pagination-container" id="paginationControls" style="display:flex;">
         <button class="page-btn" id="prevBtn" onclick="window.changePage(-1)">السابق</button>
         <span class="page-info" id="pageInfo">صفحة 1 من 1</span>
         <button class="page-btn" id="nextBtn" onclick="window.changePage(1)">التالي</button>
@@ -2209,5 +2200,6 @@ window.updateDashMaps = function() {
         fSchool.add(op);
     });
 };
+
 
 
