@@ -1699,8 +1699,12 @@ window.exportNonRegisteredExcel = function() {
 // ==========================================
 
 // 1. فتح نافذة خيارات الطباعة
+// ==========================================
+// 🖨️ 1. نافذة خيارات الطباعة (بتصميم جديد ومنطق ذكي)
+// ==========================================
 window.openBatchPrintModal = function() {
-    let daairaOptions = '<option value="">-- الجميع --</option>';
+    // إعداد قائمة الدوائر الافتراضية
+    let daairaOptions = '<option value="">-- اختر الدائرة --</option>';
     ["توقرت", "تماسين", "المقارين", "الحجيرة", "الطيبات"].forEach(d => {
         daairaOptions += `<option value="${d}">${d}</option>`;
     });
@@ -1709,24 +1713,11 @@ window.openBatchPrintModal = function() {
         title: '<strong>طباعة الاستمارات المجمعة</strong>',
         html: `
             <div style="text-align: right; font-size: 14px; padding: 10px;">
-                <div class="edit-form-group" style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">1. اختر الدائرة (اختياري)</label>
-                    <select id="print_daaira" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
-                        ${daairaOptions}
-                    </select>
-                </div>
                 
                 <div class="edit-form-group" style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">2. اختر البلدية (اختياري)</label>
-                    <select id="print_baladiya" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
-                        <option value="">-- الجميع --</option>
-                    </select>
-                </div>
-
-                <div class="edit-form-group" style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">3. اختر الطور (اختياري)</label>
+                    <label style="display:block; margin-bottom:5px; font-weight:bold; color:#d63384;">1. اختر الطور (إجباري للفلترة الذكية)</label>
                     <select id="print_level" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
-                        <option value="">-- الجميع --</option>
+                        <option value="">-- اختر الطور --</option>
                         <option value="ابتدائي">ابتدائي</option>
                         <option value="متوسط">متوسط</option>
                         <option value="ثانوي">ثانوي</option>
@@ -1735,14 +1726,28 @@ window.openBatchPrintModal = function() {
                 </div>
 
                 <div class="edit-form-group" style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">4. اختر المؤسسة (اتركه فارغاً لطباعة الكل)</label>
-                    <select id="print_school" class="filter-select" style="width:100%; padding:8px;">
-                        <option value="">-- كل المؤسسات (مع فواصل) --</option>
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">2. الدائرة</label>
+                    <select id="print_daaira" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                        ${daairaOptions}
                     </select>
                 </div>
                 
-                <div style="background:#e3f2fd; padding:10px; border-radius:5px; font-size:12px; color:#0d47a1;">
-                    <i class="fas fa-info-circle"></i> ملاحظة: إذا لم تختر مؤسسة محددة، سيتم طباعة جميع موظفي المؤسسات المفلترة (حسب الدائرة/البلدية) مع وضع ورقة فاصلة باسم كل مؤسسة.
+                <div class="edit-form-group" style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">3. البلدية</label>
+                    <select id="print_baladiya" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                        <option value="">-- اختر البلدية --</option>
+                    </select>
+                </div>
+
+                <div class="edit-form-group" style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">4. المؤسسة (اتركه فارغاً لطباعة الكل)</label>
+                    <select id="print_school" class="filter-select" style="width:100%; padding:8px;">
+                        <option value="">-- كل المؤسسات --</option>
+                    </select>
+                </div>
+                
+                <div style="background:#e3f2fd; padding:10px; border-radius:5px; font-size:12px; color:#0d47a1; margin-top:10px;">
+                    <i class="fas fa-info-circle"></i> ملاحظة: عند اختيار "مديرية التربية"، سيتم تحديد الموقع والمؤسسة تلقائياً.
                 </div>
             </div>
         `,
@@ -1767,49 +1772,77 @@ window.openBatchPrintModal = function() {
 };
 
 // 2. تحديث القوائم المنسدلة داخل نافذة الطباعة (مستقلة عن نافذة التعديل)
+// ==========================================
+// 🖨️ 2. دالة تحديث فلاتر الطباعة (الأصلية + المنطق الجديد)
+// ==========================================
 window.updatePrintFilters = function() {
-    const d = document.getElementById("print_daaira").value;
-    const bSelect = document.getElementById("print_baladiya");
-    const l = document.getElementById("print_level").value;
-    const sSelect = document.getElementById("print_school");
+    // تعريف العناصر
+    const pLevel = document.getElementById("print_level").value;
+    const pDaaira = document.getElementById("print_daaira");
+    const pBaladiya = document.getElementById("print_baladiya");
+    const pSchool = document.getElementById("print_school");
 
-    // تحديث البلديات إذا تغيرت الدائرة
-    if (d && baladiyaMap[d]) {
-        // حفظ القيمة الحالية إذا كانت موجودة
-        const currentBaladiya = bSelect.value;
-        bSelect.innerHTML = '<option value="">-- الجميع --</option>';
-        baladiyaMap[d].forEach(bal => {
-            bSelect.add(new Option(bal, bal));
-        });
-        // إعادة تحديد البلدية إذا كانت لا تزال صالحة
-        if ([...bSelect.options].some(o => o.value === currentBaladiya)) {
-            bSelect.value = currentBaladiya;
-        }
-    } else if (!d) {
-        bSelect.innerHTML = '<option value="">-- الجميع --</option>';
+    // ---------------------------------------------------------
+    // 🔴 بداية المنطق الجديد المضاف (خاص بمديرية التربية)
+    // ---------------------------------------------------------
+    if (pLevel === "مديرية التربية") {
+        // 1. تحديد الدائرة تلقائياً
+        pDaaira.value = "توقرت";
+        
+        // 2. تحديد البلدية تلقائياً (مسح القائمة وإضافة توقرت فقط)
+        pBaladiya.innerHTML = "";
+        pBaladiya.add(new Option("توقرت", "توقرت"));
+        pBaladiya.value = "توقرت";
+
+        // 3. تحديد المؤسسة تلقائياً (مسح القائمة وإضافة المديرية بالاسم الكامل)
+        pSchool.innerHTML = "";
+        pSchool.add(new Option("مديرية التربية لولاية توقرت", "مديرية التربية لولاية توقرت"));
+        pSchool.value = "مديرية التربية لولاية توقرت";
+        
+        return; // الخروج من الدالة لعدم تنفيذ الكود الأصلي في الأسفل
     }
+    // ---------------------------------------------------------
+    // 🔴 نهاية المنطق الجديد
+    // ---------------------------------------------------------
 
-    const b = bSelect.value;
 
-    // تحديث المؤسسات
-    sSelect.innerHTML = '<option value="">-- كل المؤسسات (مع فواصل) --</option>';
+    // =========================================================
+    // الكود الأصلي (لبقية الأطوار: ابتدائي، متوسط، ثانوي)
+    // =========================================================
+    const selectedDaaira = pDaaira.value;
+    const currentBaladiya = pBaladiya.value; // حفظ القيمة الحالية
+
+    // 1. تحديث قائمة البلديات بناءً على الدائرة
+    pBaladiya.innerHTML = '<option value="">-- اختر البلدية --</option>';
     
-    // منطق جلب المؤسسات (نفس المنطق القديم لكن مجمع)
-    let schools = [];
-
-    if (l === "مديرية التربية") {
-        schools = [{name: "مديرية التربية"}];
-    } else if (l === "ابتدائي" && b && primarySchoolsByBaladiya[b]) {
-        schools = primarySchoolsByBaladiya[b];
-    } else if ((l === "متوسط" || l === "ثانوي") && d && institutionsByDaaira[d] && institutionsByDaaira[d][l]) {
-        schools = institutionsByDaaira[d][l];
-    } else {
-        // حالة خاصة: إذا لم يحدد الطور بدقة، نحاول جلب المتاح حسب الدائرة/البلدية
-        // هذه خطوة إضافية لتحسين التجربة (يمكن تجاهلها إذا أردت الالتزام بالصرامة)
+    if (selectedDaaira && baladiyaMap[selectedDaaira]) {
+        baladiyaMap[selectedDaaira].forEach(bal => {
+            pBaladiya.add(new Option(bal, bal));
+        });
+        // محاولة استعادة القيمة المختارة سابقاً
+        pBaladiya.value = currentBaladiya;
+        if(pBaladiya.selectedIndex === -1) pBaladiya.value = "";
     }
 
-    schools.forEach(sch => {
-        sSelect.add(new Option(sch.name, sch.name));
+    // 2. تحديث قائمة المؤسسات بناءً على الطور والموقع
+    pSchool.innerHTML = '<option value="">-- كل المؤسسات --</option>';
+    let schoolsList = [];
+
+    if (pLevel === "ابتدائي") {
+        const selBal = pBaladiya.value;
+        if (selBal && primarySchoolsByBaladiya[selBal]) {
+            schoolsList = primarySchoolsByBaladiya[selBal];
+        }
+    } 
+    else if (pLevel === "متوسط" || pLevel === "ثانوي") {
+        if (selectedDaaira && institutionsByDaaira[selectedDaaira] && institutionsByDaaira[selectedDaaira][pLevel]) {
+            schoolsList = institutionsByDaaira[selectedDaaira][pLevel];
+        }
+    }
+
+    // ملء القائمة بالمدارس المتاحة
+    schoolsList.forEach(sch => {
+        pSchool.add(new Option(sch.name, sch.name));
     });
 };
 
@@ -2205,3 +2238,4 @@ window.updateDashMaps = function() {
         fSchool.add(op);
     });
 };
+
