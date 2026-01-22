@@ -1771,60 +1771,68 @@ window.openBatchPrintModal = function() {
     });
 };
 
-// 2. تحديث القوائم المنسدلة داخل نافذة الطباعة (مستقلة عن نافذة التعديل)
 // ==========================================
-// 🖨️ 2. دالة تحديث فلاتر الطباعة (الأصلية + المنطق الجديد)
+// 🖨️ 2. دالة تحديث فلاتر الطباعة (مع التصفير التلقائي)
 // ==========================================
-window.updatePrintFilters = function() {
-    // تعريف العناصر
+window.updatePrintFilters = function(source) { // source: 'level' أو 'daaira' أو 'baladiya'
     const pLevel = document.getElementById("print_level").value;
     const pDaaira = document.getElementById("print_daaira");
     const pBaladiya = document.getElementById("print_baladiya");
     const pSchool = document.getElementById("print_school");
 
-    // ---------------------------------------------------------
-    // 🔴 بداية المنطق الجديد المضاف (خاص بمديرية التربية)
-    // ---------------------------------------------------------
-    if (pLevel === "مديرية التربية") {
-        // 1. تحديد الدائرة تلقائياً
-        pDaaira.value = "توقرت";
-        
-        // 2. تحديد البلدية تلقائياً (مسح القائمة وإضافة توقرت فقط)
-        pBaladiya.innerHTML = "";
-        pBaladiya.add(new Option("توقرت", "توقرت"));
-        pBaladiya.value = "توقرت";
-
-        // 3. تحديد المؤسسة تلقائياً (مسح القائمة وإضافة المديرية بالاسم الكامل)
-        pSchool.innerHTML = "";
-        pSchool.add(new Option("مديرية التربية لولاية توقرت", "مديرية التربية لولاية توقرت"));
-        pSchool.value = "مديرية التربية لولاية توقرت";
-        
-        return; // الخروج من الدالة لعدم تنفيذ الكود الأصلي في الأسفل
+    // ----------------------------------------------------
+    // 🧹 منطق التصفير (Reset Logic)
+    // ----------------------------------------------------
+    
+    // إذا غيرنا الطور -> صفر الدائرة والبلدية والمؤسسة
+    if (source === 'level') {
+        if (pLevel !== "مديرية التربية") { 
+            pDaaira.value = "";
+            pBaladiya.innerHTML = '<option value="">-- اختر البلدية --</option>';
+            pSchool.innerHTML = '<option value="">-- كل المؤسسات --</option>';
+        }
     }
-    // ---------------------------------------------------------
-    // 🔴 نهاية المنطق الجديد
-    // ---------------------------------------------------------
+    // إذا غيرنا الدائرة -> صفر البلدية والمؤسسة
+    else if (source === 'daaira') {
+        pBaladiya.innerHTML = '<option value="">-- اختر البلدية --</option>';
+        pSchool.innerHTML = '<option value="">-- كل المؤسسات --</option>';
+    }
+    // إذا غيرنا البلدية -> صفر المؤسسة
+    else if (source === 'baladiya') {
+        pSchool.innerHTML = '<option value="">-- كل المؤسسات --</option>';
+    }
 
+    // ----------------------------------------------------
+    // 🏢 منطق مديرية التربية
+    // ----------------------------------------------------
+    if (pLevel === "مديرية التربية") {
+        pDaaira.value = "توقرت";
+        pBaladiya.innerHTML = ""; pBaladiya.add(new Option("توقرت", "توقرت")); pBaladiya.value = "توقرت";
+        pSchool.innerHTML = ""; pSchool.add(new Option("مديرية التربية لولاية توقرت", "مديرية التربية لولاية توقرت")); pSchool.value = "مديرية التربية لولاية توقرت";
+        return; 
+    }
 
-    // =========================================================
-    // الكود الأصلي (لبقية الأطوار: ابتدائي، متوسط، ثانوي)
-    // =========================================================
+    // ----------------------------------------------------
+    // 🔄 المنطق العادي (تحديث القوائم)
+    // ----------------------------------------------------
     const selectedDaaira = pDaaira.value;
-    const currentBaladiya = pBaladiya.value; // حفظ القيمة الحالية
+    const currentBaladiya = pBaladiya.value;
 
-    // 1. تحديث قائمة البلديات بناءً على الدائرة
+    // 1. تحديث قائمة البلديات
     pBaladiya.innerHTML = '<option value="">-- اختر البلدية --</option>';
     
     if (selectedDaaira && baladiyaMap[selectedDaaira]) {
         baladiyaMap[selectedDaaira].forEach(bal => {
             pBaladiya.add(new Option(bal, bal));
         });
-        // محاولة استعادة القيمة المختارة سابقاً
-        pBaladiya.value = currentBaladiya;
-        if(pBaladiya.selectedIndex === -1) pBaladiya.value = "";
+        
+        // هام: نسترجع القيمة السابقة فقط إذا لم نكن نحن من قام بتغيير الدائرة أو الطور
+        if (source !== 'daaira' && source !== 'level') {
+            pBaladiya.value = currentBaladiya;
+        }
     }
 
-    // 2. تحديث قائمة المؤسسات بناءً على الطور والموقع
+    // 2. تحديث قائمة المؤسسات
     pSchool.innerHTML = '<option value="">-- كل المؤسسات --</option>';
     let schoolsList = [];
 
@@ -1840,7 +1848,6 @@ window.updatePrintFilters = function() {
         }
     }
 
-    // ملء القائمة بالمدارس المتاحة
     schoolsList.forEach(sch => {
         pSchool.add(new Option(sch.name, sch.name));
     });
@@ -2174,47 +2181,74 @@ window.generateSingleFormHTML = function(d) {
 };
 
 // ==========================================
-// 🆕 دالة تحديث خرائط الفلترة (Cascasding Maps) - نسخة محدثة
+// 🆕 دالة تحديث خرائط الفلترة (مع التصفير الذكي)
 // ==========================================
-window.updateDashMaps = function() {
+window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'baladiya'
     const fLevel = document.getElementById("filter_level").value;
     const fDaaira = document.getElementById("filter_daaira");
     const fBaladiya = document.getElementById("filter_baladiya");
     const fSchool = document.getElementById("filter_school");
 
-    // 1. منطق خاص لمديرية التربية (تعبئة تلقائية بالاسم الكامل)
+    // ----------------------------------------------------
+    // 🧹 1. منطق التصفير (Reset Logic)
+    // ----------------------------------------------------
+    
+    // إذا تغير الطور -> صفر الدائرة (إلا إذا كانت مديرية)، صفر البلدية والمؤسسة
+    if (source === 'level') {
+        if (fLevel !== "مديرية التربية") {
+            fDaaira.value = ""; 
+            fBaladiya.innerHTML = '<option value="">-- البلدية --</option>';
+            fSchool.innerHTML = '<option value="">-- المؤسسة --</option>';
+        }
+    }
+    // إذا تغيرت الدائرة -> صفر البلدية والمؤسسة
+    else if (source === 'daaira') {
+        fBaladiya.innerHTML = '<option value="">-- البلدية --</option>';
+        fSchool.innerHTML = '<option value="">-- المؤسسة --</option>';
+    }
+    // إذا تغيرت البلدية -> صفر المؤسسة
+    else if (source === 'baladiya') {
+        fSchool.innerHTML = '<option value="">-- المؤسسة --</option>';
+    }
+
+    // ----------------------------------------------------
+    // 🏢 2. منطق مديرية التربية (تعبئة إجبارية)
+    // ----------------------------------------------------
     if (fLevel === "مديرية التربية") {
-        // نحدد الدائرة والبلدية تلقائياً
         fDaaira.value = "توقرت";
         
-        // تحديث قائمة البلديات يدوياً لتوقرت
-        fBaladiya.innerHTML = '<option value="توقرت">توقرت</option>';
+        fBaladiya.innerHTML = ""; 
+        fBaladiya.add(new Option("توقرت", "توقرت")); 
         fBaladiya.value = "توقرت";
 
-        // ✅ هنا التعديل: وضع الاسم الكامل للمديرية
-        fSchool.innerHTML = '<option value="مديرية التربية لولاية توقرت">مديرية التربية لولاية توقرت</option>';
+        fSchool.innerHTML = ""; 
+        fSchool.add(new Option("مديرية التربية لولاية توقرت", "مديرية التربية لولاية توقرت")); 
         fSchool.value = "مديرية التربية لولاية توقرت";
         
-        return; // نخرج من الدالة
+        return; 
     }
 
-    // 2. إذا لم تكن مديرية التربية، نكمل المنطق العادي
+    // ----------------------------------------------------
+    // 🔄 3. المنطق العادي لبقية الأطوار
+    // ----------------------------------------------------
     const selectedDaaira = fDaaira.value;
-    const currentBaladiya = fBaladiya.value; 
-    
-    // تحديث البلديات
+    const currentBaladiya = fBaladiya.value; // الحفاظ على القيمة إذا لم نكن نحن من صفرها
+
+    // أ) تحديث قائمة البلديات
     fBaladiya.innerHTML = '<option value="">-- البلدية --</option>';
+    
     if (selectedDaaira && baladiyaMap[selectedDaaira]) {
         baladiyaMap[selectedDaaira].forEach(bal => {
-            const op = document.createElement("option");
-            op.value = bal;
-            op.text = bal;
-            fBaladiya.add(op);
+            fBaladiya.add(new Option(bal, bal));
         });
-        fBaladiya.value = currentBaladiya; 
+        
+        // استرجاع القيمة فقط إذا لم نقم بتغيير الدائرة أو الطور للتو
+        if (source !== 'daaira' && source !== 'level') {
+            fBaladiya.value = currentBaladiya;
+        }
     }
 
-    // 3. تحديث قائمة المؤسسات
+    // ب) تحديث قائمة المؤسسات
     fSchool.innerHTML = '<option value="">-- المؤسسة --</option>';
     let schoolsList = [];
 
@@ -2232,10 +2266,7 @@ window.updateDashMaps = function() {
 
     // ملء القائمة
     schoolsList.forEach(sch => {
-        const op = document.createElement("option");
-        op.value = sch.name;
-        op.text = sch.name;
-        fSchool.add(op);
+        fSchool.add(new Option(sch.name, sch.name));
     });
 };
 
