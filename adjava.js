@@ -16,46 +16,41 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // --- الكود المخفي (HTML) ---
-const SECURE_DASHBOARD_HTML = `
-  <div class="dashboard-container" style="display:block;">
-    <div class="header-area">
-      <div style="display:flex; align-items:center; gap:15px;">
-        <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" width="70" style="border-radius:50%;">
-        <div>
-          <h1 class="page-title">لوحة تسيير ملفات موظفي مديرية التربية لولاية توقرت - مصلحة الرواتب</h1>
-          <p style="color:#6c757d; font-size:13px; margin-top:2px;">قاعدة بيانات تسيير نفقات المستخدمين 2026</p>
-        </div>
-      </div>
-      <button class="btn logout-btn" onclick="location.reload()">
-        خروج <i class="fas fa-sign-out-alt"></i>
-      </button>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card bg-blue">
-        <h3 id="totalCount">0</h3>
-        <p><i class="fas fa-users"></i> إجمالي المسجلين</p>
-      </div>
-      <div class="stat-card bg-green">
-        <h3 id="confirmedCount">0</h3>
-        <p><i class="fas fa-check-circle"></i> الملفات المؤكدة</p>
-      </div>
-      <div class="stat-card bg-orange">
-        <h3 id="pendingCount">0</h3>
-        <p><i class="fas fa-hourglass-half"></i> في انتظار التأكيد</p>
-      </div>
-    </div>
-
-    <div class="controls-bar">
-      <div style="position:relative; flex-grow:1;">
+<div class="controls-bar" style="flex-wrap: wrap; gap: 5px;">
+      <div style="position:relative; flex-grow:1; min-width: 200px;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
         <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
       </div>
 
+      <select id="filter_level" class="filter-select" onchange="window.updateDashMaps(); window.applyFilters()">
+        <option value="">-- كل الأطوار --</option>
+        <option value="ابتدائي">ابتدائي</option>
+        <option value="متوسط">متوسط</option>
+        <option value="ثانوي">ثانوي</option>
+        <option value="مديرية التربية">مديرية التربية</option>
+      </select>
+
+      <select id="filter_daaira" class="filter-select" onchange="window.updateDashMaps(); window.applyFilters()">
+        <option value="">-- كل الدوائر --</option>
+        <option value="توقرت">توقرت</option>
+        <option value="تماسين">تماسين</option>
+        <option value="المقارين">المقارين</option>
+        <option value="الحجيرة">الحجيرة</option>
+        <option value="الطيبات">الطيبات</option>
+      </select>
+
+      <select id="filter_baladiya" class="filter-select" onchange="window.updateDashMaps(); window.applyFilters()">
+        <option value="">-- كل البلديات --</option>
+      </select>
+
+      <select id="filter_school" class="filter-select" style="max-width: 150px;" onchange="window.applyFilters()">
+        <option value="">-- كل المؤسسات --</option>
+      </select>
+
       <select id="statusFilter" class="filter-select" onchange="window.applyFilters()">
-        <option value="all">عرض الجميع</option>
-        <option value="confirmed">✅ المؤكدة فقط</option>
-        <option value="pending">⏳ الغير مؤكدة فقط</option>
+        <option value="all">الكل</option>
+        <option value="confirmed">✅ المؤكدة</option>
+        <option value="pending">⏳ الانتظار</option>
       </select>
 
     <button class="btn btn-add" onclick="window.openDirectRegister()">
@@ -2104,4 +2099,50 @@ window.generateSingleFormHTML = function(d) {
         </div>
     </div>
     `;
+};
+
+window.applyFilters = function() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const statusFilter = document.getElementById("statusFilter").value;
+    
+    // جلب قيم الفلاتر الجديدة
+    const fLevel = document.getElementById("filter_level").value;
+    const fDaaira = document.getElementById("filter_daaira").value;
+    const fBaladiya = document.getElementById("filter_baladiya").value;
+    const fSchool = document.getElementById("filter_school").value;
+
+    filteredData = allData.filter(row => {
+        // 1. بحث النص
+        const matchesSearch = (
+            (row.fmn && row.fmn.includes(query)) ||
+            (row.frn && row.frn.includes(query)) ||
+            (row.ccp && String(row.ccp).includes(query)) ||
+            (row.phone && String(row.phone).replace(/\s/g,'').includes(query)) || 
+            (row.schoolName && row.schoolName.includes(query))
+        );
+
+        // 2. فلتر الحالة (مؤكد/غير مؤكد)
+        let matchesStatus = true;
+        const isConfirmed = String(row.confirmed).toLowerCase() === "true";
+        if (statusFilter === "confirmed") {
+            matchesStatus = isConfirmed;
+        } else if (statusFilter === "pending") {
+            matchesStatus = !isConfirmed;
+        }
+
+        // 3. 🆕 الفلاتر الجديدة (الطور، الدائرة، البلدية، المؤسسة)
+        // التحقق فقط إذا كان الفلتر له قيمة (ليس فارغاً)
+        const matchesLevel = fLevel === "" || row.level === fLevel;
+        const matchesDaaira = fDaaira === "" || row.daaira === fDaaira;
+        const matchesBaladiya = fBaladiya === "" || row.baladiya === fBaladiya;
+        const matchesSchool = fSchool === "" || row.schoolName === fSchool;
+
+        return matchesSearch && matchesStatus && matchesLevel && matchesDaaira && matchesBaladiya && matchesSchool;
+    });
+
+    currentPage = 1;
+    window.renderCurrentPage();
+    
+    // تحديث العدادات بناءً على الفلترة الحالية (اختياري - ليعرف المستخدم عدد النتائج المفلترة)
+    // window.updateStats(filteredData); // يمكنك تفعيل هذا السطر إذا أردت العدادات تتغير مع الفلتر
 };
