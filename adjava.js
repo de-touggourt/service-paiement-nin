@@ -75,7 +75,7 @@ const SECURE_DASHBOARD_HTML = `
         <i class="fas fa-map-marker-alt" style="color:#d63384;"></i> تصفية حسب:
       </div>
 
-      <select id="filter_level" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps(); window.applyFilters()">
+      <select id="filter_level" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps('level'); window.applyFilters()">
         <option value="">-- الطور --</option>
         <option value="ابتدائي">ابتدائي</option>
         <option value="متوسط">متوسط</option>
@@ -83,7 +83,7 @@ const SECURE_DASHBOARD_HTML = `
         <option value="مديرية التربية">مديرية التربية</option>
       </select>
 
-      <select id="filter_daaira" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps(); window.applyFilters()">
+      <select id="filter_daaira" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps('daaira'); window.applyFilters()">
         <option value="">-- الدائرة --</option>
         <option value="توقرت">توقرت</option>
         <option value="تماسين">تماسين</option>
@@ -92,7 +92,7 @@ const SECURE_DASHBOARD_HTML = `
         <option value="الطيبات">الطيبات</option>
       </select>
 
-      <select id="filter_baladiya" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps(); window.applyFilters()">
+      <select id="filter_baladiya" class="filter-select" style="flex:1; min-width:130px;" onchange="window.updateDashMaps('baladiya'); window.applyFilters()">
         <option value="">-- البلدية --</option>
       </select>
 
@@ -100,7 +100,7 @@ const SECURE_DASHBOARD_HTML = `
         <option value="">-- المؤسسة --</option>
       </select>
       
-      <button onclick="document.getElementById('filter_level').value=''; document.getElementById('filter_daaira').value=''; window.updateDashMaps(); window.applyFilters();" 
+      <button onclick="document.getElementById('filter_level').value=''; document.getElementById('filter_daaira').value=''; window.updateDashMaps('level'); window.applyFilters();" 
               style="border:none; background:transparent; color:#e63946; font-weight:bold; cursor:pointer;" title="إلغاء الفلاتر">
          <i class="fas fa-times"></i> مسح
       </button>
@@ -1703,7 +1703,6 @@ window.exportNonRegisteredExcel = function() {
 // 🖨️ 1. نافذة خيارات الطباعة (بتصميم جديد ومنطق ذكي)
 // ==========================================
 window.openBatchPrintModal = function() {
-    // إعداد قائمة الدوائر الافتراضية
     let daairaOptions = '<option value="">-- اختر الدائرة --</option>';
     ["توقرت", "تماسين", "المقارين", "الحجيرة", "الطيبات"].forEach(d => {
         daairaOptions += `<option value="${d}">${d}</option>`;
@@ -1716,7 +1715,7 @@ window.openBatchPrintModal = function() {
                 
                 <div class="edit-form-group" style="margin-bottom:15px;">
                     <label style="display:block; margin-bottom:5px; font-weight:bold; color:#d63384;">1. اختر الطور (إجباري للفلترة الذكية)</label>
-                    <select id="print_level" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                    <select id="print_level" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters('level')">
                         <option value="">-- اختر الطور --</option>
                         <option value="ابتدائي">ابتدائي</option>
                         <option value="متوسط">متوسط</option>
@@ -1727,14 +1726,14 @@ window.openBatchPrintModal = function() {
 
                 <div class="edit-form-group" style="margin-bottom:15px;">
                     <label style="display:block; margin-bottom:5px; font-weight:bold;">2. الدائرة</label>
-                    <select id="print_daaira" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                    <select id="print_daaira" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters('daaira')">
                         ${daairaOptions}
                     </select>
                 </div>
                 
                 <div class="edit-form-group" style="margin-bottom:15px;">
                     <label style="display:block; margin-bottom:5px; font-weight:bold;">3. البلدية</label>
-                    <select id="print_baladiya" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters()">
+                    <select id="print_baladiya" class="filter-select" style="width:100%; padding:8px;" onchange="window.updatePrintFilters('baladiya')">
                         <option value="">-- اختر البلدية --</option>
                     </select>
                 </div>
@@ -2269,4 +2268,5 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
         fSchool.add(new Option(sch.name, sch.name));
     });
 };
+
 
