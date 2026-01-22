@@ -2141,7 +2141,7 @@ window.generateSingleFormHTML = function(d) {
 };
 
 // ==========================================
-// 🆕 دالة تحديث خرائط الفلترة (Cascasding Maps) - نسخة ذكية
+// 🆕 دالة تحديث خرائط الفلترة (Cascasding Maps) - نسخة محدثة
 // ==========================================
 window.updateDashMaps = function() {
     const fLevel = document.getElementById("filter_level").value;
@@ -2149,20 +2149,20 @@ window.updateDashMaps = function() {
     const fBaladiya = document.getElementById("filter_baladiya");
     const fSchool = document.getElementById("filter_school");
 
-    // 1. منطق خاص لمديرية التربية (تعبئة تلقائية)
+    // 1. منطق خاص لمديرية التربية (تعبئة تلقائية بالاسم الكامل)
     if (fLevel === "مديرية التربية") {
-        // نحدد الدائرة والبلدية تلقائياً لأن مقر المديرية ثابت في توقرت
+        // نحدد الدائرة والبلدية تلقائياً
         fDaaira.value = "توقرت";
         
         // تحديث قائمة البلديات يدوياً لتوقرت
         fBaladiya.innerHTML = '<option value="توقرت">توقرت</option>';
         fBaladiya.value = "توقرت";
 
-        // وضع المديرية في قائمة المؤسسات
-        fSchool.innerHTML = '<option value="مديرية التربية">مديرية التربية</option>';
+        // ✅ هنا التعديل: وضع الاسم الكامل للمديرية
+        fSchool.innerHTML = '<option value="مديرية التربية لولاية توقرت">مديرية التربية لولاية توقرت</option>';
         fSchool.value = "مديرية التربية لولاية توقرت";
         
-        return; // نخرج من الدالة لأننا انتهينا
+        return; // نخرج من الدالة
     }
 
     // 2. إذا لم تكن مديرية التربية، نكمل المنطق العادي
