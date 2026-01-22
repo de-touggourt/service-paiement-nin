@@ -16,7 +16,37 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // --- الكود المخفي (HTML) ---
-<div class="controls-bar" style="flex-wrap: wrap; gap: 5px;">
+const SECURE_DASHBOARD_HTML = `
+  <div class="dashboard-container" style="display:block;">
+    <div class="header-area">
+      <div style="display:flex; align-items:center; gap:15px;">
+        <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" width="70" style="border-radius:50%;">
+        <div>
+          <h1 class="page-title">لوحة تسيير ملفات موظفي مديرية التربية لولاية توقرت - مصلحة الرواتب</h1>
+          <p style="color:#6c757d; font-size:13px; margin-top:2px;">قاعدة بيانات تسيير نفقات المستخدمين 2026</p>
+        </div>
+      </div>
+      <button class="btn logout-btn" onclick="location.reload()">
+        خروج <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card bg-blue">
+        <h3 id="totalCount">0</h3>
+        <p><i class="fas fa-users"></i> إجمالي المسجلين</p>
+      </div>
+      <div class="stat-card bg-green">
+        <h3 id="confirmedCount">0</h3>
+        <p><i class="fas fa-check-circle"></i> الملفات المؤكدة</p>
+      </div>
+      <div class="stat-card bg-orange">
+        <h3 id="pendingCount">0</h3>
+        <p><i class="fas fa-hourglass-half"></i> في انتظار التأكيد</p>
+      </div>
+    </div>
+
+    <div class="controls-bar" style="flex-wrap: wrap; gap: 5px;">
       <div style="position:relative; flex-grow:1; min-width: 200px;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
         <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
@@ -259,8 +289,15 @@ window.loadData = async function() {
 window.applyFilters = function() {
     const query = document.getElementById("searchInput").value.toLowerCase();
     const statusFilter = document.getElementById("statusFilter").value;
+    
+    // جلب قيم الفلاتر الجديدة
+    const fLevel = document.getElementById("filter_level").value;
+    const fDaaira = document.getElementById("filter_daaira").value;
+    const fBaladiya = document.getElementById("filter_baladiya").value;
+    const fSchool = document.getElementById("filter_school").value;
 
     filteredData = allData.filter(row => {
+        // 1. بحث النص
         const matchesSearch = (
             (row.fmn && row.fmn.includes(query)) ||
             (row.frn && row.frn.includes(query)) ||
@@ -269,20 +306,30 @@ window.applyFilters = function() {
             (row.schoolName && row.schoolName.includes(query))
         );
 
+        // 2. فلتر الحالة (مؤكد/غير مؤكد)
         let matchesStatus = true;
         const isConfirmed = String(row.confirmed).toLowerCase() === "true";
-
         if (statusFilter === "confirmed") {
             matchesStatus = isConfirmed;
         } else if (statusFilter === "pending") {
             matchesStatus = !isConfirmed;
         }
 
-        return matchesSearch && matchesStatus;
+        // 3. 🆕 الفلاتر الجديدة (الطور، الدائرة، البلدية، المؤسسة)
+        // التحقق فقط إذا كان الفلتر له قيمة (ليس فارغاً)
+        const matchesLevel = fLevel === "" || row.level === fLevel;
+        const matchesDaaira = fDaaira === "" || row.daaira === fDaaira;
+        const matchesBaladiya = fBaladiya === "" || row.baladiya === fBaladiya;
+        const matchesSchool = fSchool === "" || row.schoolName === fSchool;
+
+        return matchesSearch && matchesStatus && matchesLevel && matchesDaaira && matchesBaladiya && matchesSchool;
     });
 
     currentPage = 1;
     window.renderCurrentPage();
+    
+    // تحديث العدادات بناءً على الفلترة الحالية (اختياري - ليعرف المستخدم عدد النتائج المفلترة)
+    // window.updateStats(filteredData); // يمكنك تفعيل هذا السطر إذا أردت العدادات تتغير مع الفلتر
 };
 
 window.renderCurrentPage = function() {
@@ -2101,48 +2148,63 @@ window.generateSingleFormHTML = function(d) {
     `;
 };
 
-window.applyFilters = function() {
-    const query = document.getElementById("searchInput").value.toLowerCase();
-    const statusFilter = document.getElementById("statusFilter").value;
-    
-    // جلب قيم الفلاتر الجديدة
+// ==========================================
+// 🆕 دالة تحديث خرائط الفلترة في اللوحة
+// ==========================================
+window.updateDashMaps = function() {
     const fLevel = document.getElementById("filter_level").value;
-    const fDaaira = document.getElementById("filter_daaira").value;
-    const fBaladiya = document.getElementById("filter_baladiya").value;
-    const fSchool = document.getElementById("filter_school").value;
+    const fDaaira = document.getElementById("filter_daaira");
+    const fBaladiya = document.getElementById("filter_baladiya");
+    const fSchool = document.getElementById("filter_school");
 
-    filteredData = allData.filter(row => {
-        // 1. بحث النص
-        const matchesSearch = (
-            (row.fmn && row.fmn.includes(query)) ||
-            (row.frn && row.frn.includes(query)) ||
-            (row.ccp && String(row.ccp).includes(query)) ||
-            (row.phone && String(row.phone).replace(/\s/g,'').includes(query)) || 
-            (row.schoolName && row.schoolName.includes(query))
-        );
-
-        // 2. فلتر الحالة (مؤكد/غير مؤكد)
-        let matchesStatus = true;
-        const isConfirmed = String(row.confirmed).toLowerCase() === "true";
-        if (statusFilter === "confirmed") {
-            matchesStatus = isConfirmed;
-        } else if (statusFilter === "pending") {
-            matchesStatus = !isConfirmed;
-        }
-
-        // 3. 🆕 الفلاتر الجديدة (الطور، الدائرة، البلدية، المؤسسة)
-        // التحقق فقط إذا كان الفلتر له قيمة (ليس فارغاً)
-        const matchesLevel = fLevel === "" || row.level === fLevel;
-        const matchesDaaira = fDaaira === "" || row.daaira === fDaaira;
-        const matchesBaladiya = fBaladiya === "" || row.baladiya === fBaladiya;
-        const matchesSchool = fSchool === "" || row.schoolName === fSchool;
-
-        return matchesSearch && matchesStatus && matchesLevel && matchesDaaira && matchesBaladiya && matchesSchool;
-    });
-
-    currentPage = 1;
-    window.renderCurrentPage();
+    // 1. تحديث قائمة البلديات بناءً على الدائرة المختارة
+    const selectedDaaira = fDaaira.value;
+    const currentBaladiya = fBaladiya.value; // الحفاظ على الاختيار الحالي إذا أمكن
     
-    // تحديث العدادات بناءً على الفلترة الحالية (اختياري - ليعرف المستخدم عدد النتائج المفلترة)
-    // window.updateStats(filteredData); // يمكنك تفعيل هذا السطر إذا أردت العدادات تتغير مع الفلتر
+    fBaladiya.innerHTML = '<option value="">-- كل البلديات --</option>';
+    
+    if (selectedDaaira && baladiyaMap[selectedDaaira]) {
+        baladiyaMap[selectedDaaira].forEach(bal => {
+            const op = document.createElement("option");
+            op.value = bal;
+            op.text = bal;
+            fBaladiya.add(op);
+        });
+        fBaladiya.value = currentBaladiya; // محاولة إعادة تعيين القيمة السابقة
+        // إذا القيمة السابقة لم تعد موجودة في القائمة الجديدة، نصفرها
+        if (fBaladiya.selectedIndex === -1) fBaladiya.value = ""; 
+    } else if (!selectedDaaira) {
+        // إذا لم يتم اختيار دائرة، يمكننا عرض كل البلديات أو تركها فارغة (هنا نتركها فارغة للتبسيط)
+    }
+
+    // 2. تحديث قائمة المؤسسات بناءً على الطور والموقع
+    fSchool.innerHTML = '<option value="">-- كل المؤسسات --</option>';
+    
+    let schoolsList = [];
+
+    if (fLevel === "مديرية التربية") {
+        schoolsList = [{name: "مديرية التربية"}];
+        // يمكننا قفل الدائرة والبلدية أوتوماتيكياً إذا أردت، لكن سنتركها مفتوحة للمرونة
+    } 
+    else if (fLevel === "ابتدائي") {
+        // الابتدائي يعتمد على البلدية
+        const selBal = fBaladiya.value;
+        if (selBal && primarySchoolsByBaladiya[selBal]) {
+            schoolsList = primarySchoolsByBaladiya[selBal];
+        }
+    } 
+    else if (fLevel === "متوسط" || fLevel === "ثانوي") {
+        // المتوسط والثانوي يعتمد على الدائرة
+        if (selectedDaaira && institutionsByDaaira[selectedDaaira] && institutionsByDaaira[selectedDaaira][fLevel]) {
+            schoolsList = institutionsByDaaira[selectedDaaira][fLevel];
+        }
+    }
+
+    // ملء قائمة المدارس
+    schoolsList.forEach(sch => {
+        const op = document.createElement("option");
+        op.value = sch.name;
+        op.text = sch.name;
+        fSchool.add(op);
+    });
 };
