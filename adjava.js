@@ -2141,7 +2141,7 @@ window.generateSingleFormHTML = function(d) {
 };
 
 // ==========================================
-// 🆕 دالة تحديث خرائط الفلترة في اللوحة
+// 🆕 دالة تحديث خرائط الفلترة (Cascasding Maps) - نسخة ذكية
 // ==========================================
 window.updateDashMaps = function() {
     const fLevel = document.getElementById("filter_level").value;
@@ -2149,12 +2149,28 @@ window.updateDashMaps = function() {
     const fBaladiya = document.getElementById("filter_baladiya");
     const fSchool = document.getElementById("filter_school");
 
-    // 1. تحديث قائمة البلديات بناءً على الدائرة المختارة
+    // 1. منطق خاص لمديرية التربية (تعبئة تلقائية)
+    if (fLevel === "مديرية التربية") {
+        // نحدد الدائرة والبلدية تلقائياً لأن مقر المديرية ثابت في توقرت
+        fDaaira.value = "توقرت";
+        
+        // تحديث قائمة البلديات يدوياً لتوقرت
+        fBaladiya.innerHTML = '<option value="توقرت">توقرت</option>';
+        fBaladiya.value = "توقرت";
+
+        // وضع المديرية في قائمة المؤسسات
+        fSchool.innerHTML = '<option value="مديرية التربية">مديرية التربية</option>';
+        fSchool.value = "مديرية التربية لولاية توقرت";
+        
+        return; // نخرج من الدالة لأننا انتهينا
+    }
+
+    // 2. إذا لم تكن مديرية التربية، نكمل المنطق العادي
     const selectedDaaira = fDaaira.value;
-    const currentBaladiya = fBaladiya.value; // الحفاظ على الاختيار الحالي إذا أمكن
+    const currentBaladiya = fBaladiya.value; 
     
-    fBaladiya.innerHTML = '<option value="">-- كل البلديات --</option>';
-    
+    // تحديث البلديات
+    fBaladiya.innerHTML = '<option value="">-- البلدية --</option>';
     if (selectedDaaira && baladiyaMap[selectedDaaira]) {
         baladiyaMap[selectedDaaira].forEach(bal => {
             const op = document.createElement("option");
@@ -2162,37 +2178,26 @@ window.updateDashMaps = function() {
             op.text = bal;
             fBaladiya.add(op);
         });
-        fBaladiya.value = currentBaladiya; // محاولة إعادة تعيين القيمة السابقة
-        // إذا القيمة السابقة لم تعد موجودة في القائمة الجديدة، نصفرها
-        if (fBaladiya.selectedIndex === -1) fBaladiya.value = ""; 
-    } else if (!selectedDaaira) {
-        // إذا لم يتم اختيار دائرة، يمكننا عرض كل البلديات أو تركها فارغة (هنا نتركها فارغة للتبسيط)
+        fBaladiya.value = currentBaladiya; 
     }
 
-    // 2. تحديث قائمة المؤسسات بناءً على الطور والموقع
-    fSchool.innerHTML = '<option value="">-- كل المؤسسات --</option>';
-    
+    // 3. تحديث قائمة المؤسسات
+    fSchool.innerHTML = '<option value="">-- المؤسسة --</option>';
     let schoolsList = [];
 
-    if (fLevel === "مديرية التربية") {
-        schoolsList = [{name: "مديرية التربية"}];
-        // يمكننا قفل الدائرة والبلدية أوتوماتيكياً إذا أردت، لكن سنتركها مفتوحة للمرونة
-    } 
-    else if (fLevel === "ابتدائي") {
-        // الابتدائي يعتمد على البلدية
+    if (fLevel === "ابتدائي") {
         const selBal = fBaladiya.value;
         if (selBal && primarySchoolsByBaladiya[selBal]) {
             schoolsList = primarySchoolsByBaladiya[selBal];
         }
     } 
     else if (fLevel === "متوسط" || fLevel === "ثانوي") {
-        // المتوسط والثانوي يعتمد على الدائرة
         if (selectedDaaira && institutionsByDaaira[selectedDaaira] && institutionsByDaaira[selectedDaaira][fLevel]) {
             schoolsList = institutionsByDaaira[selectedDaaira][fLevel];
         }
     }
 
-    // ملء قائمة المدارس
+    // ملء القائمة
     schoolsList.forEach(sch => {
         const op = document.createElement("option");
         op.value = sch.name;
@@ -2200,9 +2205,3 @@ window.updateDashMaps = function() {
         fSchool.add(op);
     });
 };
-
-
-
-
-
-
