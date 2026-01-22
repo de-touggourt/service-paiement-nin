@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -135,7 +136,7 @@ const SECURE_DASHBOARD_HTML = `
         </table>
       </div>
       
-      <div class="pagination-container" id="paginationControls" style="display:none;">
+     <div class="pagination-container" id="paginationControls" style="display:flex;">
         <button class="page-btn" id="prevBtn" onclick="window.changePage(-1)">السابق</button>
         <span class="page-info" id="pageInfo">صفحة 1 من 1</span>
         <button class="page-btn" id="nextBtn" onclick="window.changePage(1)">التالي</button>
@@ -2208,3 +2209,4 @@ window.updateDashMaps = function() {
         fSchool.add(op);
     });
 };
+
