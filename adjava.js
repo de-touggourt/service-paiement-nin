@@ -16,8 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- الكود المخفي (HTML) ---
-// --- الكود المخفي (HTML) ---
 const SECURE_DASHBOARD_HTML = `
   <div class="dashboard-container" style="display:block;">
     <div class="header-area">
@@ -1769,7 +1767,6 @@ window.openBatchPrintModal = function() {
         }
     });
 };
-
 // ==========================================
 // 🖨️ 2. دالة تحديث فلاتر الطباعة (مع التصفير التلقائي)
 // ==========================================
@@ -2268,5 +2265,6 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
         fSchool.add(new Option(sch.name, sch.name));
     });
 };
+
 
 
