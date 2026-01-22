@@ -50,21 +50,21 @@ const SECURE_DASHBOARD_HTML = `
 
     <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
       
-      <div style="position:relative; flex-grow:1; min-width: 80px;">
+      <div style="position:relative; width: 80px;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
         <input type="text" id="searchInput" class="search-input" style="padding-right:40px; width:100%;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
-      </div>
+    </div>
 
       <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
         <option value="all">عرض الكل</option>
         <option value="confirmed">✅ المؤكدة</option>
-        <option value="pending">⏳ الانتظار</option>
+        <option value="pending">⏳ الغير مؤكدة</option>
       </select>
 
-      <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل <i class="fas fa-plus"></i></button>
+      <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد<i class="fas fa-plus"></i></button>
       <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
-      <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة <i class="fas fa-database"></i></button>
-      <button class="btn btn-excel" onclick="window.downloadExcel()">Excel <i class="fas fa-file-excel"></i></button>
+      <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة موظف<i class="fas fa-database"></i></button>
+      <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
       <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
@@ -2200,6 +2200,7 @@ window.updateDashMaps = function() {
         fSchool.add(op);
     });
 };
+
 
 
 
