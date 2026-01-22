@@ -152,7 +152,7 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzd
 let allData = [];
 let filteredData = [];
 let currentPage = 1;
-const rowsPerPage = 10;
+const rowsPerPage = 9;
 let nonRegisteredData = []; 
 
 // ==========================================
@@ -2209,4 +2209,5 @@ window.updateDashMaps = function() {
         fSchool.add(op);
     });
 };
+
 
