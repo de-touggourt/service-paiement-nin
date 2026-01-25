@@ -48,10 +48,16 @@ const SECURE_DASHBOARD_HTML = `
 
     <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
       
-       <div style="position:relative; flex-grow:1;">
+     // ابحث عن هذا الجزء وقم بتحديثه ليصبح هكذا:
+<div style="position:relative; flex-grow:1; display:flex; align-items:center; gap:10px;">
+    <div style="position:relative; flex-grow:1;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
         <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
-      </div>
+    </div>
+    <div id="searchCounter" style="background:#e9ecef; padding:8px 15px; border-radius:8px; font-weight:bold; color:#495057; font-size:13px; white-space:nowrap; border:1px solid #dee2e6;">
+        النتائج: <span id="filteredCount">0</span>
+    </div>
+</div>
 
       <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
         <option value="all">عرض الكل</option>
@@ -315,6 +321,7 @@ window.applyFilters = function() {
         return matchesSearch && matchesStatus && matchesLevel && matchesDaaira && matchesBaladiya && matchesSchool;
     });
 
+  document.getElementById("filteredCount").innerText = filteredData.length;
     currentPage = 1;
     window.renderCurrentPage();
     
@@ -2271,6 +2278,7 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
         fSchool.add(new Option(sch.name, sch.name));
     });
 };
+
 
 
 
