@@ -48,7 +48,7 @@ const SECURE_DASHBOARD_HTML = `
 
     <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
       
-     // ابحث عن هذا الجزء وقم بتحديثه ليصبح هكذا:
+    
 <div style="position:relative; flex-grow:1; display:flex; align-items:center; gap:10px;">
     <div style="position:relative; flex-grow:1;">
         <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
@@ -2278,6 +2278,7 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
         fSchool.add(new Option(sch.name, sch.name));
     });
 };
+
 
 
 
