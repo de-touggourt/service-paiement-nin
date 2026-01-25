@@ -1473,18 +1473,24 @@ window.checkNonRegistered = async function() {
         const snapshot = await getDocs(colRef);
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
-        // 4. منطق المقارنة الدقيق (Normalization)
+       // 4. منطق المقارنة الذكي (التحويل لأرقام لتجنب مشكلة الأصفار البادئة)
         
-        // أ) إنشاء قائمة CCP المحلية بعد تنظيفها (تحويل لنص + حذف مسافات)
-        const localCCPs = new Set(allData.map(item => String(item.ccp).trim()));
+        // أ) إنشاء Set تحتوي على أرقام الـ CCP المسجلة محلياً (بعد تحويلها لأرقام لحذف الأصفار)
+        const localCCPs = new Set(
+            allData.map(item => {
+                // نأخذ القيمة، نحذف المسافات، ثم نحولها لرقم (هذا يحذف الأصفار في البداية تلقائياً)
+                const cleanCCP = String(item.ccp).trim().replace(/^0+/, ''); 
+                return cleanCCP;
+            }).filter(val => val !== "") // استبعاد القيم الفارغة
+        );
 
-        // ب) تصفية بيانات فايربيز
+        // ب) تصفية بيانات فايربيز (الموظفين الذين لم يسجلوا بعد)
         nonRegisteredData = firebaseData.filter(fbItem => {
-            // تنظيف CCP القادم من فايربيز بنفس الطريقة
-            const fbCCP = String(fbItem.ccp).trim();
+            // تنظيف CCP القادم من فايربيز (حذف الأصفار من اليسار والمسافات)
+            const fbCCP = String(fbItem.ccp).trim().replace(/^0+/, '');
             
-            // هل هذا الرقم موجود في القائمة المحلية؟
-            return !localCCPs.has(fbCCP);
+            // إذا كان الـ CCP بعد التنظيف غير موجود في الـ Set المحلية، فهو غير مسجل
+            return !localCCPs.has(fbCCP) && fbCCP !== "";
         });
 
         // 5. حساب الإحصائيات للإرسال للعرض
@@ -2265,6 +2271,7 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
         fSchool.add(new Option(sch.name, sch.name));
     });
 };
+
 
 
 
