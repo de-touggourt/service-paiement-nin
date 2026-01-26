@@ -1519,18 +1519,20 @@ window.checkNonRegistered = async function() {
     }
 };
 
-// دالة عرض النافذة المنبثقة (معدلة لإضافة حقل البحث السريع)
 window.showNonRegisteredModal = function(stats) {
-    // بناء صفوف الجدول مع إضافة كلاسات للبحث
+    // بناء صفوف الجدول مع فهرسة البيانات مسبقاً للبحث فائق السرعة
     const tableRows = nonRegisteredData.map((row, index) => {
+        // نجهز نص البحث مسبقاً (الاسم، اللقب، CCP، كود الإدارة)
+        const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
+        
         return `
-            <tr class="non-reg-row" style="border-bottom:1px solid #eee;">
+            <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${index + 1}</td>
-                <td class="search-ccp" style="padding:10px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
-                <td class="search-name" style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
+                <td style="padding:10px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
+                <td style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
                 <td style="padding:10px;">${row.gr || '-'}</td>
                 <td style="padding:10px;">${row.ass || '-'}</td>
-                <td class="search-adm" style="padding:10px;">${row.adm || '-'}</td>
+                <td style="padding:10px;">${row.adm || '-'}</td>
             </tr>
         `;
     }).join('');
@@ -1557,25 +1559,24 @@ window.showNonRegisteredModal = function(stats) {
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
             <div style="position:relative; flex-grow:1; min-width:250px;">
-                <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
-                <input type="text" id="modalSearchInput" onkeyup="window.filterModalTable()" 
-                       placeholder="بحث سريع (بالاسم، CCP، أو الإدارة)..." 
-                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:8px; font-family:'Cairo'; font-size:14px; outline:none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);">
+                <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
+                <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
+                       placeholder="بحث سريع بالاسم، رقم الحساب، أو الإدارة..." 
+                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none; transition: border 0.3s;">
             </div>
-
             <div style="display:flex; gap:10px;">
-                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px; height:40px;">
-                    طباعة القائمة <i class="fas fa-print"></i>
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px;">
+                    طباعة <i class="fas fa-print"></i>
                 </button>
-                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px; height:40px;">
+                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px;">
                     Excel <i class="fas fa-file-excel"></i>
                 </button>
             </div>
         </div>
 
-        <div class="table-responsive" style="max-height:45vh; overflow-y:auto; direction:rtl; border-radius:8px; border:1px solid #eee;">
+        <div class="table-responsive" style="max-height:50vh; overflow-y:auto; direction:rtl;">
             <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
-                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 1px 0 #eee;">
+                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 1px 0 #ddd;">
                     <tr>
                         <th style="padding:12px;">#</th>
                         <th style="padding:12px;">CCP</th>
@@ -2285,21 +2286,28 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
     });
 };
 
-// دالة الفلترة اللحظية لجدول نافذة التقرير
+// دالة الفلترة فائقة السرعة والسلاسة
 window.filterModalTable = function() {
     const query = document.getElementById("modalSearchInput").value.toLowerCase();
-    const rows = document.querySelectorAll(".non-reg-row");
-
-    rows.forEach(row => {
-        const textToSearch = row.innerText.toLowerCase();
-        // سيبحث في السطر كاملاً (الاسم، CCP، والوظيفة)
-        if (textToSearch.includes(query)) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+    const rows = document.getElementsByClassName("non-reg-row");
+    
+    // استخدام الـ Animation Frame يمنع تشنج الواجهة
+    requestAnimationFrame(() => {
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            // قراءة الـ data-search أسرع مئات المرات من قراءة الخلية مباشرة
+            const isMatch = row.getAttribute('data-search').indexOf(query) > -1;
+            
+            // نغير الظهور فقط إذا تغيرت الحالة لتقليل جهد المتصفح
+            if (isMatch) {
+                if (row.style.display === "none") row.style.display = "";
+            } else {
+                if (row.style.display !== "none") row.style.display = "none";
+            }
         }
     });
 };
+
 
 
 
