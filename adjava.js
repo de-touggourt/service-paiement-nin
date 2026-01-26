@@ -1674,10 +1674,12 @@ window.showNonRegisteredModal = function(stats) {
 };
 
 // 3. دالة الطباعة المجمعة المحدثة بصفحات فاصلة لكل طور
+// 3. دالة الطباعة المجمعة المحدثة (ضبط الهوامش والأعمدة بدقة)
 window.printNonRegistered = function() {
     if (nonRegisteredData.length === 0) return;
 
     const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+    
     const grouped = nonRegisteredData.reduce((acc, row) => {
         const cat = getCategoryByGrade(row.gr);
         if (!acc[cat]) acc[cat] = [];
@@ -1693,12 +1695,12 @@ window.printNonRegistered = function() {
 
         const rows = members.map((row, index) => `
             <tr>
-                <td style="width:4%">${index + 1}</td>
-                <td style="font-weight:bold; width:13%">${row.ccp}</td>
-                <td style="text-align:right; padding-right:5px; width:33%">${row.fmn} ${row.frn}</td>
-                <td style="text-align:right; padding-right:5px; width:38%">${gradeMap[row.gr] || '---'}</td>
-                <td style="width:6%">${row.gr}</td>
-                <td style="width:6%">${row.adm}</td>
+                <td style="width: 4%;">${index + 1}</td>
+                <td style="width: 13%; font-weight: bold;">${row.ccp}</td>
+                <td style="width: 33%; text-align: right; padding-right: 5px;">${row.fmn} ${row.frn}</td>
+                <td style="width: 38%; text-align: right; padding-right: 5px; color: #004a99;">${gradeMap[row.gr] || row.gr}</td>
+                <td style="width: 6%;">${row.gr}</td>
+                <td style="width: 6%;">${row.adm}</td>
             </tr>
         `).join('');
 
@@ -1721,12 +1723,12 @@ window.printNonRegistered = function() {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>رقم الحساب (CCP)</th>
-                            <th>الاسم واللقب</th>
-                            <th>الوظيفة</th>
-                            <th>الرتبة</th>
-                            <th>ADM</th>
+                            <th style="width: 4%;">#</th>
+                            <th style="width: 13%;">رقم الحساب (CCP)</th>
+                            <th style="width: 33%;">الاسم واللقب</th>
+                            <th style="width: 38%;">الوظيفة المستنتجة</th>
+                            <th style="width: 6%;">الرتبة</th>
+                            <th style="width: 6%;">ADM</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1742,13 +1744,12 @@ window.printNonRegistered = function() {
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
         <head>
-            <title>تقرير غير المسجلين 2026</title>
-            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+            <title>تقرير غير المسجلين المبوب - 2026</title>
+            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
                 @page { 
                     size: A4 portrait; 
-                    margin: 10mm 8mm; 
+                    margin: 10mm 5mm; /* تقليل الهامش الجانبي جداً لضمان ظهور الحدود اليمنى */
                 }
                 body { 
                     font-family: 'Cairo', sans-serif; 
@@ -1756,7 +1757,11 @@ window.printNonRegistered = function() {
                     background: #fff;
                     -webkit-print-color-adjust: exact;
                 }
-                .print-page { page-break-after: always; width: 100%; }
+                .print-page { 
+                    page-break-after: always; 
+                    width: 100%;
+                    box-sizing: border-box;
+                }
                 .official-header { text-align: center; margin-bottom: 15px; line-height: 1.2; font-weight: 700; font-size: 12px; }
                 .official-header p { margin: 1px 0; }
                 .report-title-section { text-align: center; margin-bottom: 10px; }
@@ -1767,27 +1772,37 @@ window.printNonRegistered = function() {
                     background-color: #f2f2f2 !important; font-size: 13px; border-radius: 4px;
                 }
                 .data-table { 
-                    width: 100%; border-collapse: collapse; 
-                    table-layout: fixed; border: 1.2px solid #000;
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    table-layout: fixed; /* منع تمدد الجدول */
+                    border: 1.2px solid #000;
+                    margin: 0 auto;
                 }
                 .data-table th, .data-table td { 
-                    border: 1px solid #000; padding: 4px 2px; 
-                    text-align: center; font-size: 10.5px; 
-                    white-space: nowrap; overflow: hidden; text-overflow: clip;
+                    border: 1px solid #000; 
+                    padding: 4px 2px; 
+                    text-align: center; 
+                    font-size: 10px; /* تصغير الخط لضمان سطر واحد */
+                    white-space: nowrap; 
+                    overflow: hidden; 
+                    text-overflow: clip;
                 }
                 .data-table th { background-color: #e9e9e9 !important; font-weight: 800; font-size: 11px; }
                 .print-date-footer { margin-top: 8px; font-size: 9px; text-align: left; }
+                
+                @media print {
+                    .print-page { width: 100%; margin: 0; }
+                }
             </style>
         </head>
         <body>
             ${fullHTML}
-            <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); }</script>
+            <script>window.onload = function() { setTimeout(() => { window.print(); }, 1000); }</script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
-
 // دالة تصدير Excel للقائمة الجديدة (Client-Side) - تم التعديل لفرض النص
 window.exportNonRegisteredExcel = function() {
     let tableContent = `
