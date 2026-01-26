@@ -1572,24 +1572,30 @@ window.checkNonRegistered = async function() {
 };
 
 // 2. دالة عرض نافذة التقرير المحدثة بعمود الوظيفة
+// 2. دالة عرض نافذة التقرير المحدثة (تم إصلاح تداخل النصوص)
 window.showNonRegisteredModal = function(stats) {
-    // بناء أسطر الجدول أولاً
-    const tableRows = nonRegisteredData.map((row, index) => {
-        const jobTitle = gradeMap[row.gr] || '<span style="color:#d9534f">رتبة غير معروفة</span>';
-        const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${jobTitle} ${row.adm}`.toLowerCase();
-        return `
-            <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
-                <td style="padding:12px; text-align:center;">${index + 1}</td>
-                <td style="padding:12px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
-                <td style="padding:12px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
-                <td style="padding:12px; color:#0d6efd; font-weight:600;">${jobTitle}</td>
-                <td style="padding:12px; text-align:center;">${row.gr || '-'}</td>
-                <td style="padding:12px; text-align:center;">${row.adm || '-'}</td>
-            </tr>
-        `;
-    }).join('');
+    // بناء أسطر الجدول بشكل منفصل أولاً لضمان سلامة الكود
+    let rowsHtml = "";
+    if (nonRegisteredData && nonRegisteredData.length > 0) {
+        nonRegisteredData.forEach((row, index) => {
+            const jobTitle = gradeMap[row.gr] || '<span style="color:#d9534f">رتبة غير معروفة</span>';
+            const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
+            
+            rowsHtml += `
+                <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px; text-align:center;">${index + 1}</td>
+                    <td style="padding:12px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
+                    <td style="padding:12px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
+                    <td style="padding:12px; color:#0d6efd; font-weight:600;">${jobTitle}</td>
+                    <td style="padding:12px; text-align:center;">${row.gr || '-'}</td>
+                    <td style="padding:12px; text-align:center;">${row.adm || '-'}</td>
+                </tr>`;
+        });
+    } else {
+        rowsHtml = '<tr><td colspan="6" style="text-align:center; padding:30px;">جميع الموظفين مسجلين بنجاح ✅</td></tr>';
+    }
 
-    // تجميع المحتوى الكامل للنافذة
+    // تجميع المحتوى الكامل للنافذة باستخدام المتغير rowsHtml الجاهز
     const modalContent = `
         <div style="direction:rtl; font-family:'Cairo', sans-serif;">
             <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
@@ -1601,7 +1607,7 @@ window.showNonRegisteredModal = function(stats) {
                     <div style="font-size:12px; color:#2e7d32;">المسجلين حالياً</div>
                     <div style="font-size:20px; font-weight:bold;">${stats.totalRegistered}</div>
                 </div>
-                <div style="background:#ffebee; padding:15px; border-radius:10px; flex:1; border:1px solid #ef9a9a; text-align:center;">
+                <div style="background:#fff5f5; padding:15px; border-radius:10px; flex:1; border:1px solid #ef9a9a; text-align:center;">
                     <div style="font-size:12px; color:#c62828;">غير المسجلين</div>
                     <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
                 </div>
@@ -1614,25 +1620,25 @@ window.showNonRegisteredModal = function(stats) {
                            placeholder="بحث سريع بالاسم أو الوظيفة..." 
                            style="width:100%; padding:12px 40px 12px 12px; border:1px solid #ddd; border-radius:10px; outline:none; font-family:'Cairo';">
                 </div>
-                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; height:45px; padding:0 20px; border-radius:10px;">
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; height:45px; padding:0 20px; border-radius:10px; cursor:pointer; border:none;">
                     طباعة مجمعة <i class="fas fa-print"></i>
                 </button>
             </div>
 
-            <div style="height:450px; overflow-y:auto; border:1px solid #eee; border-radius:8px;">
+            <div style="height:450px; overflow-y:auto; border:1px solid #eee; border-radius:8px; background:#fff;">
                 <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:right;">
                     <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 100; box-shadow: 0 2px 2px rgba(0,0,0,0.1);">
                         <tr>
                             <th style="padding:12px; width:50px; text-align:center;">#</th>
-                            <th style="padding:12px; width:120px;">CCP</th>
+                            <th style="padding:12px; width:120px; text-align:center;">CCP</th>
                             <th style="padding:12px;">الاسم واللقب</th>
-                            <th style="padding:12px;">الوظيفة المستنتجة</th>
+                            <th style="padding:12px;">الوظيفة</th>
                             <th style="padding:12px; width:80px; text-align:center;">الرتبة</th>
                             <th style="padding:12px; width:80px; text-align:center;">ADM</th>
                         </tr>
                     </thead>
                     <tbody id="modalTableBody">
-                        ${tableRows.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:30px;">جميع الموظفين مسجلين بنجاح ✅</td></tr>'}
+                        ${rowsHtml}
                     </tbody>
                 </table>
             </div>
