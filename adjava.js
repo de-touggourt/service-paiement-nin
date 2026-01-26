@@ -1578,21 +1578,26 @@ window.checkNonRegistered = async function() {
 
 // 2. دالة عرض الواجهة (إضافة عمود الوظيفة المستنتجة)
 window.showNonRegisteredModal = function(stats) {
+    // بناء أسطر الجدول بشكل مستقل أولاً
     let rowsHtml = "";
-    nonRegisteredData.forEach((row, index) => {
-        const jobTitle = gradeMap[row.gr] || '<span style="color:#d9534f">قائمة الموظفين الإضافية</span>';
-        const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${jobTitle} ${row.adm}`.toLowerCase();
-        
-        rowsHtml += `
-            <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
-                <td style="padding:12px; text-align:center;">${index + 1}</td>
-                <td style="padding:12px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
-                <td style="padding:12px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
-                <td style="padding:12px; color:#0d6efd; font-weight:600;">${jobTitle}</td>
-                <td style="padding:12px; text-align:center;">${row.gr || '-'}</td>
-                <td style="padding:12px; text-align:center;">${row.adm || '-'}</td>
-            </tr>`;
-    });
+    if (nonRegisteredData && nonRegisteredData.length > 0) {
+        nonRegisteredData.forEach((row, index) => {
+            const jobTitle = gradeMap[row.gr] || '<span style="color:#d9534f">قائمة الموظفين الإضافية</span>';
+            const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
+            
+            rowsHtml += `
+                <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px; text-align:center;">${index + 1}</td>
+                    <td style="padding:12px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
+                    <td style="padding:12px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
+                    <td style="padding:12px; color:#0d6efd; font-weight:600;">${jobTitle}</td>
+                    <td style="padding:12px; text-align:center;">${row.gr || '-'}</td>
+                    <td style="padding:12px; text-align:center;">${row.adm || '-'}</td>
+                </tr>`;
+        });
+    } else {
+        rowsHtml = '<tr><td colspan="6" style="text-align:center; padding:30px;">جميع الموظفين مسجلين بنجاح ✅</td></tr>';
+    }
 
     const modalContent = `
         <div style="direction:rtl; font-family:'Cairo', sans-serif;">
@@ -1636,7 +1641,7 @@ window.showNonRegisteredModal = function(stats) {
                         </tr>
                     </thead>
                     <tbody id="modalTableBody">
-                        ${rowsHtml || '<tr><td colspan="6" style="text-align:center; padding:30px;">جميع الموظفين مسجلين بنجاح ✅</td></tr>'}
+                        ${rowsHtml}
                     </tbody>
                 </table>
             </div>
@@ -1649,10 +1654,10 @@ window.showNonRegisteredModal = function(stats) {
         width: '1100px',
         showConfirmButton: true,
         confirmButtonText: 'إغلاق',
-        confirmButtonColor: '#6c757d'
+        confirmButtonColor: '#6c757d',
+        customClass: { popup: 'swal-wide' }
     });
 };
-
 // 3. دالة الطباعة المجمعة المحدثة (مقسمة إلى مجموعات بصفحات فاصلة)
 window.printNonRegistered = function() {
     if (nonRegisteredData.length === 0) return;
@@ -2399,6 +2404,7 @@ window.filterModalTable = function() {
         }
     });
 };
+
 
 
 
