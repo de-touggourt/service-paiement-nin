@@ -17,66 +17,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// دالة لتصنيف الموظفين حسب المجموعات المطلوبة بدقة
-// 1. خريطة الرتب (يجب أن تكون هنا في الأعلى تماماً)
-const gradeMap = {
-    "1006": "أستاذ إبتدائي (متعاقد)", "1007": "أستاذ تعليم إبتدائي قسم أول", "1008": "أستاذ تعليم إبتدائي قسم ثان",
-    "1009": "أستاذ مميز في التعليم الإبتدائي", "1010": "أستاذ التعليم الإبتدائي", "2021": "ناظر في التعليم الإبتدائي",
-    "2031": "مربي متخصص رئيسي في الدعم", "2100": "مدير مدرسة إبتدائية", "3010": "أستاذ مميز في التعليم المتوسط",
-    "3005": "أستاذ التعليم المتوسط قسم ثاني", "3001": "أستاذ التعليم المتوسط قسم أول", "3012": "أستاذ التعليم المتوسط / متعاقد",
-    "3020": "أستاذ ت م متعاقد ق 01 (13)", "4000": "مدير متوسطة", "4006": "ناظر في التعليم المتوسط",
-    "5019": "أستاذ تعليم ثانوي", "5020": "أستاذ تعليم ثانوي (متعاقد)", "5021": "أستاذ تعليم ثانوي مستخلف",
-    "5022": "أستاذ مميز في التعليم الثانوي", "5023": "أستاذ التعليم الثانوي قسم ثان", "5024": "أستاذ التعليم الثانوي قسم أول",
-    "6001": "مدير ثانوية", "6004": "ناظر في التعليم الثانوي", "4030": "مستشار التربية", "4031": "مستشار توجيه وارشاد مدرسي",
-    "4032": "مستشار محلل لتوجيه والارشاد", "4033": "مستشار رئيسي للتوجيه", "4034": "مستشار رئيس للتوجيه",
-    "6003": "مستشار رئيس توجيه وارشاد", "6008": "مستشار محلل توجيه وارشاد", "6009": "مستشار رئيسي توجيه وارشاد",
-    "6025": "مستشار للتوجيه المدرسي", "6035": "مستشار للتربية", "7160": "مستشار محلل للتوجيه والإرشاد المدرسي",
-    "7025": "مفتش التعليم الثانوي للتوجيه والإرشاد", "4025": "مقتصد", "4040": "نائب مقتصد مسير", "4060": "نائب مقتصد",
-    "4065": "مساعد رئيسي للمصالح الاقتصادية", "6010": "مقتصد رئيسي", "6015": "مقتصد", "6085": "نائب مقتصد",
-    "7220": "نائب مقتصد", "7260": "م مصالح اقتصادية رئيسي", "4087": "مشرف تربية", "4088": "مشرف رئيسي للتربية",
-    "4089": "مشرف رئيس للتربية", "4090": "مشرف عام للتربية", "4085": "مساعد رئيسي للتربية", "6006": "مشرف رئيس للتربية",
-    "6007": "مشرف عام للتربية", "6117": "مشرف رئيسي للتربية", "6118": "مشرف للتربية", "4072": "ملحق بالمخبر",
-    "4076": "ملحق رئيسي للمخبر", "4077": "ملحق رئيس بالمخابر", "4078": "ملحق مشرف بالمخابر", "6046": "ملحق رئيسي للمخبر",
-    "6047": "ملحق مشرف بالمخابر", "6048": "ملحق رئيس بالمخابر", "7005": "مدير التربية", "7682": "مدير التربية",
-    "7011": "الأمين العام", "7013": "رئيس مصلحة بمديرية التربية", "7071": "رئيس مصلحة بمديرية التربية",
-    "7073": "رئيس مكتب", "7074": "رئيس مكتب", "7023": "مفتش التعليم المتوسط تخصص مواد", "7024": "مفتش التعليم الثانوي تخصص مواد",
-    "7036": "مفتش تعليم متوسط تخصص إدارة", "7044": "مفتش ت.إ تخصص إدارة مدارس ابتدائي", "7045": "مفتش تغذية مدرسية",
-    "7046": "مفتش التغذية المدرسية", "7047": "مفتش التعليم الابتدائي تخصص مواد", "7042": "مفتش التغذية المدرسية",
-    "6081": "ملحق إدارة", "7210": "ملحق إدارة", "7155": "ملحق إدارة رئيسي", "6100": "عون إدارة رئيسي",
-    "6185": "عون إدارة", "7311": "عون إدارة", "8380": "عون إدارة", "6194": "كاتب مديرية", "6195": "كاتب",
-    "6215": "عون حفظ بيانات", "7345": "عون حجز بيانات", "6082": "مساعد وثائقي أمين محفوظات", "6083": "أمين وثائقي للمحفوظات رئيسي",
-    "7271": "مساعد وثائقي أمين محفوظات", "7075": "مهندس دولة في الإعلام الآلي", "7095": "مهندس مستوى أول في الإحصاء",
-    "7105": "تقني سامي في الاعلام الآلي", "7150": "تقني سامي في الاعلام الآلي مستوى 3", "7099": "متصرف محلل",
-    "7100": "متصرف", "7445": "متصرف محلل", "6038": "ممرض حاصل على شهادة دولة", "6041": "ممرض للصحة العمومية",
-    "7032": "نفساني عيادي للصحة العمومية", "7033": "نفساني عيادي للصحة العمومية", "6140": "رئيس فرقة للامن و الوقاية",
-    "6165": "عون أمن ووقاية", "6225": "عون أمن ووقاية", "6201": "سائق سيارة مستوى أول", "6110": "عامل مهني خارج الصنف",
-    "6155": "عامل مهني الصنف 1", "6161": "عامل مهني مستوى ثالث", "6205": "عامل مهني الصنف 2", "6221": "عامل مهني مستوى ثاني",
-    "6241": "عامل مهني مستوى أول", "7280": "عامل مهني مستوى أول", "7310": "عامل مهني مستوى أول", "7434": "عامل مهني مستوى 1"
-};
-
-// 2. دالة التصنيف المحدثة بالأسماء الجديدة
-const getCategoryByGrade = (gr) => {
-    if (!gr) return "قائمة الموظفين الإضافية";
-    const g = String(gr);
-    if (g.startsWith('10')) return "أساتذة التعليم الإبتدائي";
-    if (g.startsWith('30')) return "أساتذة التعليم المتوسط";
-    if (g.startsWith('50')) return "أساتذة التعليم الثانوي";
-    const workerCodes = ["6110", "6155", "6161", "6205", "6221", "6241", "7280", "7310", "7434", "6201", "6140", "6165", "6225"];
-    if (workerCodes.includes(g)) return "العمال المهنيين وأعوان الأمن";
-    if (gradeMap[g]) return "المدراء والرتب الإدارية";
-    return "قائمة الموظفين الإضافية";
-};
-
-// 3. مصفوفة الترتيب
-const categoryOrder = [
-    "أساتذة التعليم الإبتدائي",
-    "أساتذة التعليم المتوسط",
-    "أساتذة التعليم الثانوي",
-    "المدراء والرتب الإدارية",
-    "العمال المهنيين وأعوان الأمن",
-    "قائمة الموظفين الإضافية"
-];
-
 const SECURE_DASHBOARD_HTML = `
   <div class="dashboard-container" style="display:block;">
     <div class="header-area">
@@ -1516,58 +1456,71 @@ window.printForm = function(index) {
 
 // الدالة الرئيسية للفحص والمقارنة
 // الدالة الرئيسية للفحص والمقارنة (محدثة لضمان دقة الحساب)
-// 1. دالة الفحص (تحديث المطابقة والترتيب حسب المجموعات)
 window.checkNonRegistered = async function() {
+    // 1. إظهار التحميل
     Swal.fire({
         title: 'جاري مطابقة البيانات...',
-        html: 'يتم الآن جلب السجلات ومطابقة الوظائف إدارياً.<br>يرجى الانتظار...',
+        html: 'يتم جلب البيانات ومطابقة السجلات بدقة.<br>يرجى الانتظار...',
         allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
+        didOpen: () => {
+            Swal.showLoading();
+        }
     });
 
     try {
+        // 2. تحديث البيانات المحلية (الجدول)
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
-        if (result.status !== "success") throw new Error("فشل تحديث البيانات");
+        
+        if (result.status !== "success") {
+            throw new Error("فشل في تحديث البيانات المحلية");
+        }
         allData = result.data; 
 
+        // 3. جلب بيانات Firebase
         const colRef = collection(db, "employeescompay");
         const snapshot = await getDocs(colRef);
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
+        // --- معالجة البيانات لضمان دقة الحساب ---
+
+        // أ) بناء قائمة CCPs المسجلين فعلياً في الجدول (مع التنظيف)
         const localCCPs = new Set(allData.map(item => 
             item.ccp ? String(item.ccp).trim().replace(/^0+/, '') : ""
         ));
 
+        // ب) توحيد موظفي Firebase (منع التكرار في القاعدة الأصلية)
         const uniqueFirebaseMap = {};
         firebaseData.forEach(emp => {
             if (emp.ccp) {
                 const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
-                if (cleanCCP !== "") uniqueFirebaseMap[cleanCCP] = emp;
+                if (cleanCCP !== "") {
+                    uniqueFirebaseMap[cleanCCP] = emp;
+                }
             }
         });
 
+        // ج) تحويل الخريطة إلى مصفوفة موظفين فريدين
         const uniqueFirebaseList = Object.values(uniqueFirebaseMap);
 
+        // د) الفرز بناءً على قائمة القاعدة الفريدة
+        // 1. استخراج غير المسجلين
         nonRegisteredData = uniqueFirebaseList.filter(emp => {
             const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
             return !localCCPs.has(cleanCCP);
         });
 
-        // ترتيب القائمة المكتشفة حسب المجموعات المحددة في categoryOrder
-        nonRegisteredData.sort((a, b) => {
-            const catA = getCategoryByGrade(a.gr);
-            const catB = getCategoryByGrade(b.gr);
-            return categoryOrder.indexOf(catA) - categoryOrder.indexOf(catB);
-        });
+        // 2. حساب الذين سجلوا فعلاً من أصل القاعدة
+        const registeredFromFirebaseCount = uniqueFirebaseList.length - nonRegisteredData.length;
 
+        // 5. حساب الإحصائيات الدقيقة
         const stats = {
-            totalFirebase: uniqueFirebaseList.length,
-            totalRegistered: uniqueFirebaseList.length - nonRegisteredData.length,
-            totalNonReg: nonRegisteredData.length
+            totalFirebase: uniqueFirebaseList.length,           // الإجمالي الحقيقي (فريد)
+            totalRegistered: registeredFromFirebaseCount,       // من سجل منهم فعلاً
+            totalNonReg: nonRegisteredData.length              // الفرق الحسابي المتبقي
         };
 
-        Swal.close();
+        // 6. عرض النتائج
         window.showNonRegisteredModal(stats);
 
     } catch (error) {
@@ -1576,184 +1529,140 @@ window.checkNonRegistered = async function() {
     }
 };
 
-// 2. دالة عرض الواجهة (إضافة عمود الوظيفة المستنتجة)
 window.showNonRegisteredModal = function(stats) {
-    // بناء أسطر الجدول بشكل مستقل أولاً
-    let rowsHtml = "";
-    if (nonRegisteredData && nonRegisteredData.length > 0) {
-        nonRegisteredData.forEach((row, index) => {
-            const jobTitle = gradeMap[row.gr] || '<span style="color:#d9534f">قائمة الموظفين الإضافية</span>';
-            const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
-            
-            rowsHtml += `
-                <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
-                    <td style="padding:12px; text-align:center;">${index + 1}</td>
-                    <td style="padding:12px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
-                    <td style="padding:12px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
-                    <td style="padding:12px; color:#0d6efd; font-weight:600;">${jobTitle}</td>
-                    <td style="padding:12px; text-align:center;">${row.gr || '-'}</td>
-                    <td style="padding:12px; text-align:center;">${row.adm || '-'}</td>
-                </tr>`;
-        });
-    } else {
-        rowsHtml = '<tr><td colspan="6" style="text-align:center; padding:30px;">جميع الموظفين مسجلين بنجاح ✅</td></tr>';
-    }
+    const tableRows = nonRegisteredData.map((row, index) => {
+        const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
+        return `
+            <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
+                <td style="padding:10px; width:50px;">${index + 1}</td>
+                <td style="padding:10px; font-weight:bold; color:#d63384; width:120px;">${row.ccp || '-'}</td>
+                <td style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
+                <td style="padding:10px; width:100px;">${row.gr || '-'}</td>
+                <td style="padding:10px; width:150px;">${row.ass || '-'}</td>
+                <td style="padding:10px; width:100px;">${row.adm || '-'}</td>
+            </tr>
+        `;
+    }).join('');
 
-    const modalContent = `
-        <div style="direction:rtl; font-family:'Cairo', sans-serif;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
-                <div style="background:#e3f2fd; padding:15px; border-radius:10px; flex:1; border:1px solid #90caf9; text-align:center;">
-                    <div style="font-size:12px; color:#1565c0;">إجمالي القاعدة</div>
-                    <div style="font-size:20px; font-weight:bold;">${stats.totalFirebase}</div>
-                </div>
-                <div style="background:#e8f5e9; padding:15px; border-radius:10px; flex:1; border:1px solid #a5d6a7; text-align:center;">
-                    <div style="font-size:12px; color:#2e7d32;">المسجلين حالياً</div>
-                    <div style="font-size:20px; font-weight:bold;">${stats.totalRegistered}</div>
-                </div>
-                <div style="background:#fff5f5; padding:15px; border-radius:10px; flex:1; border:1px solid #ef9a9a; text-align:center;">
-                    <div style="font-size:12px; color:#c62828;">غير المسجلين</div>
-                    <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
-                </div>
+    const headerStats = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
+            <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
+                <div style="font-size:12px; color:#1565c0;">عدد الموظفين</div>
+                <div style="font-size:20px; font-weight:bold; color:#0d47a1;">${stats.totalFirebase}</div>
             </div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:10px;">
-                <div style="position:relative; flex-grow:1;">
-                    <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
-                    <input type="text" id="modalSearchInput" onkeyup="window.filterModalTable()" 
-                           placeholder="بحث سريع بالاسم أو الوظيفة..." 
-                           style="width:100%; padding:12px 40px 12px 12px; border:1px solid #ddd; border-radius:10px; outline:none; font-family:'Cairo';">
-                </div>
-                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; height:45px; padding:0 20px; border-radius:10px; cursor:pointer; border:none;">
-                    طباعة مجمعة <i class="fas fa-print"></i>
-                </button>
+            <div style="background:#e8f5e9; padding:10px; border-radius:8px; flex:1; border:1px solid #a5d6a7;">
+                <div style="font-size:12px; color:#2e7d32;">المسجلين حاليا</div>
+                <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalRegistered}</div>
             </div>
-
-            <div style="height:450px; overflow-y:auto; border:1px solid #eee; border-radius:8px; background:#fff;">
-                <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:right;">
-                    <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 100; box-shadow: 0 2px 2px rgba(0,0,0,0.1);">
-                        <tr>
-                            <th style="padding:12px; width:50px; text-align:center;">#</th>
-                            <th style="padding:12px; width:120px; text-align:center;">CCP</th>
-                            <th style="padding:12px;">الاسم واللقب</th>
-                            <th style="padding:12px;">الوظيفة</th>
-                            <th style="padding:12px; width:80px; text-align:center;">الرتبة</th>
-                            <th style="padding:12px; width:80px; text-align:center;">ADM</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modalTableBody">
-                        ${rowsHtml}
-                    </tbody>
-                </table>
+            <div style="background:#ffebee; padding:10px; border-radius:8px; flex:1; border:1px solid #ef9a9a;">
+                <div style="font-size:12px; color:#c62828;">الغير مسجلين</div>
+                <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
             </div>
         </div>
     `;
 
+    const modalContent = `
+        ${headerStats}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <div style="position:relative; flex-grow:1; min-width:250px;">
+                <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
+                <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
+                       placeholder="بحث سريع بالاسم، رقم الحساب، أو الإدارة..." 
+                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
+                    طباعة القائمة <i class="fas fa-print"></i>
+                </button>
+                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
+                    Excel تحميل<i class="fas fa-file-excel"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="height:450px; overflow-y:auto; direction:rtl; border:1px solid #eee; border-radius:8px; background:#fff;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right; table-layout: fixed;">
+                <thead style="position: sticky; top: 0; z-index: 100; background: #f8f9fa; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);">
+                    <tr>
+                        <th style="padding:12px; width:50px; border-bottom:2px solid #dee2e6;">#</th>
+                        <th style="padding:12px; width:120px; border-bottom:2px solid #dee2e6;">CCP</th>
+                        <th style="padding:12px; border-bottom:2px solid #dee2e6;">الاسم واللقب</th>
+                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">الرتبة</th>
+                        <th style="padding:12px; width:150px; border-bottom:2px solid #dee2e6;">الضمان (ASS)</th>
+                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">كود الإدارة</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody">
+                    ${nonRegisteredData.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:20px;">جميع الموظفين مسجلين! ✅</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+    `;
+
     Swal.fire({
-        title: '<strong>تقرير مطابقة قاعدة البيانات والوظائف</strong>',
+        title: '<strong>تقرير حالة التسجيل (مطابقة القاعدة)</strong>',
         html: modalContent,
-        width: '1100px',
+        width: '1000px',
         showConfirmButton: true,
         confirmButtonText: 'إغلاق',
-        confirmButtonColor: '#6c757d',
+        allowOutsideClick: false,
         customClass: { popup: 'swal-wide' }
     });
 };
-// 3. دالة الطباعة المجمعة المحدثة (مقسمة إلى مجموعات بصفحات فاصلة)
+
+// دالة طباعة القائمة الجديدة (معدلة لتكون عمودية فقط)
 window.printNonRegistered = function() {
-    if (nonRegisteredData.length === 0) return;
-
-    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+    const printDate = new Date().toLocaleDateString('ar-DZ');
     
-    // تجميع البيانات حسب الفئات المحددة في getCategoryByGrade
-    const grouped = nonRegisteredData.reduce((acc, row) => {
-        const cat = getCategoryByGrade(row.gr);
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(row);
-        return acc;
-    }, {});
-
-    let fullHTML = '';
-
-    categoryOrder.forEach(category => {
-        const members = grouped[category];
-        if (!members || members.length === 0) return;
-
-        const rows = members.map((row, index) => `
+    const printRows = nonRegisteredData.map((row, index) => {
+        return `
             <tr>
-                <td style="width: 4%;">${index + 1}</td>
-                <td style="width: 13%; font-weight: bold;">${row.ccp}</td>
-                <td style="width: 33%; text-align: right; padding-right: 5px;">${row.fmn} ${row.frn}</td>
-                <td style="width: 38%; text-align: right; padding-right: 5px; color: #004a99;">${gradeMap[row.gr] || row.gr}</td>
-                <td style="width: 6%;">${row.gr}</td>
-                <td style="width: 6%;">${row.adm}</td>
+                <td>${index + 1}</td>
+                <td style="font-weight:bold;">${row.ccp}</td>
+                <td>${row.fmn} ${row.frn}</td>
+                <td>${row.gr || ''}</td>
+                <td>${row.ass || ''}</td>
+                <td>${row.adm || ''}</td>
             </tr>
-        `).join('');
-
-        fullHTML += `
-            <div class="print-page">
-                <div class="official-header">
-                    <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
-                    <p>وزارة التربية الوطنية</p>
-                    <p>مديرية التربية لولاية توقرت</p>
-                    <p>مصلحة تسيير نفقات المستخدمين</p>
-                </div>
-
-                <div class="report-title-section">
-                    <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
-                    <div class="category-box-container">
-                         <h3 class="category-info">${category} (العدد الإجمالي: ${members.length})</h3>
-                    </div>
-                </div>
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 4%;">#</th>
-                            <th style="width: 13%;">رقم الحساب (CCP)</th>
-                            <th style="width: 33%;">الاسم واللقب</th>
-                            <th style="width: 38%;">الوظيفة المستنتجة</th>
-                            <th style="width: 6%;">الرتبة</th>
-                            <th style="width: 6%;">ADM</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-                <div class="print-date-footer">تاريخ الاستخراج: ${printDate}</div>
-            </div>
         `;
-    });
+    }).join('');
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
         <head>
-            <title>تقرير غير المسجلين المبوب - 2026</title>
-            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
+            <title>قائمة غير المسجلين</title>
             <style>
-                @page { size: A4 portrait; margin: 10mm 5mm; }
-                body { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; }
-                .print-page { page-break-after: always; width: 100%; box-sizing: border-box; }
-                .official-header { text-align: center; margin-bottom: 15px; line-height: 1.2; font-weight: 700; font-size: 12px; }
-                .official-header p { margin: 1px 0; }
-                .report-title-section { text-align: center; margin-bottom: 10px; }
-                .main-title { margin: 0; font-size: 17px; text-decoration: underline; font-weight: 800; }
-                .category-info {
-                    margin: 5px auto; padding: 5px 15px;
-                    border: 1.5px solid #000; display: inline-block;
-                    background-color: #f2f2f2 !important; font-size: 13px; border-radius: 4px;
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+                
+                /* فرض الطباعة العمودية */
+                @page { 
+                    size: portrait; 
+                    margin: 10mm; 
                 }
-                .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.2px solid #000; margin: 0 auto; }
-                .data-table th, .data-table td { border: 1px solid #000; padding: 4px 2px; text-align: center; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
-                .data-table th { background-color: #e9e9e9 !important; font-weight: 800; font-size: 11px; }
-                .print-date-footer { margin-top: 8px; font-size: 9px; text-align: left; }
-                @media print { .print-page { width: 100%; margin: 0; } }
+                
+                body { font-family: 'Cairo', sans-serif; padding: 20px; }
+                .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+                th { background-color: #eee; font-weight: bold; }
             </style>
         </head>
         <body>
-            ${fullHTML}
-            <script>window.onload = function() { setTimeout(() => { window.print(); }, 1000); }</script>
+            <div class="header">
+                <h3>مديرية التربية لولاية توقرت</h3>
+                <h2>قائمة الموظفين غير المسجلين</h2>
+                <p>تاريخ: ${printDate} - العدد: ${nonRegisteredData.length}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>CCP</th><th>الاسم واللقب</th><th>الرتبة</th><th>ASS</th><th>ADM</th></tr>
+                </thead>
+                <tbody>
+                    ${printRows}
+                </tbody>
+            </table>
+            <script>window.onload = function() { window.print(); }</script>
         </body>
         </html>
     `);
@@ -2404,8 +2313,6 @@ window.filterModalTable = function() {
         }
     });
 };
-
-
 
 
 
