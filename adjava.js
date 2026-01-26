@@ -1693,12 +1693,12 @@ window.printNonRegistered = function() {
 
         const rows = members.map((row, index) => `
             <tr>
-                <td style="width:5%">${index + 1}</td>
-                <td style="font-weight:bold; width:15%">${row.ccp}</td>
-                <td style="text-align:right; padding-right:5px; width:30%">${row.fmn} ${row.frn}</td>
-                <td style="text-align:right; padding-right:5px; width:35%">${gradeMap[row.gr] || '---'}</td>
-                <td style="width:8%">${row.gr}</td>
-                <td style="width:7%">${row.adm}</td>
+                <td style="width:4%">${index + 1}</td>
+                <td style="font-weight:bold; width:13%">${row.ccp}</td>
+                <td style="text-align:right; padding-right:5px; width:33%">${row.fmn} ${row.frn}</td>
+                <td style="text-align:right; padding-right:5px; width:38%">${gradeMap[row.gr] || '---'}</td>
+                <td style="width:6%">${row.gr}</td>
+                <td style="width:6%">${row.adm}</td>
             </tr>
         `).join('');
 
@@ -1721,7 +1721,7 @@ window.printNonRegistered = function() {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>الرقم</th>
+                            <th>#</th>
                             <th>رقم الحساب (CCP)</th>
                             <th>الاسم واللقب</th>
                             <th>الوظيفة</th>
@@ -1745,91 +1745,48 @@ window.printNonRegistered = function() {
             <title>تقرير غير المسجلين 2026</title>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
             <style>
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
                 @page { 
                     size: A4 portrait; 
-                    margin: 15mm 12mm; /* زيادة الهامش الأيمن والأيسر لضمان ظهور الحدود */
+                    margin: 10mm 8mm; 
                 }
                 body { 
                     font-family: 'Cairo', sans-serif; 
-                    margin: 0; 
-                    padding: 0; 
+                    margin: 0; padding: 0; 
                     background: #fff;
-                    color: #000;
                     -webkit-print-color-adjust: exact;
                 }
-                .print-page { 
-                    page-break-after: always; 
-                    width: 100%;
-                }
-                .official-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    line-height: 1.3;
-                    font-weight: 700;
-                    font-size: 13px;
-                }
+                .print-page { page-break-after: always; width: 100%; }
+                .official-header { text-align: center; margin-bottom: 15px; line-height: 1.2; font-weight: 700; font-size: 12px; }
                 .official-header p { margin: 1px 0; }
-                
-                .report-title-section {
-                    text-align: center;
-                    margin-bottom: 15px;
-                }
-                .main-title {
-                    margin: 0 0 10px 0;
-                    font-size: 18px;
-                    text-decoration: underline;
-                    font-weight: 800;
-                }
-                .category-box-container { text-align: center; }
+                .report-title-section { text-align: center; margin-bottom: 10px; }
+                .main-title { margin: 0; font-size: 17px; text-decoration: underline; font-weight: 800; }
                 .category-info {
-                    margin: 5px auto;
-                    padding: 6px 15px;
-                    border: 1.5px solid #000;
-                    display: inline-block;
-                    background-color: #f2f2f2 !important;
-                    font-size: 14px;
-                    border-radius: 4px;
+                    margin: 5px auto; padding: 5px 15px;
+                    border: 1.5px solid #000; display: inline-block;
+                    background-color: #f2f2f2 !important; font-size: 13px; border-radius: 4px;
                 }
-                
                 .data-table { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    table-layout: fixed; /* تثبيت عرض الأعمدة لضمان عدم الخروج عن الصفحة */
-                    border: 1px solid #000;
+                    width: 100%; border-collapse: collapse; 
+                    table-layout: fixed; border: 1.2px solid #000;
                 }
                 .data-table th, .data-table td { 
-                    border: 1px solid #000; 
-                    padding: 5px 2px; 
-                    text-align: center; 
-                    font-size: 11px; /* تصغير الخط ليتناسب مع سطر واحد */
-                    white-space: nowrap; /* منع النص من النزول لسطر جديد */
-                    overflow: hidden;
-                    text-overflow: ellipsis; /* إضافة نقاط في حال كان النص طويلاً جداً جداً */
+                    border: 1px solid #000; padding: 4px 2px; 
+                    text-align: center; font-size: 10.5px; 
+                    white-space: nowrap; overflow: hidden; text-overflow: clip;
                 }
-                .data-table th { 
-                    background-color: #e9e9e9 !important; 
-                    font-weight: 800;
-                }
-                .print-date-footer {
-                    margin-top: 10px;
-                    font-size: 10px;
-                    text-align: left;
-                }
-                @media print {
-                    body { width: 100%; }
-                    .data-table { width: 100% !important; }
-                }
+                .data-table th { background-color: #e9e9e9 !important; font-weight: 800; font-size: 11px; }
+                .print-date-footer { margin-top: 8px; font-size: 9px; text-align: left; }
             </style>
         </head>
         <body>
             ${fullHTML}
-            <script>window.onload = function() { setTimeout(() => { window.print(); }, 800); }</script>
+            <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); }</script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
-
 
 // دالة تصدير Excel للقائمة الجديدة (Client-Side) - تم التعديل لفرض النص
 window.exportNonRegisteredExcel = function() {
