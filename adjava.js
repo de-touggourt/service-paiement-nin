@@ -1677,7 +1677,7 @@ window.showNonRegisteredModal = function(stats) {
 window.printNonRegistered = function() {
     if (nonRegisteredData.length === 0) return;
 
-    const printDate = new Date().toLocaleDateString('ar-DZ');
+    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
     const grouped = nonRegisteredData.reduce((acc, row) => {
         const cat = getCategoryByGrade(row.gr);
         if (!acc[cat]) acc[cat] = [];
@@ -1693,12 +1693,12 @@ window.printNonRegistered = function() {
 
         const rows = members.map((row, index) => `
             <tr>
-                <td style="width:40px;">${index + 1}</td>
-                <td style="font-weight:bold; width:120px;">${row.ccp}</td>
-                <td style="text-align:right; padding-right:10px;">${row.fmn} ${row.frn}</td>
-                <td style="text-align:right; padding-right:10px;">${gradeMap[row.gr] || '---'}</td>
-                <td style="width:80px;">${row.gr}</td>
-                <td style="width:80px;">${row.adm}</td>
+                <td style="width:5%">${index + 1}</td>
+                <td style="font-weight:bold; width:15%">${row.ccp}</td>
+                <td style="text-align:right; padding-right:5px; width:30%">${row.fmn} ${row.frn}</td>
+                <td style="text-align:right; padding-right:5px; width:35%">${gradeMap[row.gr] || '---'}</td>
+                <td style="width:8%">${row.gr}</td>
+                <td style="width:7%">${row.adm}</td>
             </tr>
         `).join('');
 
@@ -1713,7 +1713,9 @@ window.printNonRegistered = function() {
 
                 <div class="report-title-section">
                     <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
-                    <h3 class="category-info">${category} (العدد الإجمالي: ${members.length})</h3>
+                    <div class="category-box-container">
+                         <h3 class="category-info">${category} (العدد الإجمالي: ${members.length})</h3>
+                    </div>
                 </div>
                 
                 <table class="data-table">
@@ -1745,7 +1747,7 @@ window.printNonRegistered = function() {
             <style>
                 @page { 
                     size: A4 portrait; 
-                    margin: 15mm 10mm; /* تعديل الهوامش */
+                    margin: 15mm 12mm; /* زيادة الهامش الأيمن والأيسر لضمان ظهور الحدود */
                 }
                 body { 
                     font-family: 'Cairo', sans-serif; 
@@ -1753,64 +1755,69 @@ window.printNonRegistered = function() {
                     padding: 0; 
                     background: #fff;
                     color: #000;
+                    -webkit-print-color-adjust: exact;
                 }
                 .print-page { 
                     page-break-after: always; 
-                    position: relative;
+                    width: 100%;
                 }
                 .official-header {
                     text-align: center;
-                    margin-bottom: 25px;
-                    line-height: 1.4;
+                    margin-bottom: 20px;
+                    line-height: 1.3;
                     font-weight: 700;
-                    font-size: 14px;
+                    font-size: 13px;
                 }
-                .official-header p { margin: 2px 0; }
+                .official-header p { margin: 1px 0; }
                 
                 .report-title-section {
                     text-align: center;
-                    margin-bottom: 20px;
+                    margin-bottom: 15px;
                 }
                 .main-title {
-                    margin: 0;
-                    font-size: 20px;
+                    margin: 0 0 10px 0;
+                    font-size: 18px;
                     text-decoration: underline;
                     font-weight: 800;
                 }
+                .category-box-container { text-align: center; }
                 .category-info {
-                    margin: 10px auto;
-                    padding: 8px 20px;
-                    border: 2px solid #000;
+                    margin: 5px auto;
+                    padding: 6px 15px;
+                    border: 1.5px solid #000;
                     display: inline-block;
-                    background-color: #f9f9f9 !important;
-                    font-size: 16px;
-                    border-radius: 5px;
+                    background-color: #f2f2f2 !important;
+                    font-size: 14px;
+                    border-radius: 4px;
                 }
                 
                 .data-table { 
                     width: 100%; 
                     border-collapse: collapse; 
-                    margin-top: 10px;
+                    table-layout: fixed; /* تثبيت عرض الأعمدة لضمان عدم الخروج عن الصفحة */
+                    border: 1px solid #000;
                 }
                 .data-table th, .data-table td { 
                     border: 1px solid #000; 
-                    padding: 8px 5px; 
+                    padding: 5px 2px; 
                     text-align: center; 
-                    font-size: 13px; 
+                    font-size: 11px; /* تصغير الخط ليتناسب مع سطر واحد */
+                    white-space: nowrap; /* منع النص من النزول لسطر جديد */
+                    overflow: hidden;
+                    text-overflow: ellipsis; /* إضافة نقاط في حال كان النص طويلاً جداً جداً */
                 }
                 .data-table th { 
-                    background-color: #ededed !important; 
-                    -webkit-print-color-adjust: exact;
+                    background-color: #e9e9e9 !important; 
                     font-weight: 800;
                 }
                 .print-date-footer {
-                    margin-top: 15px;
-                    font-size: 11px;
+                    margin-top: 10px;
+                    font-size: 10px;
                     text-align: left;
-                    font-style: italic;
                 }
                 @media print {
-                    body { -webkit-print-color-adjust: exact; }
+                    body { width: 100%; }
+                    .data-table { width: 100% !important; }
                 }
             </style>
         </head>
@@ -1822,6 +1829,8 @@ window.printNonRegistered = function() {
     `);
     printWindow.document.close();
 };
+
+
 // دالة تصدير Excel للقائمة الجديدة (Client-Side) - تم التعديل لفرض النص
 window.exportNonRegisteredExcel = function() {
     let tableContent = `
