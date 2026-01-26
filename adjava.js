@@ -1516,53 +1516,53 @@ window.printForm = function(index) {
 window.checkNonRegistered = async function() {
     Swal.fire({
         title: 'جاري مطابقة البيانات...',
-        html: 'يتم جلب البيانات ومطابقة السجلات بدقة بناءً على الرتب والوظائف.<br>يرجى الانتظار...',
+        html: 'يتم الآن جلب السجلات من Firebase ومطابقتها مع الجدول المحلي.<br>يرجى الانتظار...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
 
     try {
+        // 1. تحديث البيانات المحلية أولاً
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
         if (result.status !== "success") throw new Error("فشل في تحديث البيانات المحلية");
         allData = result.data; 
 
+        // 2. جلب بيانات Firebase
         const colRef = collection(db, "employeescompay");
         const snapshot = await getDocs(colRef);
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
+        // 3. مطابقة البيانات (CCP)
         const localCCPs = new Set(allData.map(item => 
             item.ccp ? String(item.ccp).trim().replace(/^0+/, '') : ""
         ));
 
-        const uniqueFirebaseMap = {};
-        firebaseData.forEach(emp => {
-            if (emp.ccp) {
-                const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
-                if (cleanCCP !== "") uniqueFirebaseMap[cleanCCP] = emp;
-            }
-        });
-
-        const uniqueFirebaseList = Object.values(uniqueFirebaseMap);
+        const uniqueFirebaseList = firebaseData.filter((emp, index, self) =>
+            emp.ccp && index === self.findIndex((t) => t.ccp === emp.ccp)
+        );
 
         nonRegisteredData = uniqueFirebaseList.filter(emp => {
             const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
             return !localCCPs.has(cleanCCP);
         });
 
-        // ترتيب القائمة حسب الفئات المحددة إدارياً
+        // 4. الترتيب حسب الطور والمهنة
         nonRegisteredData.sort((a, b) => {
             const catA = getCategoryByGrade(a.gr);
             const catB = getCategoryByGrade(b.gr);
             return categoryOrder.indexOf(catA) - categoryOrder.indexOf(catB);
         });
 
+        // 5. حساب الإحصائيات
         const stats = {
             totalFirebase: uniqueFirebaseList.length,
             totalRegistered: uniqueFirebaseList.length - nonRegisteredData.length,
             totalNonReg: nonRegisteredData.length
         };
 
+        // 6. إغلاق تحذير التحميل وفتح واجهة النتائج
+        Swal.close();
         window.showNonRegisteredModal(stats);
 
     } catch (error) {
@@ -1573,70 +1573,79 @@ window.checkNonRegistered = async function() {
 
 // 2. دالة عرض نافذة التقرير المحدثة بعمود الوظيفة
 window.showNonRegisteredModal = function(stats) {
+    // بناء أسطر الجدول أولاً
     const tableRows = nonRegisteredData.map((row, index) => {
         const jobTitle = gradeMap[row.gr] || '<span style="color:#d9534f">رتبة غير معروفة</span>';
         const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${jobTitle} ${row.adm}`.toLowerCase();
         return `
             <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
-                <td style="padding:10px; width:40px; text-align:center;">${index + 1}</td>
-                <td style="padding:10px; font-weight:bold; color:#d63384; width:100px;">${row.ccp || '-'}</td>
-                <td style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
-                <td style="padding:10px; color:#0d6efd; font-weight:600;">${jobTitle}</td>
-                <td style="padding:10px; width:70px; text-align:center;">${row.gr || '-'}</td>
-                <td style="padding:10px; width:90px; text-align:center;">${row.adm || '-'}</td>
+                <td style="padding:12px; text-align:center;">${index + 1}</td>
+                <td style="padding:12px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
+                <td style="padding:12px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
+                <td style="padding:12px; color:#0d6efd; font-weight:600;">${jobTitle}</td>
+                <td style="padding:12px; text-align:center;">${row.gr || '-'}</td>
+                <td style="padding:12px; text-align:center;">${row.adm || '-'}</td>
             </tr>
         `;
     }).join('');
 
+    // تجميع المحتوى الكامل للنافذة
     const modalContent = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
-            <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
-                <div style="font-size:12px; color:#1565c0;">عدد الموظفين</div>
-                <div style="font-size:20px; font-weight:bold; color:#0d47a1;">${stats.totalFirebase}</div>
+        <div style="direction:rtl; font-family:'Cairo', sans-serif;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
+                <div style="background:#e3f2fd; padding:15px; border-radius:10px; flex:1; border:1px solid #90caf9; text-align:center;">
+                    <div style="font-size:12px; color:#1565c0;">إجمالي القاعدة</div>
+                    <div style="font-size:20px; font-weight:bold;">${stats.totalFirebase}</div>
+                </div>
+                <div style="background:#e8f5e9; padding:15px; border-radius:10px; flex:1; border:1px solid #a5d6a7; text-align:center;">
+                    <div style="font-size:12px; color:#2e7d32;">المسجلين حالياً</div>
+                    <div style="font-size:20px; font-weight:bold;">${stats.totalRegistered}</div>
+                </div>
+                <div style="background:#ffebee; padding:15px; border-radius:10px; flex:1; border:1px solid #ef9a9a; text-align:center;">
+                    <div style="font-size:12px; color:#c62828;">غير المسجلين</div>
+                    <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
+                </div>
             </div>
-            <div style="background:#e8f5e9; padding:10px; border-radius:8px; flex:1; border:1px solid #a5d6a7;">
-                <div style="font-size:12px; color:#2e7d32;">المسجلين حاليا</div>
-                <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalRegistered}</div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:10px;">
+                <div style="position:relative; flex-grow:1;">
+                    <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
+                    <input type="text" id="modalSearchInput" onkeyup="window.filterModalTable()" 
+                           placeholder="بحث سريع بالاسم أو الوظيفة..." 
+                           style="width:100%; padding:12px 40px 12px 12px; border:1px solid #ddd; border-radius:10px; outline:none; font-family:'Cairo';">
+                </div>
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; height:45px; padding:0 20px; border-radius:10px;">
+                    طباعة مجمعة <i class="fas fa-print"></i>
+                </button>
             </div>
-            <div style="background:#ffebee; padding:10px; border-radius:8px; flex:1; border:1px solid #ef9a9a;">
-                <div style="font-size:12px; color:#c62828;">الغير مسجلين</div>
-                <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
+
+            <div style="height:450px; overflow-y:auto; border:1px solid #eee; border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:right;">
+                    <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 100; box-shadow: 0 2px 2px rgba(0,0,0,0.1);">
+                        <tr>
+                            <th style="padding:12px; width:50px; text-align:center;">#</th>
+                            <th style="padding:12px; width:120px;">CCP</th>
+                            <th style="padding:12px;">الاسم واللقب</th>
+                            <th style="padding:12px;">الوظيفة المستنتجة</th>
+                            <th style="padding:12px; width:80px; text-align:center;">الرتبة</th>
+                            <th style="padding:12px; width:80px; text-align:center;">ADM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalTableBody">
+                        ${tableRows.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:30px;">جميع الموظفين مسجلين بنجاح ✅</td></tr>'}
+                    </tbody>
+                </table>
             </div>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px;">
-            <div style="position:relative; flex-grow:1;">
-                <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
-                <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
-                       placeholder="بحث سريع بالاسم، الوظيفة، أو رقم الحساب..." 
-                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
-            </div>
-            <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white;">
-                طباعة القائمة المجمعة <i class="fas fa-print"></i>
-            </button>
-        </div>
-        <div class="table-responsive" style="height:450px; overflow-y:auto; direction:rtl; border:1px solid #eee; border-radius:8px;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
-                <thead style="position: sticky; top: 0; z-index: 100; background: #f8f9fa; box-shadow: 0 2px 2px rgba(0,0,0,0.1);">
-                    <tr>
-                        <th style="padding:12px; width:50px;">#</th>
-                        <th style="padding:12px; width:120px;">CCP</th>
-                        <th style="padding:12px;">الاسم واللقب</th>
-                        <th style="padding:12px;">الوظيفة المستنتجة</th>
-                        <th style="padding:12px; width:80px;">الرتبة</th>
-                        <th style="padding:12px; width:100px;">ADM</th>
-                    </tr>
-                </thead>
-                <tbody id="modalTableBody">${tableRows}</tbody>
-            </table>
         </div>
     `;
 
     Swal.fire({
-        title: '<strong>تقرير حالة التسجيل (مطابقة القاعدة والوظائف)</strong>',
+        title: '<strong>تقرير مطابقة قاعدة البيانات والوظائف</strong>',
         html: modalContent,
-        width: '1050px',
+        width: '1100px',
         showConfirmButton: true,
         confirmButtonText: 'إغلاق',
+        confirmButtonColor: '#6c757d',
         customClass: { popup: 'swal-wide' }
     });
 };
