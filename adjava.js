@@ -73,10 +73,10 @@ const getCategoryByGrade = (gr) => {
     if (workerCodes.includes(g)) return "العمال المهنيين وأعوان الأمن";
     
     // الإداريين والمدراء وباقي الرتب المعروفة
-    if (gradeMap[g]) return "الإداريين والمدراء وباقي الرتب";
+    if (gradeMap[g]) return "المدراء و الرتب الإدارية";
     
     // في حال وجود كود رتبة غير موجود في الخريطة
-    return "موظفون لم يتم التعرف على وظيفتهم";
+    return "قائمة الموظفين الإضافية";
 };
 
 // الترتيب الذي ستظهر به المجموعات في صفحات الطباعة
@@ -84,9 +84,9 @@ const categoryOrder = [
     "أساتذة التعليم الإبتدائي",
     "أساتذة التعليم المتوسط",
     "أساتذة التعليم الثانوي",
-    "الإداريين والمدراء وباقي الرتب",
+    "المدراء و الرتب الإدارية",
     "العمال المهنيين وأعوان الأمن",
-    "موظفون لم يتم التعرف على وظيفتهم"
+    "قائمة الموظفين الإضافية"
 ];
 
 
@@ -1674,7 +1674,7 @@ window.showNonRegisteredModal = function(stats) {
     `;
 
     Swal.fire({
-        title: '<strong>تقرير حالة التسجيل (مطابقة القاعدة)</strong>',
+        title: '<strong>تقرير حالة التسجيل</strong>',
         html: modalContent,
         width: '1000px',
         showConfirmButton: true,
@@ -1724,16 +1724,16 @@ window.printNonRegistered = function() {
 
                 <div class="report-title-section">
                     <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
-                    <div class="category-info">فئة الموظفين: ${category} (العدد: ${members.length})</div>
+                    <div class="category-info">قائمة الموظفين: ${category} (العدد: ${members.length})</div>
                 </div>
                 
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th>الرقم</th>
                             <th>رقم الحساب (CCP)</th>
                             <th>الاسم واللقب</th>
-                            <th>الوظيفة المسجلة</th>
+                            <th>الوظيفة</th>
                             <th>الرتبة</th>
                             <th>ADM</th>
                         </tr>
@@ -1744,7 +1744,7 @@ window.printNonRegistered = function() {
                 </table>
                 
                 <div class="print-footer-info">
-                    تاريخ الاستخراج: ${printDate} | صفحة إحصائية داخلية لمديرية التربية
+                    تاريخ الاستخراج: ${printDate} | مستخرج من المنصة الرقمية لمديرية التربية
                 </div>
             </div>
         `;
@@ -2493,7 +2493,6 @@ window.filterModalTable = function() {
         }
     });
 };
-
 
 
 
