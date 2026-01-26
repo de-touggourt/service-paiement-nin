@@ -1519,23 +1519,22 @@ window.checkNonRegistered = async function() {
     }
 };
 
-// دالة عرض النافذة المنبثقة مع الإحصائيات التفصيلية
+// دالة عرض النافذة المنبثقة (معدلة لإضافة حقل البحث السريع)
 window.showNonRegisteredModal = function(stats) {
-    // بناء صفوف الجدول
+    // بناء صفوف الجدول مع إضافة كلاسات للبحث
     const tableRows = nonRegisteredData.map((row, index) => {
         return `
-            <tr style="border-bottom:1px solid #eee;">
+            <tr class="non-reg-row" style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${index + 1}</td>
-                <td style="padding:10px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
-                <td style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
+                <td class="search-ccp" style="padding:10px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
+                <td class="search-name" style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
                 <td style="padding:10px;">${row.gr || '-'}</td>
                 <td style="padding:10px;">${row.ass || '-'}</td>
-                <td style="padding:10px;">${row.adm || '-'}</td>
+                <td class="search-adm" style="padding:10px;">${row.adm || '-'}</td>
             </tr>
         `;
     }).join('');
 
-    // تصميم الهيدر الذي يحتوي على الإحصائيات
     const headerStats = `
         <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
             <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
@@ -1553,28 +1552,32 @@ window.showNonRegisteredModal = function(stats) {
         </div>
     `;
 
-    // محتوى النافذة الكامل
-    // التعديل: تقليص max-height من 450px إلى 50vh لضمان ظهور زر الإغلاق في الشاشات الصغيرة
     const modalContent = `
         ${headerStats}
         
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <div style="font-weight:bold;">قائمة الموظفين الغير مسجلين بعد:</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <div style="position:relative; flex-grow:1; min-width:250px;">
+                <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
+                <input type="text" id="modalSearchInput" onkeyup="window.filterModalTable()" 
+                       placeholder="بحث سريع (بالاسم، CCP، أو الإدارة)..." 
+                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:8px; font-family:'Cairo'; font-size:14px; outline:none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);">
+            </div>
+
             <div style="display:flex; gap:10px;">
-                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px;">
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px; height:40px;">
                     طباعة القائمة <i class="fas fa-print"></i>
                 </button>
-                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px;">
+                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px; height:40px;">
                     Excel <i class="fas fa-file-excel"></i>
                 </button>
             </div>
         </div>
 
-        <div class="table-responsive" style="max-height:50vh; overflow-y:auto; direction:rtl;">
+        <div class="table-responsive" style="max-height:45vh; overflow-y:auto; direction:rtl; border-radius:8px; border:1px solid #eee;">
             <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
-                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10;">
+                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 1px 0 #eee;">
                     <tr>
-                        <th style="padding:12px;">الرقم</th>
+                        <th style="padding:12px;">#</th>
                         <th style="padding:12px;">CCP</th>
                         <th style="padding:12px;">الاسم واللقب</th>
                         <th style="padding:12px;">الرتبة</th>
@@ -1582,7 +1585,7 @@ window.showNonRegisteredModal = function(stats) {
                         <th style="padding:12px;">كود الإدارة</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="modalTableBody">
                     ${nonRegisteredData.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:20px;">جميع الموظفين مسجلين! ✅</td></tr>'}
                 </tbody>
             </table>
@@ -2282,7 +2285,21 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
     });
 };
 
+// دالة الفلترة اللحظية لجدول نافذة التقرير
+window.filterModalTable = function() {
+    const query = document.getElementById("modalSearchInput").value.toLowerCase();
+    const rows = document.querySelectorAll(".non-reg-row");
 
+    rows.forEach(row => {
+        const textToSearch = row.innerText.toLowerCase();
+        // سيبحث في السطر كاملاً (الاسم، CCP، والوظيفة)
+        if (textToSearch.includes(query)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+};
 
 
 
