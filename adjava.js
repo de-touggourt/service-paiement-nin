@@ -53,23 +53,40 @@ const gradeMap = {
 };
 
 // دالة لتصنيف الموظفين حسب الطور والمهنة (تستخدم للترتيب والطباعة)
+// دالة لتصنيف الموظفين حسب المجموعات المطلوبة بدقة
+// دالة لتصنيف الموظفين حسب المجموعات المطلوبة بدقة
 const getCategoryByGrade = (gr) => {
-    if (!gr) return "أخرى / غير مصنف";
+    if (!gr) return "موظفون لم يتم التعرف على وظيفتهم";
     const g = String(gr);
-    if (g.startsWith('1') || g.startsWith('2')) return "الطور الابتدائي والمدراء";
-    if (g.startsWith('3') || g.startsWith('4')) return "الطور المتوسط والمدراء";
-    if (g.startsWith('5') || g.startsWith('6')) return "الطور الثانوي والمدراء";
-    if (g.startsWith('7')) return "المصالح الإدارية والرقابة (مديرية التربية)";
-    return "الأسلاك المشتركة والعمال المهنيين";
+    
+    // أساتذة الابتدائي (تبدأ بـ 10)
+    if (g.startsWith('10')) return "أساتذة التعليم الإبتدائي";
+    
+    // أساتذة المتوسط (تبدأ بـ 30)
+    if (g.startsWith('30')) return "أساتذة التعليم المتوسط";
+    
+    // أساتذة الثانوي (تبدأ بـ 50)
+    if (g.startsWith('50')) return "أساتذة التعليم الثانوي";
+    
+    // العمال (أكواد العمال المهنيين وسائقي السيارات)
+    const workerCodes = ["6110", "6155", "6161", "6205", "6221", "6241", "7280", "7310", "7434", "6201", "6140", "6165", "6225"];
+    if (workerCodes.includes(g)) return "العمال المهنيين وأعوان الأمن";
+    
+    // الإداريين والمدراء وباقي الرتب المعروفة
+    if (gradeMap[g]) return "المدراء والرتب الإدارية";
+    
+    // في حال وجود كود رتبة غير موجود في الخريطة
+    return "قائمة الموظفين الإضافية";
 };
 
+// الترتيب الذي ستظهر به المجموعات في صفحات الطباعة
 const categoryOrder = [
-    "الطور الابتدائي والمدراء",
-    "الطور المتوسط والمدراء",
-    "الطور الثانوي والمدراء",
-    "المصالح الإدارية والرقابة (مديرية التربية)",
-    "الأسلاك المشتركة والعمال المهنيين",
-    "أخرى / غير مصنف"
+    "أساتذة التعليم الإبتدائي",
+    "أساتذة التعليم المتوسط",
+    "أساتذة التعليم الثانوي",
+    "المدراء والرتب الإدارية",
+    "العمال المهنيين وأعوان الأمن",
+    "قائمة الموظفين الإضافية"
 ];
 
 
@@ -1658,9 +1675,9 @@ window.showNonRegisteredModal = function(stats) {
 
 // 3. دالة الطباعة المجمعة المحدثة بصفحات فاصلة لكل طور
 window.printNonRegistered = function() {
-    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
-    
-    // تجميع البيانات حسب الفئات
+    if (nonRegisteredData.length === 0) return;
+
+    const printDate = new Date().toLocaleDateString('ar-DZ');
     const grouped = nonRegisteredData.reduce((acc, row) => {
         const cat = getCategoryByGrade(row.gr);
         if (!acc[cat]) acc[cat] = [];
@@ -1676,49 +1693,45 @@ window.printNonRegistered = function() {
 
         const rows = members.map((row, index) => `
             <tr>
-                <td>${index + 1}</td>
-                <td style="font-weight:bold;">${row.ccp}</td>
+                <td style="width:40px;">${index + 1}</td>
+                <td style="font-weight:bold; width:120px;">${row.ccp}</td>
                 <td style="text-align:right; padding-right:10px;">${row.fmn} ${row.frn}</td>
-                <td style="text-align:right; padding-right:10px; color:#004a99; font-weight:600;">${gradeMap[row.gr] || row.gr}</td>
-                <td>${row.gr}</td>
-                <td>${row.adm}</td>
-                <td style="width:100px;"></td> </tr>
+                <td style="text-align:right; padding-right:10px;">${gradeMap[row.gr] || '---'}</td>
+                <td style="width:80px;">${row.gr}</td>
+                <td style="width:80px;">${row.adm}</td>
+            </tr>
         `).join('');
 
         fullHTML += `
             <div class="print-page">
-                <div class="header">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="text-align:right; font-size:12px;">
-                            الجمهورية الجزائرية الديمقراطية الشعبية<br>
-                            مديرية التربية لولاية توقرت<br>
-                            مصلحة تسيير نفقات المستخدمين
-                        </div>
-                        <div style="text-align:center;">
-                            <h2 style="margin:0; text-decoration:underline;">قائمة الموظفين غير المسجلين</h2>
-                            <div style="margin-top:10px; padding:5px 15px; background:#eee; border:1px solid #000; font-weight:bold;">${category}</div>
-                        </div>
-                        <div style="text-align:left; font-size:12px;">تاريخ الاستخراج: ${printDate}</div>
-                    </div>
+                <div class="official-header">
+                    <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
+                    <p>وزارة التربية الوطنية</p>
+                    <p>مديرية التربية لولاية توقرت</p>
+                    <p>مصلحة تسيير نفقات المستخدمين</p>
                 </div>
-                <table>
+
+                <div class="report-title-section">
+                    <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
+                    <h3 class="category-info">${category} (العدد الإجمالي: ${members.length})</h3>
+                </div>
+                
+                <table class="data-table">
                     <thead>
                         <tr>
-                            <th width="5%">#</th>
-                            <th width="15%">CCP</th>
-                            <th width="25%">الاسم واللقب</th>
-                            <th width="30%">الوظيفة المستنتجة</th>
-                            <th width="8%">الرتبة</th>
-                            <th width="8%">ADM</th>
-                            <th width="9%">ملاحظات</th>
+                            <th>الرقم</th>
+                            <th>رقم الحساب (CCP)</th>
+                            <th>الاسم واللقب</th>
+                            <th>الوظيفة</th>
+                            <th>الرتبة</th>
+                            <th>ADM</th>
                         </tr>
                     </thead>
-                    <tbody>${rows}</tbody>
+                    <tbody>
+                        ${rows}
+                    </tbody>
                 </table>
-                <div style="margin-top:20px; font-weight:bold; display:flex; justify-content:space-between;">
-                    <span>العدد الإجمالي لهذه الفئة: ${members.length} موظف</span>
-                    <span style="text-align:center; min-width:200px;">ختم وتوقيع مصلحة الرواتب</span>
-                </div>
+                <div class="print-date-footer">تاريخ الاستخراج: ${printDate}</div>
             </div>
         `;
     });
@@ -1727,27 +1740,88 @@ window.printNonRegistered = function() {
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
         <head>
-            <title>قائمة الغير المسجلين في المنصة - 2026</title>
+            <title>تقرير غير المسجلين 2026</title>
+            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
-                @page { size: A4 portrait; margin: 10mm; }
-                body { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
-                .print-page { page-break-after: always; padding-bottom: 20px; }
-                .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th, td { border: 1px solid #000; padding: 7px; text-align: center; font-size: 12px; }
-                th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; font-weight: bold; }
+                @page { 
+                    size: A4 portrait; 
+                    margin: 15mm 10mm; /* تعديل الهوامش */
+                }
+                body { 
+                    font-family: 'Cairo', sans-serif; 
+                    margin: 0; 
+                    padding: 0; 
+                    background: #fff;
+                    color: #000;
+                }
+                .print-page { 
+                    page-break-after: always; 
+                    position: relative;
+                }
+                .official-header {
+                    text-align: center;
+                    margin-bottom: 25px;
+                    line-height: 1.4;
+                    font-weight: 700;
+                    font-size: 14px;
+                }
+                .official-header p { margin: 2px 0; }
+                
+                .report-title-section {
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+                .main-title {
+                    margin: 0;
+                    font-size: 20px;
+                    text-decoration: underline;
+                    font-weight: 800;
+                }
+                .category-info {
+                    margin: 10px auto;
+                    padding: 8px 20px;
+                    border: 2px solid #000;
+                    display: inline-block;
+                    background-color: #f9f9f9 !important;
+                    font-size: 16px;
+                    border-radius: 5px;
+                }
+                
+                .data-table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 10px;
+                }
+                .data-table th, .data-table td { 
+                    border: 1px solid #000; 
+                    padding: 8px 5px; 
+                    text-align: center; 
+                    font-size: 13px; 
+                }
+                .data-table th { 
+                    background-color: #ededed !important; 
+                    -webkit-print-color-adjust: exact;
+                    font-weight: 800;
+                }
+                .print-date-footer {
+                    margin-top: 15px;
+                    font-size: 11px;
+                    text-align: left;
+                    font-style: italic;
+                }
+                @media print {
+                    body { -webkit-print-color-adjust: exact; }
+                }
             </style>
         </head>
         <body>
             ${fullHTML}
-            <script>window.onload = function() { setTimeout(() => { window.print(); }, 1000); }</script>
+            <script>window.onload = function() { setTimeout(() => { window.print(); }, 800); }</script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
-
 // دالة تصدير Excel للقائمة الجديدة (Client-Side) - تم التعديل لفرض النص
 window.exportNonRegisteredExcel = function() {
     let tableContent = `
