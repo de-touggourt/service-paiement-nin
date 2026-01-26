@@ -1481,24 +1481,27 @@ window.checkNonRegistered = async function() {
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
        // 4. منطق المقارنة الذكي (التحويل لأرقام لتجنب مشكلة الأصفار البادئة)
+        // --- ⬇️ بداية التعديل الجذري للمطابقة ⬇️ ---
         
-        // أ) إنشاء Set تحتوي على أرقام الـ CCP المسجلة محلياً (بعد تحويلها لأرقام لحذف الأصفار)
-        const localCCPs = new Set(
-            allData.map(item => {
-                // نأخذ القيمة، نحذف المسافات، ثم نحولها لرقم (هذا يحذف الأصفار في البداية تلقائياً)
-                const cleanCCP = String(item.ccp).trim().replace(/^0+/, ''); 
-                return cleanCCP;
-            }).filter(val => val !== "") // استبعاد القيم الفارغة
-        );
+        // أ) بناء قائمة CCP المحلية (المسجلين) مع حذف الأصفار والمسافات
+        const localCCPs = new Set(allData.map(item => {
+            if (!item.ccp) return "";
+            // تحويل لنص -> حذف المسافات -> حذف الأصفار من اليسار
+            return String(item.ccp).trim().replace(/^0+/, '');
+        }));
 
-        // ب) تصفية بيانات فايربيز (الموظفين الذين لم يسجلوا بعد)
+        // ب) تصفية بيانات Firebase (البحث عن غير المسجلين)
         nonRegisteredData = firebaseData.filter(fbItem => {
-            // تنظيف CCP القادم من فايربيز (حذف الأصفار من اليسار والمسافات)
-            const fbCCP = String(fbItem.ccp).trim().replace(/^0+/, '');
+            if (!fbItem.ccp) return false;
             
-            // إذا كان الـ CCP بعد التنظيف غير موجود في الـ Set المحلية، فهو غير مسجل
-            return !localCCPs.has(fbCCP) && fbCCP !== "";
+            // تنظيف CCP الخاص بقاعدة البيانات بنفس الطريقة تماماً
+            const cleanFbCCP = String(fbItem.ccp).trim().replace(/^0+/, '');
+            
+            // المقارنة الآن ستتم بين (28925178) و (28925178) ولن يهم عدد الأصفار
+            return !localCCPs.has(cleanFbCCP) && cleanFbCCP !== "";
         });
+
+        // --- ⬆️ نهاية التعديل ⬆️ ---
 
         // 5. حساب الإحصائيات للإرسال للعرض
         const stats = {
@@ -2278,6 +2281,7 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
         fSchool.add(new Option(sch.name, sch.name));
     });
 };
+
 
 
 
