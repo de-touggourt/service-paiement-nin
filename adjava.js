@@ -2,6 +2,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// إضافة مكتبة html2pdf تلقائياً في بداية الملف
+if (!document.getElementById('html2pdf-script')) {
+    const script = document.createElement('script');
+    script.id = 'html2pdf-script';
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    document.head.appendChild(script);
+}
+
 // --- إعدادات Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
@@ -2328,3 +2336,4 @@ window.saveNonRegisteredPDF = function() {
         Swal.fire('خطأ', 'فشل في إنشاء ملف PDF: ' + err, 'error');
     });
 };
+
