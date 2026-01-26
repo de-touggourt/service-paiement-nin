@@ -1547,15 +1547,15 @@ window.showNonRegisteredModal = function(stats) {
     const headerStats = `
         <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
             <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
-                <div style="font-size:12px; color:#1565c0;">إجمالي موظفي القاعدة</div>
+                <div style="font-size:12px; color:#1565c0;">عدد الموظفين</div>
                 <div style="font-size:20px; font-weight:bold; color:#0d47a1;">${stats.totalFirebase}</div>
             </div>
             <div style="background:#e8f5e9; padding:10px; border-radius:8px; flex:1; border:1px solid #a5d6a7;">
-                <div style="font-size:12px; color:#2e7d32;">المسجلين بالجدول</div>
+                <div style="font-size:12px; color:#2e7d32;">المسجلين حاليا</div>
                 <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalRegistered}</div>
             </div>
             <div style="background:#ffebee; padding:10px; border-radius:8px; flex:1; border:1px solid #ef9a9a;">
-                <div style="font-size:12px; color:#c62828;">المتبقي (غير مسجل)</div>
+                <div style="font-size:12px; color:#c62828;">الغير مسجلين</div>
                 <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
             </div>
         </div>
@@ -2313,5 +2313,6 @@ window.filterModalTable = function() {
         }
     });
 };
+
 
 
