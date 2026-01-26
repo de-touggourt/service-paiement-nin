@@ -1520,11 +1520,8 @@ window.checkNonRegistered = async function() {
 };
 
 window.showNonRegisteredModal = function(stats) {
-    // بناء صفوف الجدول مع فهرسة البيانات مسبقاً للبحث فائق السرعة
     const tableRows = nonRegisteredData.map((row, index) => {
-        // نجهز نص البحث مسبقاً (الاسم، اللقب، CCP، كود الإدارة)
         const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
-        
         return `
             <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${index + 1}</td>
@@ -1556,20 +1553,22 @@ window.showNonRegisteredModal = function(stats) {
 
     const modalContent = `
         ${headerStats}
-        
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
             <div style="position:relative; flex-grow:1; min-width:250px;">
                 <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
                 <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
-                       placeholder="بحث سريع بالاسم، رقم الحساب، أو الإدارة..." 
-                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none; transition: border 0.3s;">
+                       placeholder="بحث سريع..." 
+                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
             </div>
-            <div style="display:flex; gap:10px;">
-                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px;">
-                    طباعة <i class="fas fa-print"></i>
+            <div style="display:flex; gap:5px;">
+                <button onclick="window.saveNonRegisteredPDF()" class="btn" style="background-color:#e63946; color:white; font-size:12px;" title="حفظ بصيغة PDF">
+                    PDF تحميل<i class="fas fa-file-pdf"></i>
                 </button>
-                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px;">
-                    Excel <i class="fas fa-file-excel"></i>
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
+                   طباعة القائمة<i class="fas fa-print"></i>
+                </button>
+                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
+                    Excel تحميل<i class="fas fa-file-excel"></i>
                 </button>
             </div>
         </div>
@@ -1578,7 +1577,7 @@ window.showNonRegisteredModal = function(stats) {
             <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
                 <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 1px 0 #ddd;">
                     <tr>
-                        <th style="padding:12px;">#</th>
+                        <th style="padding:12px;">الرقم</th>
                         <th style="padding:12px;">CCP</th>
                         <th style="padding:12px;">الاسم واللقب</th>
                         <th style="padding:12px;">الرتبة</th>
@@ -1601,7 +1600,7 @@ window.showNonRegisteredModal = function(stats) {
         confirmButtonText: 'إغلاق',
         customClass: { popup: 'swal-wide' }
     });
-};
+};;
 
 // دالة طباعة القائمة الجديدة (معدلة لتكون عمودية فقط)
 window.printNonRegistered = function() {
@@ -2308,6 +2307,78 @@ window.filterModalTable = function() {
     });
 };
 
+// دالة حفظ قائمة غير المسجلين بصيغة PDF عبر نافذة الطباعة
+window.saveNonRegisteredPDF = function() {
+    if (!nonRegisteredData || nonRegisteredData.length === 0) {
+        Swal.fire('تنبيه', 'لا توجد بيانات للحفظ', 'warning');
+        return;
+    }
+
+    const printDate = new Date().toLocaleDateString('ar-DZ');
+    
+    // بناء الصفوف (نفس منطق الطباعة)
+    const printRows = nonRegisteredData.map((row, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td style="font-weight:bold;">${row.ccp}</td>
+            <td>${row.fmn} ${row.frn}</td>
+            <td>${row.gr || ''}</td>
+            <td>${row.ass || ''}</td>
+            <td>${row.adm || ''}</td>
+        </tr>
+    `).join('');
+
+    const pdfWindow = window.open('', '_blank');
+    pdfWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <title>قائمة_غير_المسجلين_${printDate}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+                @page { size: A4 portrait; margin: 10mm; }
+                body { font-family: 'Cairo', sans-serif; padding: 10px; color: #333; }
+                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td { border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; }
+                th { background-color: #f2f2f2; font-weight: bold; }
+                .footer { margin-top: 20px; font-size: 10px; text-align: left; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h3 style="margin:0;">مديرية التربية لولاية توقرت</h3>
+                <h2 style="margin:10px 0;">قائمة الموظفين غير المسجلين في النظام</h2>
+                <p style="margin:0;">تاريخ الاستخراج: ${printDate} | العدد الإجمالي: ${nonRegisteredData.length}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>CCP</th>
+                        <th>الاسم واللقب</th>
+                        <th>الرتبة</th>
+                        <th>رقم الضمان (ASS)</th>
+                        <th>رمز الإدارة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${printRows}
+                </tbody>
+            </table>
+            <div class="footer">تم إنشاء هذا المستند آلياً بتاريخ ${printDate}</div>
+            <script>
+                window.onload = function() { 
+                    setTimeout(() => { 
+                        window.print(); 
+                        window.close(); 
+                    }, 500); 
+                }
+            </script>
+        </body>
+        </html>
+    `);
+    pdfWindow.document.close();
+};
 
 
 
