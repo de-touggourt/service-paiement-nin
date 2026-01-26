@@ -1704,12 +1704,12 @@ window.printNonRegistered = function() {
 
         const rows = members.map((row, index) => `
             <tr>
-                <td style="width:35px;">${index + 1}</td>
-                <td style="font-weight:700; width:110px;">${row.ccp}</td>
+                <td style="width:40px;">${index + 1}</td>
+                <td style="font-weight:700; width:120px;">${row.ccp}</td>
                 <td style="text-align:right; padding-right:8px;">${row.fmn} ${row.frn}</td>
                 <td style="text-align:right; padding-right:8px;">${gradeMap[row.gr] || '---'}</td>
-                <td style="width:70px;">${row.gr}</td>
-                <td style="width:70px;">${row.adm}</td>
+                <td style="width:80px;">${row.gr}</td>
+                <td style="width:80px;">${row.adm}</td>
             </tr>
         `).join('');
 
@@ -1759,18 +1759,20 @@ window.printNonRegistered = function() {
             <style>
                 @page { 
                     size: A4 portrait; 
-                    margin: 10mm; /* هامش آمن للطابعة */
+                    margin: 15mm 10mm 10mm 10mm; /* زيادة الهامش العلوي واليمين */
                 }
+                * { box-sizing: border-box; }
                 body { 
                     font-family: 'Cairo', sans-serif; 
                     margin: 0; padding: 0; background: #fff; 
+                    width: 100%;
                 }
                 .print-page { 
                     page-break-after: always;
                     display: flex;
                     flex-direction: column;
-                    min-height: 100%; /* لضمان توزيع العناصر */
                     width: 100%;
+                    padding-right: 5px; /* مسافة أمان إضافية للحد الأيمن */
                 }
                 .official-header {
                     text-align: center;
@@ -1796,40 +1798,42 @@ window.printNonRegistered = function() {
                     padding: 5px 15px;
                     border: 1.5px solid #000;
                     display: inline-block;
-                    background-color: #f9f9f9 !important;
                     font-size: 15px;
                     font-weight: 700;
                 }
                 
                 .data-table { 
-                    width: 100%; 
+                    width: 99%; /* تقليل العرض قليلاً لضمان عدم ملامسة الحواف */
                     border-collapse: collapse; 
                     margin-top: 10px;
+                    margin-right: auto;
+                    margin-left: auto;
+                    border: 1.5px solid #000; /* تقوية الإطار الخارجي */
                 }
                 .data-table th, .data-table td { 
                     border: 1px solid #000; 
-                    padding: 7px 4px; 
+                    padding: 8px 5px; 
                     text-align: center; 
                     font-size: 12px; 
                 }
                 .data-table th { 
-                    background-color: #ededed !important; 
+                    background-color: #f2f2f2 !important; 
                     -webkit-print-color-adjust: exact;
                     font-weight: 800;
                 }
 
                 .print-footer-info {
-                    margin-top: 15px; /* يتبع الجدول مباشرة بمسافة صغيرة */
+                    margin-top: 20px;
                     font-size: 11px;
                     font-style: italic;
-                    text-align: left; /* يظهر في جهة اليسار بالأسفل */
-                    border-top: 1px solid #eee;
-                    padding-top: 5px;
+                    text-align: left;
+                    padding-left: 10px;
                 }
 
                 @media print {
                     body { -webkit-print-color-adjust: exact; }
                     .print-page { margin: 0; }
+                    .data-table { width: 100% !important; }
                 }
             </style>
         </head>
@@ -2489,6 +2493,7 @@ window.filterModalTable = function() {
         }
     });
 };
+
 
 
 
