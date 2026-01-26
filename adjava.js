@@ -1704,12 +1704,12 @@ window.printNonRegistered = function() {
 
         const rows = members.map((row, index) => `
             <tr>
-                <td style="width:40px;">${index + 1}</td>
-                <td style="font-weight:bold; width:120px;">${row.ccp}</td>
-                <td style="text-align:right; padding-right:10px;">${row.fmn} ${row.frn}</td>
-                <td style="text-align:right; padding-right:10px;">${gradeMap[row.gr] || '---'}</td>
-                <td style="width:80px;">${row.gr}</td>
-                <td style="width:80px;">${row.adm}</td>
+                <td style="width:35px;">${index + 1}</td>
+                <td style="font-weight:700; width:110px;">${row.ccp}</td>
+                <td style="text-align:right; padding-right:8px;">${row.fmn} ${row.frn}</td>
+                <td style="text-align:right; padding-right:8px;">${gradeMap[row.gr] || '---'}</td>
+                <td style="width:70px;">${row.gr}</td>
+                <td style="width:70px;">${row.adm}</td>
             </tr>
         `).join('');
 
@@ -1724,7 +1724,7 @@ window.printNonRegistered = function() {
 
                 <div class="report-title-section">
                     <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
-                    <h3 class="category-info">${category} (العدد الإجمالي: ${members.length})</h3>
+                    <div class="category-info">فئة الموظفين: ${category} (العدد: ${members.length})</div>
                 </div>
                 
                 <table class="data-table">
@@ -1733,7 +1733,7 @@ window.printNonRegistered = function() {
                             <th>#</th>
                             <th>رقم الحساب (CCP)</th>
                             <th>الاسم واللقب</th>
-                            <th>الوظيفة</th>
+                            <th>الوظيفة المسجلة</th>
                             <th>الرتبة</th>
                             <th>ADM</th>
                         </tr>
@@ -1742,7 +1742,10 @@ window.printNonRegistered = function() {
                         ${rows}
                     </tbody>
                 </table>
-                <div class="print-date-footer">تاريخ الاستخراج: ${printDate}</div>
+                
+                <div class="print-footer-info">
+                    تاريخ الاستخراج: ${printDate} | صفحة إحصائية داخلية لمديرية التربية
+                </div>
             </div>
         `;
     });
@@ -1751,30 +1754,30 @@ window.printNonRegistered = function() {
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
         <head>
-            <title>تقرير غير المسجلين 2026</title>
+            <title>تقرير غير المسجلين</title>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
             <style>
                 @page { 
                     size: A4 portrait; 
-                    margin: 15mm 10mm; /* تعديل الهوامش */
+                    margin: 10mm; /* هامش آمن للطابعة */
                 }
                 body { 
                     font-family: 'Cairo', sans-serif; 
-                    margin: 0; 
-                    padding: 0; 
-                    background: #fff;
-                    color: #000;
+                    margin: 0; padding: 0; background: #fff; 
                 }
                 .print-page { 
-                    page-break-after: always; 
-                    position: relative;
+                    page-break-after: always;
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 100%; /* لضمان توزيع العناصر */
+                    width: 100%;
                 }
                 .official-header {
                     text-align: center;
-                    margin-bottom: 25px;
-                    line-height: 1.4;
+                    margin-bottom: 20px;
+                    line-height: 1.3;
                     font-weight: 700;
-                    font-size: 14px;
+                    font-size: 13px;
                 }
                 .official-header p { margin: 2px 0; }
                 
@@ -1784,18 +1787,18 @@ window.printNonRegistered = function() {
                 }
                 .main-title {
                     margin: 0;
-                    font-size: 20px;
+                    font-size: 19px;
                     text-decoration: underline;
                     font-weight: 800;
                 }
                 .category-info {
-                    margin: 10px auto;
-                    padding: 8px 20px;
-                    border: 2px solid #000;
+                    margin-top: 10px;
+                    padding: 5px 15px;
+                    border: 1.5px solid #000;
                     display: inline-block;
                     background-color: #f9f9f9 !important;
-                    font-size: 16px;
-                    border-radius: 5px;
+                    font-size: 15px;
+                    font-weight: 700;
                 }
                 
                 .data-table { 
@@ -1805,35 +1808,43 @@ window.printNonRegistered = function() {
                 }
                 .data-table th, .data-table td { 
                     border: 1px solid #000; 
-                    padding: 8px 5px; 
+                    padding: 7px 4px; 
                     text-align: center; 
-                    font-size: 13px; 
+                    font-size: 12px; 
                 }
                 .data-table th { 
                     background-color: #ededed !important; 
                     -webkit-print-color-adjust: exact;
                     font-weight: 800;
                 }
-                .print-date-footer {
-                    margin-top: 15px;
+
+                .print-footer-info {
+                    margin-top: 15px; /* يتبع الجدول مباشرة بمسافة صغيرة */
                     font-size: 11px;
-                    text-align: left;
                     font-style: italic;
+                    text-align: left; /* يظهر في جهة اليسار بالأسفل */
+                    border-top: 1px solid #eee;
+                    padding-top: 5px;
                 }
+
                 @media print {
                     body { -webkit-print-color-adjust: exact; }
+                    .print-page { margin: 0; }
                 }
             </style>
         </head>
         <body>
             ${fullHTML}
-            <script>window.onload = function() { setTimeout(() => { window.print(); }, 800); }</script>
+            <script>
+                window.onload = function() { 
+                    setTimeout(() => { window.print(); window.close(); }, 800); 
+                }
+            </script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
-
 // دالة تصدير Excel للقائمة الجديدة (Client-Side) - تم التعديل لفرض النص
 window.exportNonRegisteredExcel = function() {
     let tableContent = `
@@ -2478,6 +2489,7 @@ window.filterModalTable = function() {
         }
     });
 };
+
 
 
 
