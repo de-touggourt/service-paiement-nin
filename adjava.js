@@ -1524,12 +1524,12 @@ window.showNonRegisteredModal = function(stats) {
         const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
         return `
             <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
-                <td style="padding:10px;">${index + 1}</td>
-                <td style="padding:10px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
+                <td style="padding:10px; width:50px;">${index + 1}</td>
+                <td style="padding:10px; font-weight:bold; color:#d63384; width:120px;">${row.ccp || '-'}</td>
                 <td style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
-                <td style="padding:10px;">${row.gr || '-'}</td>
-                <td style="padding:10px;">${row.ass || '-'}</td>
-                <td style="padding:10px;">${row.adm || '-'}</td>
+                <td style="padding:10px; width:100px;">${row.gr || '-'}</td>
+                <td style="padding:10px; width:150px;">${row.ass || '-'}</td>
+                <td style="padding:10px; width:100px;">${row.adm || '-'}</td>
             </tr>
         `;
     }).join('');
@@ -1557,32 +1557,32 @@ window.showNonRegisteredModal = function(stats) {
             <div style="position:relative; flex-grow:1; min-width:250px;">
                 <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
                 <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
-                       placeholder="بحث سريع..." 
+                       placeholder="بحث سريع بالاسم، رقم الحساب، أو الإدارة..." 
                        style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
             </div>
             <div style="display:flex; gap:5px;">
-                <button onclick="window.saveNonRegisteredPDF()" class="btn" style="background-color:#e63946; color:white; font-size:12px;" title="حفظ بصيغة PDF">
-                    PDF تحميل<i class="fas fa-file-pdf"></i>
+                <button onclick="window.saveNonRegisteredPDF()" class="btn" style="background-color:#e63946; color:white; font-size:12px;">
+                    PDF <i class="fas fa-file-pdf"></i>
                 </button>
                 <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
-                   طباعة القائمة<i class="fas fa-print"></i>
+                    طباعة <i class="fas fa-print"></i>
                 </button>
                 <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
-                    Excel تحميل<i class="fas fa-file-excel"></i>
+                    Excel <i class="fas fa-file-excel"></i>
                 </button>
             </div>
         </div>
 
-        <div class="table-responsive" style="max-height:50vh; overflow-y:auto; direction:rtl;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
-                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10; box-shadow:0 1px 0 #ddd;">
+        <div class="table-responsive" style="height:450px; overflow-y:auto; direction:rtl; border:1px solid #eee; border-radius:8px; background:#fff;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right; table-layout: fixed;">
+                <thead style="position: sticky; top: 0; z-index: 100; background: #f8f9fa; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);">
                     <tr>
-                        <th style="padding:12px;">الرقم</th>
-                        <th style="padding:12px;">CCP</th>
-                        <th style="padding:12px;">الاسم واللقب</th>
-                        <th style="padding:12px;">الرتبة</th>
-                        <th style="padding:12px;">الضمان (ASS)</th>
-                        <th style="padding:12px;">كود الإدارة</th>
+                        <th style="padding:12px; width:50px; border-bottom:2px solid #dee2e6;">#</th>
+                        <th style="padding:12px; width:120px; border-bottom:2px solid #dee2e6;">CCP</th>
+                        <th style="padding:12px; border-bottom:2px solid #dee2e6;">الاسم واللقب</th>
+                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">الرتبة</th>
+                        <th style="padding:12px; width:150px; border-bottom:2px solid #dee2e6;">الضمان (ASS)</th>
+                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">كود الإدارة</th>
                     </tr>
                 </thead>
                 <tbody id="modalTableBody">
@@ -1598,10 +1598,10 @@ window.showNonRegisteredModal = function(stats) {
         width: '1000px',
         showConfirmButton: true,
         confirmButtonText: 'إغلاق',
-        customClass: { popup: 'swal-wide' }
+        allowOutsideClick: false, // منع الإغلاق بالخطأ أثناء البحث
+        customClass: { popup: 'swal-wide fixed-modal-height' }
     });
-};;
-
+};
 // دالة طباعة القائمة الجديدة (معدلة لتكون عمودية فقط)
 window.printNonRegistered = function() {
     const printDate = new Date().toLocaleDateString('ar-DZ');
@@ -2290,16 +2290,15 @@ window.filterModalTable = function() {
     const query = document.getElementById("modalSearchInput").value.toLowerCase();
     const rows = document.getElementsByClassName("non-reg-row");
     
-    // استخدام الـ Animation Frame يمنع تشنج الواجهة
+    // استخدام requestAnimationFrame يضمن سلاسة بصرية تامة
     requestAnimationFrame(() => {
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
-            // قراءة الـ data-search أسرع مئات المرات من قراءة الخلية مباشرة
             const isMatch = row.getAttribute('data-search').indexOf(query) > -1;
             
-            // نغير الظهور فقط إذا تغيرت الحالة لتقليل جهد المتصفح
+            // تحديث العرض فقط إذا لزم الأمر لمنع الوميض (Flickering)
             if (isMatch) {
-                if (row.style.display === "none") row.style.display = "";
+                if (row.style.display === "none") row.style.display = "table-row";
             } else {
                 if (row.style.display !== "none") row.style.display = "none";
             }
@@ -2379,6 +2378,7 @@ window.saveNonRegisteredPDF = function() {
     `);
     pdfWindow.document.close();
 };
+
 
 
 
