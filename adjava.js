@@ -71,7 +71,7 @@ const SECURE_DASHBOARD_HTML = `
       <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة موظف<i class="fas fa-database"></i></button>
       <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
       <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
-      <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
+      <button class="btn" style="background-color:#FF00AA; color:white;" onclick="()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
     </div>
 
@@ -1467,51 +1467,65 @@ window.checkNonRegistered = async function() {
     });
 
     try {
-        // 2. تحديث البيانات المحلية أولاً
+        // 2. تحديث البيانات المحلية (الجدول)
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
         
         if (result.status !== "success") {
             throw new Error("فشل في تحديث البيانات المحلية");
         }
-        allData = result.data; // البيانات المحلية المحدثة
+        allData = result.data; 
 
-        // 3. جلب بيانات Firebase بالكامل
+        // 3. جلب بيانات Firebase
         const colRef = collection(db, "employeescompay");
         const snapshot = await getDocs(colRef);
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
-       // 4. منطق المقارنة الذكي (التحويل لأرقام لتجنب مشكلة الأصفار البادئة)
-        // --- ⬇️ بداية التعديل الجذري للمطابقة ⬇️ ---
-        
-        // أ) بناء قائمة CCP المحلية (المسجلين) مع حذف الأصفار والمسافات
-        const localCCPs = new Set(allData.map(item => {
-            if (!item.ccp) return "";
-            // تحويل لنص -> حذف المسافات -> حذف الأصفار من اليسار
-            return String(item.ccp).trim().replace(/^0+/, '');
-        }));
+        // --- ⬇️ معالجة البيانات لضمان دقة الحساب ⬇️ ---
 
-        // ب) تصفية بيانات Firebase (البحث عن غير المسجلين)
-        nonRegisteredData = firebaseData.filter(fbItem => {
-            if (!fbItem.ccp) return false;
-            
-            // تنظيف CCP الخاص بقاعدة البيانات بنفس الطريقة تماماً
-            const cleanFbCCP = String(fbItem.ccp).trim().replace(/^0+/, '');
-            
-            // المقارنة الآن ستتم بين (28925178) و (28925178) ولن يهم عدد الأصفار
-            return !localCCPs.has(cleanFbCCP) && cleanFbCCP !== "";
+        // أ) استخراج الـ CCPs الموجودة في الجدول حالياً (مع تنظيفها)
+        const localCCPs = new Set(allData.map(item => 
+            item.ccp ? String(item.ccp).trim().replace(/^0+/, '') : ""
+        ));
+
+        // ب) توحيد موظفي Firebase (إزالة التكرار بناءً على الـ CCP)
+        // هذا يضمن أن الموظف المكرر في فايربيز يُحسب كشخص واحد فقط
+        const uniqueFirebaseMap = {};
+        firebaseData.forEach(emp => {
+            if (emp.ccp) {
+                const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
+                if (cleanCCP !== "") {
+                    uniqueFirebaseMap[cleanCCP] = emp;
+                }
+            }
         });
 
-        // --- ⬆️ نهاية التعديل ⬆️ ---
+        // ج) تحويل الخريطة إلى مصفوفة موظفين فريدين
+        const uniqueFirebaseList = Object.values(uniqueFirebaseMap);
 
-        // 5. حساب الإحصائيات للإرسال للعرض
+        // د) تحديد من سجل ومن لم يسجل (بناءً على قائمة فايربيز الفريدة حصراً)
+        // الموظفون الذين لم يسجلوا
+        nonRegisteredData = uniqueFirebaseList.filter(emp => {
+            const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
+            return !localCCPs.has(cleanCCP);
+        });
+
+        // الموظفون الذين سجلوا فعلياً (موجودين في فايربيز ووجدناهم في الجدول)
+        const registeredFromFirebase = uniqueFirebaseList.filter(emp => {
+            const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
+            return localCCPs.has(cleanCCP);
+        });
+
+        // --- ⬆️ نهاية المعالجة ⬆️ ---
+
+        // 5. حساب الإحصائيات الدقيقة
         const stats = {
-            totalFirebase: firebaseData.length,      // الإجمالي في قاعدة البيانات
-            totalLocal: allData.length,              // المسجلين محلياً
-            totalNonReg: nonRegisteredData.length    // الفرق
+            totalFirebase: uniqueFirebaseList.length,           // الإجمالي الحقيقي للموظفين
+            totalRegistered: registeredFromFirebase.length,     // من سجل منهم فعلاً
+            totalNonReg: nonRegisteredData.length              // المتبقي (الفرق الحسابي الصحيح)
         };
 
-        // 6. عرض النتائج
+        // 6. عرض النتائج في النافذة
         window.showNonRegisteredModal(stats);
 
     } catch (error) {
@@ -1535,18 +1549,19 @@ window.showNonRegisteredModal = function(stats) {
         `;
     }).join('');
 
+    // الإحصائيات المحدثة لضمان التطابق الحسابي
     const headerStats = `
         <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
             <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
-                <div style="font-size:12px; color:#1565c0;">إجمالي الموظفين</div>
+                <div style="font-size:12px; color:#1565c0;">إجمالي موظفي القاعدة</div>
                 <div style="font-size:20px; font-weight:bold; color:#0d47a1;">${stats.totalFirebase}</div>
             </div>
             <div style="background:#e8f5e9; padding:10px; border-radius:8px; flex:1; border:1px solid #a5d6a7;">
-                <div style="font-size:12px; color:#2e7d32;">المسجلين حالياً</div>
-                <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalLocal}</div>
+                <div style="font-size:12px; color:#2e7d32;">تم تسجيلهم بالجدول</div>
+                <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalRegistered}</div>
             </div>
             <div style="background:#ffebee; padding:10px; border-radius:8px; flex:1; border:1px solid #ef9a9a;">
-                <div style="font-size:12px; color:#c62828;">الغير المسجلين</div>
+                <div style="font-size:12px; color:#c62828;">المتبقي (غير مسجل)</div>
                 <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
             </div>
         </div>
@@ -1562,12 +1577,11 @@ window.showNonRegisteredModal = function(stats) {
                        style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
             </div>
             <div style="display:flex; gap:5px;">
-               
                 <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
                     طباعة القائمة <i class="fas fa-print"></i>
                 </button>
                 <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
-                    Excel تحميل<i class="fas fa-file-excel"></i>
+                    Excel تحميل <i class="fas fa-file-excel"></i>
                 </button>
             </div>
         </div>
@@ -1592,13 +1606,13 @@ window.showNonRegisteredModal = function(stats) {
     `;
 
     Swal.fire({
-        title: '<strong>تقرير حالة التسجيل</strong>',
+        title: '<strong>تقرير حالة التسجيل (مطابقة قاعدة البيانات)</strong>',
         html: modalContent,
         width: '1000px',
         showConfirmButton: true,
         confirmButtonText: 'إغلاق',
-        allowOutsideClick: false, // منع الإغلاق بالخطأ أثناء البحث
-        customClass: { popup: 'swal-wide fixed-modal-height' }
+        allowOutsideClick: false,
+        customClass: { popup: 'swal-wide' }
     });
 };
 
@@ -2305,6 +2319,7 @@ window.filterModalTable = function() {
         }
     });
 };
+
 
 
 
