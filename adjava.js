@@ -1649,8 +1649,8 @@ window.showNonRegisteredModal = function(stats) {
                     طباعة القائمة <i class="fas fa-print"></i>
                 </button>
 
-                <button onclick="window.printNonRegisteredWithNotes()" class="btn" style="background-color:#6c757d; color:white; font-size:12px;">
-      2 طباعة القائمة <i class="fas fa-edit"></i>
+                <button onclick="window.printNonRegisteredWithNotes()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
+    طباعة القائمة <i class="fas fa-edit"></i>
     </button>
                 <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
                     Excel تحميل<i class="fas fa-file-excel"></i>
@@ -2516,7 +2516,6 @@ window.printNonRegisteredWithNotes = function() {
         const members = grouped[category];
         if (!members || members.length === 0) return;
 
-        // تعديل هنا: دمج عمودي الرتبة والإدارة في خلية واحدة فارغة للملاحظات
         const rows = members.map((row, index) => `
             <tr>
                 <td style="width:40px;">${index + 1}</td>
@@ -2529,33 +2528,34 @@ window.printNonRegisteredWithNotes = function() {
 
         fullHTML += `
             <div class="print-page">
-                <div class="official-header">
-                    <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
-                    <p>وزارة التربية الوطنية</p>
-                    <p>مديرية التربية لولاية توقرت</p>
-                    <p>مصلحة تسيير نفقات المستخدمين</p>
-                </div>
+                <div class="print-content-area">
+                    <div class="official-header">
+                        <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
+                        <p>وزارة التربية الوطنية</p>
+                        <p>مديرية التربية لولاية توقرت</p>
+                        <p>مصلحة تسيير نفقات المستخدمين</p>
+                    </div>
 
-                <div class="report-title-section">
-                    <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
-                    <div class="category-info">قائمة الموظفين: ${category} (العدد: ${members.length})</div>
+                    <div class="report-title-section">
+                        <h2 class="main-title">قائمة الموظفين غير المسجلين (للمراجعة)</h2>
+                        <div class="category-info">قائمة الموظفين: ${category} (العدد: ${members.length})</div>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>الرقم</th>
+                                <th>رقم الحساب (CCP)</th>
+                                <th>الاسم واللقب</th>
+                                <th>الوظيفة</th>
+                                <th style="width:160px;">ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
                 </div>
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>الرقم</th>
-                            <th>رقم الحساب (CCP)</th>
-                            <th>الاسم واللقب</th>
-                            <th>الوظيفة</th>
-                            <th style="width:160px;">ملاحظات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-                
                 <div class="print-footer-info">
                     تاريخ الاستخراج: ${printDate} | مستخرج من المنصة الرقمية لمديرية التربية
                 </div>
@@ -2570,55 +2570,46 @@ window.printNonRegisteredWithNotes = function() {
             <title>تقرير غير المسجلين - ملاحظات</title>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
             <style>
-                @page { 
-                    size: A4 portrait; 
-                    margin: 15mm 10mm 10mm 10mm;
-                }
+                @page { size: A4 portrait; margin: 0; }
                 * { box-sizing: border-box; }
-                body { 
-                    font-family: 'Cairo', sans-serif; 
-                    margin: 0; padding: 0; background: #fff; 
-                    width: 100%;
-                }
+                body { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; background: #fff; }
                 .print-page { 
                     page-break-after: always;
                     display: flex;
                     flex-direction: column;
-                    width: 100%;
-                    padding-right: 5px;
+                    width: 210mm;
+                    min-height: 297mm;
+                    padding: 15mm 10mm 10mm 10mm;
+                    margin: 0 auto;
                 }
-                .official-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    line-height: 1.3;
-                    font-weight: 700;
-                    font-size: 13px;
-                }
+                .print-content-area { flex: 0 0 auto; }
+                .official-header { text-align: center; margin-bottom: 15px; font-weight: 700; font-size: 13px; }
                 .official-header p { margin: 2px 0; }
-                .report-title-section { text-align: center; margin-bottom: 20px; }
-                .main-title { margin: 0; font-size: 19px; text-decoration: underline; font-weight: 800; }
-                .category-info { margin-top: 10px; padding: 5px 15px; border: 1.5px solid #000; display: inline-block; font-size: 15px; font-weight: 700; }
-                .data-table { width: 99%; border-collapse: collapse; margin-top: 10px; margin-right: auto; margin-left: auto; border: 1.5px solid #000; }
-                .data-table th, .data-table td { border: 1px solid #000; padding: 8px 5px; text-align: center; font-size: 12px; height: 35px; }
+                .report-title-section { text-align: center; margin-bottom: 15px; }
+                .main-title { margin: 0; font-size: 18px; text-decoration: underline; font-weight: 800; }
+                .category-info { margin-top: 8px; padding: 4px 12px; border: 1.5px solid #000; display: inline-block; font-size: 14px; font-weight: 700; }
+                .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1.5px solid #000; }
+                .data-table th, .data-table td { border: 1px solid #000; padding: 6px 4px; text-align: center; font-size: 12px; height: 35px; }
                 .data-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; font-weight: 800; }
-                .print-footer-info { margin-top: 20px; font-size: 11px; font-style: italic; text-align: left; padding-left: 10px; }
-                @media print { body { -webkit-print-color-adjust: exact; } .print-page { margin: 0; } .data-table { width: 100% !important; } }
+                .print-footer-info {
+                    margin-top: auto; 
+                    padding-top: 10px;
+                    font-size: 11px;
+                    font-style: italic;
+                    text-align: left;
+                    border-top: 1px solid #eee;
+                }
+                @media print { body { -webkit-print-color-adjust: exact; } }
             </style>
         </head>
         <body>
             ${fullHTML}
-            <script>
-                window.onload = function() { 
-                    setTimeout(() => { window.print(); window.close(); }, 800); 
-                }
-            </script>
+            <script>window.onload = function() { setTimeout(() => { window.print(); window.close(); }, 800); }</script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
-
-
 
 
 
