@@ -2499,6 +2499,7 @@ window.filterModalTable = function() {
 };
 
 // دالة طباعة القائمة مع عمود ملاحظات فارغ (دمج الرتبة والإدارة)
+// دالة طباعة القائمة مع عمود ملاحظات فارغ (دمج الرتبة والإدارة) - نسخة محسنة الهوامش
 window.printNonRegisteredWithNotes = function() {
     if (nonRegisteredData.length === 0) return;
 
@@ -2528,7 +2529,7 @@ window.printNonRegisteredWithNotes = function() {
 
         fullHTML += `
             <div class="print-page">
-                <div class="print-content-area">
+                <div class="print-content-wrapper">
                     <div class="official-header">
                         <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
                         <p>وزارة التربية الوطنية</p>
@@ -2537,7 +2538,7 @@ window.printNonRegisteredWithNotes = function() {
                     </div>
 
                     <div class="report-title-section">
-                        <h2 class="main-title">قائمة الموظفين غير المسجلين (للمراجعة)</h2>
+                        <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
                         <div class="category-info">قائمة الموظفين: ${category} (العدد: ${members.length})</div>
                     </div>
                     
@@ -2555,9 +2556,10 @@ window.printNonRegisteredWithNotes = function() {
                             ${rows}
                         </tbody>
                     </table>
-                </div>
-                <div class="print-footer-info">
-                    تاريخ الاستخراج: ${printDate} | مستخرج من المنصة الرقمية لمديرية التربية
+                    
+                    <div class="print-footer-info" style="page-break-inside: avoid;">
+                        تاريخ الاستخراج: ${printDate} | مستخرج من المنصة الرقمية لمديرية التربية
+                    </div>
                 </div>
             </div>
         `;
@@ -2570,46 +2572,94 @@ window.printNonRegisteredWithNotes = function() {
             <title>تقرير غير المسجلين - ملاحظات</title>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 portrait; margin: 0; }
+                @page { 
+                    size: A4 portrait; 
+                    margin: 0; 
+                }
                 * { box-sizing: border-box; }
-                body { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; background: #fff; }
+                body { 
+                    font-family: 'Cairo', sans-serif; 
+                    margin: 0; padding: 0; background: #fff; 
+                }
                 .print-page { 
-                    page-break-after: always;
-                    display: flex;
-                    flex-direction: column;
                     width: 210mm;
                     min-height: 297mm;
-                    padding: 15mm 10mm 10mm 10mm;
-                    margin: 0 auto;
+                    padding: 15mm 12mm;
+                    page-break-after: always;
+                    display: block;
+                    position: relative;
                 }
-                .print-content-area { flex: 0 0 auto; }
-                .official-header { text-align: center; margin-bottom: 15px; font-weight: 700; font-size: 13px; }
+                .print-content-wrapper {
+                    width: 100%;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .official-header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    line-height: 1.3;
+                    font-weight: 700;
+                    font-size: 13px;
+                }
                 .official-header p { margin: 2px 0; }
-                .report-title-section { text-align: center; margin-bottom: 15px; }
-                .main-title { margin: 0; font-size: 18px; text-decoration: underline; font-weight: 800; }
-                .category-info { margin-top: 8px; padding: 4px 12px; border: 1.5px solid #000; display: inline-block; font-size: 14px; font-weight: 700; }
-                .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1.5px solid #000; }
-                .data-table th, .data-table td { border: 1px solid #000; padding: 6px 4px; text-align: center; font-size: 12px; height: 35px; }
-                .data-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; font-weight: 800; }
-                .print-footer-info {
-                    margin-top: auto; 
-                    padding-top: 10px;
-                    font-size: 11px;
-                    font-style: italic;
-                    text-align: left;
-                    border-top: 1px solid #eee;
+                .report-title-section { text-align: center; margin-bottom: 20px; }
+                .main-title { margin: 0; font-size: 19px; text-decoration: underline; font-weight: 800; }
+                .category-info { 
+                    margin-top: 10px; 
+                    padding: 5px 15px; 
+                    border: 1.5px solid #000; 
+                    display: inline-block; 
+                    font-size: 14px; 
+                    font-weight: 700;
+                    background-color: #f9f9f9 !important;
                 }
-                @media print { body { -webkit-print-color-adjust: exact; } }
+                .data-table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 10px; 
+                    border: 1.5px solid #000; 
+                    table-layout: fixed;
+                }
+                .data-table th, .data-table td { 
+                    border: 1px solid #000; 
+                    padding: 8px 5px; 
+                    text-align: center; 
+                    font-size: 12px; 
+                    height: 35px;
+                    word-wrap: break-word;
+                }
+                .data-table th { 
+                    background-color: #f2f2f2 !important; 
+                    -webkit-print-color-adjust: exact; 
+                    font-weight: 800; 
+                }
+                .print-footer-info { 
+                    margin-top: 10px;
+                    font-size: 11px; 
+                    font-style: italic; 
+                    text-align: left; 
+                    padding-left: 5px;
+                    border-top: 1px solid #eee;
+                    padding-top: 5px;
+                    /* منع الانفصال عن الجدول */
+                    page-break-before: avoid;
+                }
+                @media print { 
+                    body { -webkit-print-color-adjust: exact; } 
+                    .print-page { border: none; }
+                }
             </style>
         </head>
         <body>
             ${fullHTML}
-            <script>window.onload = function() { setTimeout(() => { window.print(); window.close(); }, 800); }</script>
+            <script>
+                window.onload = function() { 
+                    setTimeout(() => { window.print(); window.close(); }, 800); 
+                }
+            </script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
-
-
 
