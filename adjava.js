@@ -2627,7 +2627,7 @@ window.openFirebaseManager = async function() {
     const { value: password } = await Swal.fire({
         title: 'منطقة أمنية محظورة',
         input: 'password',
-        inputLabel: 'أدخل كلمة المرور للوصول إلى Firestore',
+        inputLabel: 'أدخل كلمة المرور للوصول إلى قاعدة البيانات الرئيسية',
         inputPlaceholder: 'كلمة المرور...',
         confirmButtonColor: '#e63946',
         inputAttributes: { autocapitalize: 'off', autocorrect: 'off' }
@@ -2643,7 +2643,7 @@ window.openFirebaseManager = async function() {
 // --- 2. واجهة عرض بيانات Firestore ---
 window.showFirebaseEditorModal = async function() {
     Swal.fire({
-        title: 'جاري جلب البيانات مباشرة...',
+        title: 'جاري جلب قاعدة البيانات الرئيسية...',
         didOpen: () => Swal.showLoading()
     });
 
@@ -2657,7 +2657,7 @@ window.showFirebaseEditorModal = async function() {
                 <div style="position:relative; margin-bottom:15px;">
                     <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
                     <input type="text" id="fbSearchInput" onkeyup="window.filterFirebaseTable()" 
-                           placeholder="بحث بالاسم، اللقب، الاسم الكامل معكوس، أو CCP..." 
+                           placeholder="بحث سريع..." 
                            style="width:100%; padding:12px 40px 12px 10px; border:1px solid #ddd; border-radius:10px; outline:none; border:2px solid #3498db;">
                 </div>
                 <div style="max-height:500px; overflow-y:auto; border-radius:8px; border:1px solid #eee;">
@@ -2695,7 +2695,7 @@ window.showFirebaseEditorModal = async function() {
         `;
 
         Swal.fire({
-            title: 'مدير قاعدة بيانات Firebase (Firestore)',
+            title: 'مدير قاعدة بيانات الرئيسية',
             html: modalHtml,
             width: '950px',
             showConfirmButton: false,
@@ -2731,7 +2731,7 @@ window.editFirebaseDoc = async function(oldId) {
             html: `
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; direction:rtl; text-align:right; font-family:'Cairo'; padding:10px;">
                     <div style="grid-column: span 2;">
-                        <label style="font-weight:bold; color:#e63946;">رقم الحساب (CCP) - تغيير هذا الحقل سيغير معرف الوثيقة</label>
+                        <label style="font-weight:bold; color:#e63946;">رقم الحساب (CCP) - تغيير هذا الحقل سيغير معرف ملف الموظف</label>
                         <input id="fb-ccp" class="swal2-input" style="width:100%; margin:5px 0; border:2px solid #e63946;" value="${d.ccp || oldId}">
                     </div>
                     <div><label style="font-weight:bold;">اللقب (FMN)</label><input id="fb-fmn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.fmn || ''}"></div>
@@ -2744,7 +2744,7 @@ window.editFirebaseDoc = async function(oldId) {
             `,
             focusConfirm: false,
             showCancelButton: true,
-            confirmButtonText: 'حفظ التغييرات الشاملة',
+            confirmButtonText: 'حفظ التغييرات',
             cancelButtonText: 'إلغاء',
             preConfirm: () => ({
                 newCcp: document.getElementById('fb-ccp').value.trim(),
@@ -2781,7 +2781,7 @@ window.editFirebaseDoc = async function(oldId) {
                 await setDoc(docRef, updatedData);
             }
 
-            Swal.fire('تم التحديث بنجاح', 'تم تحديث الوثيقة وكافة الحقول بداخلها', 'success')
+            Swal.fire('تم التحديث بنجاح', 'تم تحديث الملف وكافة البيانات بداخله', 'success')
                 .then(() => window.showFirebaseEditorModal());
         }
     } catch (e) {
@@ -2793,7 +2793,7 @@ window.editFirebaseDoc = async function(oldId) {
 window.deleteFirebaseDoc = function(id) {
     Swal.fire({
         title: 'تأكيد الحذف النهائي',
-        text: `هل أنت متأكد من حذف الموظف ذو الـ CCP: ${id} من Firestore؟`,
+        text: `هل أنت متأكد من حذف الموظف ذو الـ CCP: ${id} من قاعدة البيانات الرئيسية ؟`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#e74c3c',
@@ -2810,4 +2810,5 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
