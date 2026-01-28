@@ -1530,76 +1530,75 @@ window.printForm = function(index) {
 
 // الدالة الرئيسية للفحص والمقارنة
 // الدالة الرئيسية للفحص والمقارنة (محدثة لضمان دقة الحساب)
-window.checkNonRegistered = async function() {
-    // 1. إظهار التحميل
+window.checkNonRegistered = async function(forceRefresh = false) {
+    const CACHE_KEY = "firebase_employees_cache";
+    const CACHE_TIME_KEY = "firebase_employees_cache_time";
+    const EXPIRE_TIME = 24 * 60 * 60 * 1000; // صلاحية التخزين: 24 ساعة
+
     Swal.fire({
         title: 'جاري مطابقة البيانات...',
-        html: 'يتم جلب البيانات ومطابقة السجلات بدقة.<br>يرجى الانتظار...',
+        html: 'يتم جلب البيانات ومطابقة السجلات.<br>يرجى الانتظار...',
         allowOutsideClick: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
+        didOpen: () => { Swal.showLoading(); }
     });
 
     try {
-        // 2. تحديث البيانات المحلية (الجدول)
+        // 1. تحديث بيانات Google Sheets دائماً (لأنها مجانية وغير محدودة)
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
-        
-        if (result.status !== "success") {
-            throw new Error("فشل في تحديث البيانات المحلية");
+        if (result.status === "success") allData = result.data;
+
+        // 2. منطق التخزين الدائم (LocalStorage) لـ Firebase
+        let firebaseData;
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+        const now = new Date().getTime();
+
+        // فحص: هل البيانات موجودة؟ هل هي صالحة؟ هل المستخدم طلب تحديثاً إجبارياً؟
+        if (!forceRefresh && cachedData && cachedTime && (now - cachedTime < EXPIRE_TIME)) {
+            console.log("استخدام البيانات المخزنة في المتصفح (صفر استهلاك كيوتا) ✅");
+            firebaseData = JSON.parse(cachedData);
+        } else {
+            console.log("جلب بيانات جديدة من Firebase (استهلاك الكيوتا) ⚠️");
+            const colRef = collection(db, "employeescompay");
+            const snapshot = await getDocs(colRef);
+            firebaseData = snapshot.docs.map(doc => doc.data());
+            
+            // حفظ في الذاكرة الدائمة
+            localStorage.setItem(CACHE_KEY, JSON.stringify(firebaseData));
+            localStorage.setItem(CACHE_TIME_KEY, now.toString());
         }
-        allData = result.data; 
 
-        // 3. جلب بيانات Firebase
-        const colRef = collection(db, "employeescompay");
-        const snapshot = await getDocs(colRef);
-        const firebaseData = snapshot.docs.map(doc => doc.data());
-
-        // --- معالجة البيانات لضمان دقة الحساب ---
-
-        // أ) بناء قائمة CCPs المسجلين فعلياً في الجدول (مع التنظيف)
+        // 3. معالجة المطابقة
         const localCCPs = new Set(allData.map(item => 
             item.ccp ? String(item.ccp).trim().replace(/^0+/, '') : ""
         ));
 
-        // ب) توحيد موظفي Firebase (منع التكرار في القاعدة الأصلية)
         const uniqueFirebaseMap = {};
         firebaseData.forEach(emp => {
             if (emp.ccp) {
                 const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
-                if (cleanCCP !== "") {
-                    uniqueFirebaseMap[cleanCCP] = emp;
-                }
+                if (cleanCCP !== "") uniqueFirebaseMap[cleanCCP] = emp;
             }
         });
 
-        // ج) تحويل الخريطة إلى مصفوفة موظفين فريدين
         const uniqueFirebaseList = Object.values(uniqueFirebaseMap);
-
-        // د) الفرز بناءً على قائمة القاعدة الفريدة
-        // 1. استخراج غير المسجلين
         nonRegisteredData = uniqueFirebaseList.filter(emp => {
             const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
             return !localCCPs.has(cleanCCP);
         });
 
-        // 2. حساب الذين سجلوا فعلاً من أصل القاعدة
-        const registeredFromFirebaseCount = uniqueFirebaseList.length - nonRegisteredData.length;
-
-        // 5. حساب الإحصائيات الدقيقة
         const stats = {
-            totalFirebase: uniqueFirebaseList.length,           // الإجمالي الحقيقي (فريد)
-            totalRegistered: registeredFromFirebaseCount,       // من سجل منهم فعلاً
-            totalNonReg: nonRegisteredData.length              // الفرق الحسابي المتبقي
+            totalFirebase: uniqueFirebaseList.length,
+            totalRegistered: uniqueFirebaseList.length - nonRegisteredData.length,
+            totalNonReg: nonRegisteredData.length
         };
 
-        // 6. عرض النتائج
         window.showNonRegisteredModal(stats);
 
     } catch (error) {
         console.error(error);
-        Swal.fire('خطأ', 'حدثت مشكلة أثناء الفحص: ' + error.message, 'error');
+        Swal.fire('خطأ', 'فشل الفحص: ' + error.message, 'error');
     }
 };
 
@@ -1635,47 +1634,64 @@ window.showNonRegisteredModal = function(stats) {
         </div>
     `;
 
-    const modalContent = `
-        ${headerStats}
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
-            <div style="position:relative; flex-grow:1; min-width:250px;">
-                <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
-                <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
-                       placeholder="بحث سريع بالاسم، رقم الحساب، أو الإدارة..." 
-                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
-            </div>
-            <div style="display:flex; gap:5px;">
-                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
-                    طباعة القائمة <i class="fas fa-print"></i>
-                </button>
+// 1. حساب وقت آخر تحديث لعرضه في النافذة المنبثقة
+const lastUpdate = localStorage.getItem("firebase_employees_cache_time") 
+    ? new Date(parseInt(localStorage.getItem("firebase_employees_cache_time"))).toLocaleTimeString('ar-DZ') 
+    : 'غير محدد';
 
-                <button onclick="window.printNonRegisteredWithNotes()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
-    طباعة القائمة <i class="fas fa-edit"></i>
-    </button>
-                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
-                    Excel تحميل<i class="fas fa-file-excel"></i>
-                </button>
-            </div>
+const modalContent = `
+    ${headerStats}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
+        <div style="position:relative; flex-grow:1; min-width:250px;">
+            <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
+            <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
+                   placeholder="بحث سريع..." 
+                   style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
         </div>
 
-        <div class="table-responsive" style="height:450px; overflow-y:auto; direction:rtl; border:1px solid #eee; border-radius:8px; background:#fff;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right; table-layout: fixed;">
-                <thead style="position: sticky; top: 0; z-index: 100; background: #f8f9fa; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);">
-                    <tr>
-                        <th style="padding:12px; width:50px; border-bottom:2px solid #dee2e6;">#</th>
-                        <th style="padding:12px; width:120px; border-bottom:2px solid #dee2e6;">CCP</th>
-                        <th style="padding:12px; border-bottom:2px solid #dee2e6;">الاسم واللقب</th>
-                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">الرتبة</th>
-                        <th style="padding:12px; width:150px; border-bottom:2px solid #dee2e6;">الضمان (ASS)</th>
-                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">كود الإدارة</th>
-                    </tr>
-                </thead>
-                <tbody id="modalTableBody">
-                    ${nonRegisteredData.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:20px;">جميع الموظفين مسجلين! ✅</td></tr>'}
-                </tbody>
-            </table>
+        <div style="display:flex; gap:8px; align-items:center;">
+            
+            <div style="text-align:left; margin-left:10px; border-left:1px solid #ddd; padding-left:10px;">
+                <span style="font-size:10px; color:#666; display:block;">آخر مزامنة</span>
+                <span style="font-size:11px; font-weight:bold; color:#d63384;">${lastUpdate}</span>
+            </div>
+
+            <button onclick="window.checkNonRegistered(true)" class="btn" style="background-color:#dc3545; color:white; font-size:12px;" title="تحديث إجباري من السيرفر">
+                تحديث السيرفر <i class="fas fa-sync-alt"></i>
+            </button>
+
+            <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
+                طباعة القائمة <i class="fas fa-print"></i>
+            </button>
+
+            <button onclick="window.printNonRegisteredWithNotes()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
+                طباعة + ملاحظات <i class="fas fa-edit"></i>
+            </button>
+
+            <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
+                Excel <i class="fas fa-file-excel"></i>
+            </button>
         </div>
-    `;
+    </div>
+
+    <div class="table-responsive" style="height:450px; overflow-y:auto; direction:rtl; border:1px solid #eee; border-radius:8px; background:#fff;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right; table-layout: fixed;">
+            <thead style="position: sticky; top: 0; z-index: 100; background: #f8f9fa; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);">
+                <tr>
+                    <th style="padding:12px; width:50px; border-bottom:2px solid #dee2e6;">#</th>
+                    <th style="padding:12px; width:120px; border-bottom:2px solid #dee2e6;">CCP</th>
+                    <th style="padding:12px; border-bottom:2px solid #dee2e6;">الاسم واللقب</th>
+                    <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">الرتبة</th>
+                    <th style="padding:12px; width:150px; border-bottom:2px solid #dee2e6;">الضمان (ASS)</th>
+                    <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">كود الإدارة</th>
+                </tr>
+            </thead>
+            <tbody id="modalTableBody">
+                ${nonRegisteredData.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:20px;">جميع الموظفين مسجلين! ✅</td></tr>'}
+            </tbody>
+        </table>
+    </div>
+`;
 
     Swal.fire({
         title: '<strong>تقرير حالة التسجيل</strong>',
@@ -1763,7 +1779,7 @@ window.printNonRegistered = function() {
             <style>
                 @page { 
                     size: A4 portrait; 
-                    margin: 15mm 10mm 10mm 10mm; /* زيادة الهامش العلوي واليمين */
+                    margin: 10mm 10mm 10mm 10mm; /* زيادة الهامش العلوي واليمين */
                 }
                 * { box-sizing: border-box; }
                 body { 
