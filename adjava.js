@@ -2634,33 +2634,37 @@ window.openFirebaseManager = async function() {
         inputAttributes: {
             autocapitalize: 'off',
             autocorrect: 'off',
-            style: 'text-align: center; letter-spacing: 5px;' // توسيط وتنسيق النقاط
+            style: 'text-align: center; font-family: monospace; letter-spacing: 4px;' 
         }
     });
 
     if (password) {
-   
-        const hashedPassword = await window.hashString(password);
+        // دالة التشفير اللحظي
+        const hashString = async (str) => {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+
+        const hashedPassword = await hashString(password);
         
-       
-      const secretKey = "3575c7426618742467d130325376046e9112247738f7129f1207907530460492";
+        // الرمز المشفر الصحيح لـ feh@09
+        const secretKey = "3575c7426618742467d130325376046e9112247738f7129f1207907530460492";
 
         if (hashedPassword === secretKey) {
             window.showFirebaseEditorModal();
         } else {
-            Swal.fire('دخول غير مصرح', 'الرمز الذي أدخلته غير صحيح!', 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ في التحقق',
+                text: 'الرمز غير صحيح، حاول مرة أخرى.',
+                confirmButtonColor: '#e63946'
+            });
         }
     }
 };
-
-window.hashString = async function(str) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
 // --- 2. واجهة عرض بيانات Firestore ---
 window.showFirebaseEditorModal = async function() {
     Swal.fire({
@@ -2831,6 +2835,7 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
 
 
