@@ -2643,7 +2643,7 @@ window.openFirebaseManager = async function() {
         const hashedPassword = await window.hashString(password);
         
        
-        const secretKey = "63d7e5d8a0c2834796342898929944d320215792949787e937d25e0e01086208";
+      const secretKey = "3575c7426618742467d130325376046e9112247738f7129f1207907530460492";
 
         if (hashedPassword === secretKey) {
             window.showFirebaseEditorModal();
@@ -2831,6 +2831,7 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
 
 
