@@ -2627,44 +2627,35 @@ window.openFirebaseManager = async function() {
     const { value: password } = await Swal.fire({
         title: 'منطقة أمنية محظورة',
         input: 'password',
-        inputLabel: 'أدخل رمز الوصول المشفر',
+        inputLabel: 'أدخل رمز الوصول',
         inputPlaceholder: '••••••••',
         confirmButtonColor: '#e63946',
         inputAttributes: {
             autocapitalize: 'off',
             autocorrect: 'off',
-            style: 'text-align: center; font-family: monospace; letter-spacing: 4px;' 
+            style: 'text-align: center; font-family: monospace;' 
         }
     });
 
-    // إضافة .trim() لإزالة أي مسافات قد تضاف بالخطأ أثناء الكتابة
-    if (password && password.trim() !== "") {
-        const cleanPassword = password.trim(); 
-
-        // دالة التشفير اللحظي المحسنة
-        const hashString = async (str) => {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(str);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        };
-
-        const hashedPassword = await hashString(cleanPassword);
+    if (password) {
+        // تحويل النص المدخل إلى ترميز Base64 لمقارنته
+        // الكلمة feh@09 بترميز Base64 هي: ZmVoQDA5
+        const encodedInput = btoa(password.trim());
         
-        // الرمز المشفر لـ feh@09 (تأكد من مطابقة هذا الرقم تماماً)
-        const secretKey = "3575c7426618742467d130325376046e9112247738f7129f1207907530460492";
+        const secretKey = "ZmVoQDA5"; // هذا هو الترميز الخاص بـ feh@09
 
-        if (hashedPassword === secretKey) {
-            window.showFirebaseEditorModal();
+        if (encodedInput === secretKey) {
+            // إغلاق النافذة السابقة ثم فتح المودال
+            Swal.close(); 
+            setTimeout(() => {
+                window.showFirebaseEditorModal();
+            }, 100);
         } else {
-            // إضافة اهتزاز عند الخطأ للتنبيه
             Swal.fire({
                 icon: 'error',
-                title: 'خطأ في التحقق',
-                text: 'الرمز غير صحيح، تأكد من لوحة المفاتيح وحاول مرة أخرى.',
-                confirmButtonColor: '#e63946',
-                showClass: { popup: 'animate__animated animate__headShake' }
+                title: 'خطأ',
+                text: 'الرمز غير صحيح!',
+                confirmButtonColor: '#e63946'
             });
         }
     }
@@ -2839,6 +2830,7 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
 
 
