@@ -2718,17 +2718,22 @@ window.filterFirebaseTable = function() {
 };
 
 // --- 4. تعديل جميع الحقول في Firebase ---
-window.editFirebaseDoc = async function(id) {
+// --- تحديث دالة التعديل لتشمل تغيير رقم الحساب (ID) ---
+window.editFirebaseDoc = async function(oldId) {
     try {
-        const docRef = doc(db, "employeescompay", id);
+        const docRef = doc(db, "employeescompay", oldId);
         const snap = await getDoc(docRef);
         const d = snap.data();
 
         const { value: formValues } = await Swal.fire({
-            title: `تعديل الموظف: ${d.ccp}`,
+            title: `تعديل بيانات الموظف`,
             width: '700px',
             html: `
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; direction:rtl; text-align:right; font-family:'Cairo'; padding:10px;">
+                    <div style="grid-column: span 2;">
+                        <label style="font-weight:bold; color:#e63946;">رقم الحساب (CCP) - تغيير هذا الحقل سيغير معرف الوثيقة</label>
+                        <input id="fb-ccp" class="swal2-input" style="width:100%; margin:5px 0; border:2px solid #e63946;" value="${d.ccp || oldId}">
+                    </div>
                     <div><label style="font-weight:bold;">اللقب (FMN)</label><input id="fb-fmn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.fmn || ''}"></div>
                     <div><label style="font-weight:bold;">الاسم (FRN)</label><input id="fb-frn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.frn || ''}"></div>
                     <div><label style="font-weight:bold;">الرتبة (GR)</label><input id="fb-gr" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.gr || ''}"></div>
@@ -2739,9 +2744,10 @@ window.editFirebaseDoc = async function(id) {
             `,
             focusConfirm: false,
             showCancelButton: true,
-            confirmButtonText: 'حفظ التغييرات',
+            confirmButtonText: 'حفظ التغييرات الشاملة',
             cancelButtonText: 'إلغاء',
             preConfirm: () => ({
+                newCcp: document.getElementById('fb-ccp').value.trim(),
                 fmn: document.getElementById('fb-fmn').value,
                 frn: document.getElementById('fb-frn').value,
                 gr: document.getElementById('fb-gr').value,
@@ -2752,12 +2758,34 @@ window.editFirebaseDoc = async function(id) {
         });
 
         if (formValues) {
-            Swal.fire({ title: 'جاري التحديث...', didOpen: () => Swal.showLoading() });
-            await setDoc(docRef, { ...d, ...formValues, last_admin_edit: new Date() });
-            Swal.fire('تم التحديث!', 'تمت مزامنة البيانات مع Firestore', 'success').then(() => window.showFirebaseEditorModal());
+            Swal.fire({ title: 'جاري تحديث البيانات والروابط...', didOpen: () => Swal.showLoading() });
+
+            const newId = formValues.newCcp;
+            const updatedData = {
+                ccp: newId,
+                fmn: formValues.fmn,
+                frn: formValues.frn,
+                gr: formValues.gr,
+                ass: formValues.ass,
+                adm: formValues.adm,
+                mtr: formValues.mtr,
+                last_update: new Date()
+            };
+
+            if (newId !== oldId) {
+                // حالة تغيير رقم الحساب: إنشاء وثيقة جديدة وحذف القديمة
+                await setDoc(doc(db, "employeescompay", newId), updatedData);
+                await deleteDoc(doc(db, "employeescompay", oldId));
+            } else {
+                // حالة تحديث البيانات فقط دون تغيير رقم الحساب
+                await setDoc(docRef, updatedData);
+            }
+
+            Swal.fire('تم التحديث بنجاح', 'تم تحديث الوثيقة وكافة الحقول بداخلها', 'success')
+                .then(() => window.showFirebaseEditorModal());
         }
     } catch (e) {
-        Swal.fire('خطأ', 'فشل التعديل: ' + e.message, 'error');
+        Swal.fire('خطأ في التعديل', e.message, 'error');
     }
 };
 
@@ -2782,3 +2810,4 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
