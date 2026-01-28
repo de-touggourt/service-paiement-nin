@@ -2622,8 +2622,7 @@ window.printNonRegisteredWithNotes = function() {
 
 
 
-// --- 1. دالة الدخول لمدير Firebase ---
-// --- 1. دالة الدخول لمدير Firebase ---
+// --- 1. دالة الدخول لمدير Firebase المحدثة ---
 window.openFirebaseManager = async function() {
     const { value: password } = await Swal.fire({
         title: 'منطقة أمنية محظورة',
@@ -2638,8 +2637,11 @@ window.openFirebaseManager = async function() {
         }
     });
 
-    if (password) {
-        // دالة التشفير اللحظي
+    // إضافة .trim() لإزالة أي مسافات قد تضاف بالخطأ أثناء الكتابة
+    if (password && password.trim() !== "") {
+        const cleanPassword = password.trim(); 
+
+        // دالة التشفير اللحظي المحسنة
         const hashString = async (str) => {
             const encoder = new TextEncoder();
             const data = encoder.encode(str);
@@ -2648,19 +2650,21 @@ window.openFirebaseManager = async function() {
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         };
 
-        const hashedPassword = await hashString(password);
+        const hashedPassword = await hashString(cleanPassword);
         
-        // الرمز المشفر الصحيح لـ feh@09
+        // الرمز المشفر لـ feh@09 (تأكد من مطابقة هذا الرقم تماماً)
         const secretKey = "3575c7426618742467d130325376046e9112247738f7129f1207907530460492";
 
         if (hashedPassword === secretKey) {
             window.showFirebaseEditorModal();
         } else {
+            // إضافة اهتزاز عند الخطأ للتنبيه
             Swal.fire({
                 icon: 'error',
                 title: 'خطأ في التحقق',
-                text: 'الرمز غير صحيح، حاول مرة أخرى.',
-                confirmButtonColor: '#e63946'
+                text: 'الرمز غير صحيح، تأكد من لوحة المفاتيح وحاول مرة أخرى.',
+                confirmButtonColor: '#e63946',
+                showClass: { popup: 'animate__animated animate__headShake' }
             });
         }
     }
@@ -2835,6 +2839,7 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
 
 
