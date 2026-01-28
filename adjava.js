@@ -2627,7 +2627,7 @@ window.openFirebaseManager = async function() {
     const { value: password } = await Swal.fire({
         title: 'منطقة أمنية محظورة',
         input: 'password',
-        inputLabel: 'أدخل رمز الوصول',
+        inputLabel: 'أدخل رمز المسؤول',
         inputPlaceholder: '••••••••',
         confirmButtonColor: '#e63946',
         inputAttributes: {
@@ -2638,14 +2638,13 @@ window.openFirebaseManager = async function() {
     });
 
     if (password) {
-        // تحويل النص المدخل إلى ترميز Base64 لمقارنته
-        // الكلمة feh@09 بترميز Base64 هي: ZmVoQDA5
+       
         const encodedInput = btoa(password.trim());
         
-        const secretKey = "ZmVoQDA5"; // هذا هو الترميز الخاص بـ feh@09
+        const secretKey = "ZmVoQDA5";
 
         if (encodedInput === secretKey) {
-            // إغلاق النافذة السابقة ثم فتح المودال
+           
             Swal.close(); 
             setTimeout(() => {
                 window.showFirebaseEditorModal();
@@ -2830,6 +2829,7 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
 
 
