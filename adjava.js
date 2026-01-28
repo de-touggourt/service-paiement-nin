@@ -2623,21 +2623,42 @@ window.printNonRegisteredWithNotes = function() {
 
 
 // --- 1. دالة الدخول لمدير Firebase ---
+// --- 1. دالة الدخول لمدير Firebase ---
 window.openFirebaseManager = async function() {
     const { value: password } = await Swal.fire({
         title: 'منطقة أمنية محظورة',
         input: 'password',
-        inputLabel: 'أدخل كلمة المرور للوصول إلى قاعدة البيانات الرئيسية',
-        inputPlaceholder: 'كلمة المرور...',
+        inputLabel: 'أدخل رمز الوصول المشفر',
+        inputPlaceholder: '••••••••',
         confirmButtonColor: '#e63946',
-        inputAttributes: { autocapitalize: 'off', autocorrect: 'off' }
+        inputAttributes: {
+            autocapitalize: 'off',
+            autocorrect: 'off',
+            style: 'text-align: center; letter-spacing: 5px;' // توسيط وتنسيق النقاط
+        }
     });
 
-    if (password === 'feh@09') {
-        window.showFirebaseEditorModal();
-    } else if (password) {
-        Swal.fire('خطأ', 'كلمة المرور غير صحيحة!', 'error');
+    if (password) {
+   
+        const hashedPassword = await window.hashString(password);
+        
+       
+        const secretKey = "63d7e5d8a0c2834796342898929944d320215792949787e937d25e0e01086208";
+
+        if (hashedPassword === secretKey) {
+            window.showFirebaseEditorModal();
+        } else {
+            Swal.fire('دخول غير مصرح', 'الرمز الذي أدخلته غير صحيح!', 'error');
+        }
     }
+};
+
+window.hashString = async function(str) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
 // --- 2. واجهة عرض بيانات Firestore ---
@@ -2810,5 +2831,6 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
 
