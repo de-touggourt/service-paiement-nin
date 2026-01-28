@@ -1533,47 +1533,47 @@ window.printForm = function(index) {
 window.checkNonRegistered = async function(forceRefresh = false) {
     const CACHE_KEY = "firebase_employees_cache";
     const CACHE_TIME_KEY = "firebase_employees_cache_time";
-    const EXPIRE_TIME = 24 * 60 * 60 * 1000; // صلاحية التخزين: 24 ساعة
+    const EXPIRE_TIME = 24 * 60 * 60 * 1000; // 24 ساعة
 
     Swal.fire({
         title: 'جاري مطابقة البيانات...',
-        html: 'يتم جلب البيانات ومطابقة السجلات.<br>يرجى الانتظار...',
+        html: 'يتم جلب البيانات ومطابقة السجلات بدقة...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
 
     try {
-        // 1. تحديث بيانات Google Sheets دائماً (لأنها مجانية وغير محدودة)
+        // تحديث بيانات Google Sheets (المسجلين) دائماً لضمان الدقة
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
-        if (result.status === "success") allData = result.data;
+        
+        if (result.status === "success") {
+            allData = result.data;
+            // تحديث بطاقات لوحة التحكم الخلفية فوراً
+            window.updateStats(allData); 
+        }
 
-        // 2. منطق التخزين الدائم (LocalStorage) لـ Firebase
         let firebaseData;
         const cachedData = localStorage.getItem(CACHE_KEY);
         const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
         const now = new Date().getTime();
 
-        // فحص: هل البيانات موجودة؟ هل هي صالحة؟ هل المستخدم طلب تحديثاً إجبارياً؟
         if (!forceRefresh && cachedData && cachedTime && (now - cachedTime < EXPIRE_TIME)) {
-            console.log("استخدام البيانات المخزنة في المتصفح (صفر استهلاك كيوتا) ✅");
             firebaseData = JSON.parse(cachedData);
         } else {
-            console.log("جلب بيانات جديدة من Firebase (استهلاك الكيوتا) ⚠️");
             const colRef = collection(db, "employeescompay");
             const snapshot = await getDocs(colRef);
             firebaseData = snapshot.docs.map(doc => doc.data());
-            
-            // حفظ في الذاكرة الدائمة
             localStorage.setItem(CACHE_KEY, JSON.stringify(firebaseData));
             localStorage.setItem(CACHE_TIME_KEY, now.toString());
         }
 
-        // 3. معالجة المطابقة
+        // توحيد CCPs المسجلين (من Google Sheets)
         const localCCPs = new Set(allData.map(item => 
             item.ccp ? String(item.ccp).trim().replace(/^0+/, '') : ""
         ));
 
+        // تصفية قاعدة البيانات لمعرفة من لم يسجل بعد
         const uniqueFirebaseMap = {};
         firebaseData.forEach(emp => {
             if (emp.ccp) {
@@ -1588,9 +1588,10 @@ window.checkNonRegistered = async function(forceRefresh = false) {
             return !localCCPs.has(cleanCCP);
         });
 
+        // إحصائيات دقيقة ومطابقة للوحة التحكم
         const stats = {
             totalFirebase: uniqueFirebaseList.length,
-            totalRegistered: uniqueFirebaseList.length - nonRegisteredData.length,
+            totalRegistered: allData.length, // نستخدم طول allData مباشرة ليطابق لوحة التحكم
             totalNonReg: nonRegisteredData.length
         };
 
@@ -1598,10 +1599,9 @@ window.checkNonRegistered = async function(forceRefresh = false) {
 
     } catch (error) {
         console.error(error);
-        Swal.fire('خطأ', 'فشل الفحص: ' + error.message, 'error');
+        Swal.fire('خطأ', 'فشل في تحديث البيانات: ' + error.message, 'error');
     }
 };
-
 window.showNonRegisteredModal = function(stats) {
     const tableRows = nonRegisteredData.map((row, index) => {
         const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
@@ -2633,3 +2633,4 @@ window.printNonRegisteredWithNotes = function() {
     `);
     printWindow.document.close();
 };
+
