@@ -1,6 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 
 // --- إعدادات Firebase ---
@@ -142,6 +142,8 @@ const SECURE_DASHBOARD_HTML = `
 
       <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد<i class="fas fa-plus"></i></button>
       <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
+    
+<button class="btn" style="background-color:#e63946; color:white;" onclick="window.openFirebaseManager()">قاعدة البيانات<i class="fas fa-server"></i></button>
       <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة موظف<i class="fas fa-database"></i></button>
       <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
       <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
@@ -2616,4 +2618,167 @@ window.printNonRegisteredWithNotes = function() {
         </html>
     `);
     printWindow.document.close();
+};
+
+
+
+// --- 1. دالة الدخول لمدير Firebase ---
+window.openFirebaseManager = async function() {
+    const { value: password } = await Swal.fire({
+        title: 'منطقة أمنية محظورة',
+        input: 'password',
+        inputLabel: 'أدخل كلمة المرور للوصول إلى Firestore',
+        inputPlaceholder: 'كلمة المرور...',
+        confirmButtonColor: '#e63946',
+        inputAttributes: { autocapitalize: 'off', autocorrect: 'off' }
+    });
+
+    if (password === 'feh@09') {
+        window.showFirebaseEditorModal();
+    } else if (password) {
+        Swal.fire('خطأ', 'كلمة المرور غير صحيحة!', 'error');
+    }
+};
+
+// --- 2. واجهة عرض بيانات Firestore ---
+window.showFirebaseEditorModal = async function() {
+    Swal.fire({
+        title: 'جاري جلب البيانات مباشرة...',
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const colRef = collection(db, "employeescompay");
+        const snapshot = await getDocs(colRef);
+        const fbData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const modalHtml = `
+            <div style="direction:rtl; text-align:right; font-family:'Cairo';">
+                <div style="position:relative; margin-bottom:15px;">
+                    <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
+                    <input type="text" id="fbSearchInput" onkeyup="window.filterFirebaseTable()" 
+                           placeholder="بحث بالاسم، اللقب، الاسم الكامل معكوس، أو CCP..." 
+                           style="width:100%; padding:12px 40px 12px 10px; border:1px solid #ddd; border-radius:10px; outline:none; border:2px solid #3498db;">
+                </div>
+                <div style="max-height:500px; overflow-y:auto; border-radius:8px; border:1px solid #eee;">
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <thead style="background:#2c3e50; color:white; position:sticky; top:0; z-index:10;">
+                            <tr>
+                                <th style="padding:12px; border:1px solid #444;">CCP</th>
+                                <th style="padding:12px; border:1px solid #444;">الاسم واللقب</th>
+                                <th style="padding:12px; border:1px solid #444;">الرتبة</th>
+                                <th style="padding:12px; border:1px solid #444;">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fbTableBody">
+                            ${fbData.map(emp => {
+                                // دمج الاسم واللقب والبحث العكسي لضمان نتائج دقيقة
+                                const fullName = `${emp.fmn} ${emp.frn}`;
+                                const reverseName = `${emp.frn} ${emp.fmn}`;
+                                const searchKey = `${emp.ccp} ${fullName} ${reverseName} ${emp.gr}`.toLowerCase();
+                                
+                                return `
+                                <tr class="fb-row" data-search="${searchKey}" style="border-bottom:1px solid #eee;">
+                                    <td style="padding:10px; border:1px solid #ddd; font-weight:bold; color:#e63946;">${emp.ccp}</td>
+                                    <td style="padding:10px; border:1px solid #ddd;">${fullName}</td>
+                                    <td style="padding:10px; border:1px solid #ddd;">${emp.gr || '-'}</td>
+                                    <td style="padding:10px; border:1px solid #ddd; text-align:center; display:flex; gap:5px; justify-content:center;">
+                                        <button onclick="window.editFirebaseDoc('${emp.id}')" class="btn-edit" style="background:#3498db; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;"><i class="fas fa-pen"></i></button>
+                                        <button onclick="window.deleteFirebaseDoc('${emp.id}')" class="btn-delete" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        Swal.fire({
+            title: 'مدير قاعدة بيانات Firebase (Firestore)',
+            html: modalHtml,
+            width: '950px',
+            showConfirmButton: false,
+            showCloseButton: true,
+            customClass: { popup: 'swal-wide' }
+        });
+
+    } catch (e) {
+        Swal.fire('خطأ', 'فشل تحميل البيانات: ' + e.message, 'error');
+    }
+};
+
+// --- 3. نظام البحث المتقدم (اللحظي) ---
+window.filterFirebaseTable = function() {
+    const q = document.getElementById("fbSearchInput").value.toLowerCase();
+    const rows = document.getElementsByClassName("fb-row");
+    for (let row of rows) {
+        row.style.display = row.getAttribute('data-search').includes(q) ? "" : "none";
+    }
+};
+
+// --- 4. تعديل جميع الحقول في Firebase ---
+window.editFirebaseDoc = async function(id) {
+    try {
+        const docRef = doc(db, "employeescompay", id);
+        const snap = await getDoc(docRef);
+        const d = snap.data();
+
+        const { value: formValues } = await Swal.fire({
+            title: `تعديل الموظف: ${d.ccp}`,
+            width: '700px',
+            html: `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; direction:rtl; text-align:right; font-family:'Cairo'; padding:10px;">
+                    <div><label style="font-weight:bold;">اللقب (FMN)</label><input id="fb-fmn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.fmn || ''}"></div>
+                    <div><label style="font-weight:bold;">الاسم (FRN)</label><input id="fb-frn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.frn || ''}"></div>
+                    <div><label style="font-weight:bold;">الرتبة (GR)</label><input id="fb-gr" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.gr || ''}"></div>
+                    <div><label style="font-weight:bold;">الضمان (ASS)</label><input id="fb-ass" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.ass || ''}"></div>
+                    <div><label style="font-weight:bold;">كود الإدارة (ADM)</label><input id="fb-adm" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.adm || ''}"></div>
+                    <div><label style="font-weight:bold;">الرقم التسلسلي (MTR)</label><input id="fb-mtr" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.mtr || ''}"></div>
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'حفظ التغييرات',
+            cancelButtonText: 'إلغاء',
+            preConfirm: () => ({
+                fmn: document.getElementById('fb-fmn').value,
+                frn: document.getElementById('fb-frn').value,
+                gr: document.getElementById('fb-gr').value,
+                ass: document.getElementById('fb-ass').value,
+                adm: document.getElementById('fb-adm').value,
+                mtr: document.getElementById('fb-mtr').value
+            })
+        });
+
+        if (formValues) {
+            Swal.fire({ title: 'جاري التحديث...', didOpen: () => Swal.showLoading() });
+            await setDoc(docRef, { ...d, ...formValues, last_admin_edit: new Date() });
+            Swal.fire('تم التحديث!', 'تمت مزامنة البيانات مع Firestore', 'success').then(() => window.showFirebaseEditorModal());
+        }
+    } catch (e) {
+        Swal.fire('خطأ', 'فشل التعديل: ' + e.message, 'error');
+    }
+};
+
+// --- 5. حذف موظف نهائياً من Firebase ---
+window.deleteFirebaseDoc = function(id) {
+    Swal.fire({
+        title: 'تأكيد الحذف النهائي',
+        text: `هل أنت متأكد من حذف الموظف ذو الـ CCP: ${id} من Firestore؟`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        confirmButtonText: 'نعم، احذف نهائياً',
+        cancelButtonText: 'تراجع'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                await deleteDoc(doc(db, "employeescompay", id));
+                Swal.fire('محذوف!', 'تم إزالة السجل من قاعدة البيانات.', 'success').then(() => window.showFirebaseEditorModal());
+            } catch (e) {
+                Swal.fire('خطأ', 'تعذر الحذف: ' + e.message, 'error');
+            }
+        }
+    });
 };
