@@ -92,6 +92,106 @@ const categoryOrder = [
 
 
 const SECURE_DASHBOARD_HTML = `
+
+<style>
+    /* 1. التأسيس العام ونظام الزوم الذكي للحاسوب والهاتف */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f8f9fa;
+      font-family: 'Cairo', sans-serif !important;
+      /* زوم 90% تلقائي لشاشات الحاسوب */
+      zoom: 90%; 
+      -moz-transform: scale(0.9); /* دعم فايرفوكس */
+      -moz-transform-origin: top center;
+    }
+
+    /* إلغاء الزوم في الهواتف لضمان وضوح الخط وسهولة اللمس */
+    @media screen and (max-width: 768px) {
+      body { zoom: 100%; -moz-transform: scale(1); }
+      .dashboard-container { padding: 10px !important; }
+      .header-area { flex-direction: column; text-align: center; gap: 15px; }
+      .header-area img { width: 60px; }
+      .page-title { font-size: 18px !important; }
+    }
+
+    /* 2. حاوية اللوحة الرئيسية (متجاوبة تماماً) */
+    .dashboard-container {
+      width: 100% !important;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 3. شبكة الإحصائيات (تتغير من صف لعمود في الهاتف) */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    /* 4. الجداول (تمرير عرضي سلس في الهاتف) */
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* 5. نظام النوافذ المنبثقة المتجاوب (SweetAlert2) */
+    .swal2-popup {
+      font-family: 'Cairo', sans-serif !important;
+      max-width: 95vw !important; /* عرض 95% من الشاشة في الهاتف */
+      max-height: 95vh !important; /* لا تخرج عن طول الشاشة */
+      border-radius: 20px !important;
+    }
+
+    /* توسيط النماذج داخل النوافذ المنبثقة */
+    .edit-form-wrapper {
+      max-height: 70vh;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .edit-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      text-align: right;
+    }
+
+    /* شريط الأدوات (تحويل الأزرار لصفوف في الهاتف) */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .controls-bar button, .controls-bar select {
+        width: 100% !important;
+        margin: 2px 0;
+      }
+      .swal2-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+      .swal2-actions button {
+        width: 100% !important;
+        margin: 5px 0 !important;
+      }
+    }
+  </style>
+
   <div class="dashboard-container" style="display:block;">
     <div class="header-area">
       <div style="display:flex; align-items:center; gap:15px;">
@@ -1847,7 +1947,7 @@ window.printNonRegistered = function() {
             ${fullHTML}
             <script>
                 window.onload = function() { 
-                    setTimeout(() => { window.print(); }, 800); 
+                    setTimeout(() => { window.print(); window.close(); }, 800); 
                 }
             </script>
         </body>
@@ -2611,7 +2711,7 @@ window.printNonRegisteredWithNotes = function() {
             ${fullHTML}
             <script>
                 window.onload = function() { 
-                    setTimeout(() => { window.print(); }, 800); 
+                    setTimeout(() => { window.print(); window.close(); }, 800); 
                 }
             </script>
         </body>
@@ -2829,12 +2929,3 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
-
-
-
-
-
-
-
-
-
