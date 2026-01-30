@@ -1847,7 +1847,7 @@ window.printNonRegistered = function() {
             ${fullHTML}
             <script>
                 window.onload = function() { 
-                    setTimeout(() => { window.print(); window.close(); }, 800); 
+                    setTimeout(() => { window.print(); }, 800); 
                 }
             </script>
         </body>
@@ -2611,7 +2611,7 @@ window.printNonRegisteredWithNotes = function() {
             ${fullHTML}
             <script>
                 window.onload = function() { 
-                    setTimeout(() => { window.print(); window.close(); }, 800); 
+                    setTimeout(() => { window.print(); }, 800); 
                 }
             </script>
         </body>
@@ -2829,6 +2829,7 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
 
 
