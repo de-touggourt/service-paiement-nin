@@ -94,28 +94,31 @@ const categoryOrder = [
 const SECURE_DASHBOARD_HTML = `
 
 <style>
-    /* 1. التأسيس العام ونظام الزوم الذكي للحاسوب والهاتف */
+    /* 1. الإعدادات العامة ونظام الزوم الذكي */
+    :root {
+      --primary-color: #4361ee;
+      --success-color: #2ec4b6;
+      --danger-color: #e63946;
+      --bg-light: #f8f9fa;
+    }
+
     body {
       margin: 0;
       padding: 0;
-      background-color: #f8f9fa;
+      background-color: var(--bg-light);
       font-family: 'Cairo', sans-serif !important;
-      /* زوم 90% تلقائي لشاشات الحاسوب */
-      zoom: 90%; 
-      -moz-transform: scale(0.9); /* دعم فايرفوكس */
+      /* زوم تلقائي للحواسيب للحفاظ على اتساع الرؤية */
+      zoom: 90%;
+      -moz-transform: scale(0.9);
       -moz-transform-origin: top center;
     }
 
     /* إلغاء الزوم في الهواتف لضمان وضوح الخط وسهولة اللمس */
     @media screen and (max-width: 768px) {
       body { zoom: 100%; -moz-transform: scale(1); }
-      .dashboard-container { padding: 10px !important; }
-      .header-area { flex-direction: column; text-align: center; gap: 15px; }
-      .header-area img { width: 60px; }
-      .page-title { font-size: 18px !important; }
     }
 
-    /* 2. حاوية اللوحة الرئيسية (متجاوبة تماماً) */
+    /* 2. حاوية اللوحة الرئيسية المتجاوبة */
     .dashboard-container {
       width: 100% !important;
       max-width: 1600px;
@@ -124,38 +127,45 @@ const SECURE_DASHBOARD_HTML = `
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      gap: 20px;
     }
 
-    /* 3. شبكة الإحصائيات (تتغير من صف لعمود في الهاتف) */
+    @media (max-width: 768px) {
+      .dashboard-container { padding: 10px; }
+      .header-area { flex-direction: column; text-align: center; gap: 15px; }
+      .header-area img { width: 60px; }
+    }
+
+    /* 3. شبكة الإحصائيات المرنة */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 15px;
-      margin-bottom: 20px;
     }
 
-    /* 4. الجداول (تمرير عرضي سلس في الهاتف) */
+    /* 4. الجداول والنوافذ المنبثقة */
     .table-container {
       background: white;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
+
     .table-responsive {
       width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
 
-    /* 5. نظام النوافذ المنبثقة المتجاوب (SweetAlert2) */
+    /* تحسين النوافذ المنبثقة SweetAlert لتكون مركزية تماماً وتناسب الهاتف */
     .swal2-popup {
       font-family: 'Cairo', sans-serif !important;
-      max-width: 95vw !important; /* عرض 95% من الشاشة في الهاتف */
-      max-height: 95vh !important; /* لا تخرج عن طول الشاشة */
-      border-radius: 20px !important;
+      max-width: 95vw !important;
+      max-height: 95vh !important;
+      border-radius: 15px !important;
+      padding: 1rem !important;
     }
 
-    /* توسيط النماذج داخل النوافذ المنبثقة */
     .edit-form-wrapper {
       max-height: 70vh;
       overflow-y: auto;
@@ -164,22 +174,31 @@ const SECURE_DASHBOARD_HTML = `
 
     .edit-form-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 15px;
       text-align: right;
     }
 
-    /* شريط الأدوات (تحويل الأزرار لصفوف في الهاتف) */
-    .controls-bar {
+    /* 5. شريط الأدوات والفلاتر */
+    .controls-bar, .filter-area {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .filter-select, .search-input {
+      flex: 1 1 180px;
+      min-width: 150px;
     }
 
     @media (max-width: 600px) {
       .controls-bar button, .controls-bar select {
         width: 100% !important;
-        margin: 2px 0;
+        flex: none;
       }
       .swal2-actions {
         flex-direction: column;
@@ -324,7 +343,7 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzd
 let allData = [];
 let filteredData = [];
 let currentPage = 1;
-const rowsPerPage = 8;
+const rowsPerPage = 10;
 let nonRegisteredData = []; 
 
 // ==========================================
@@ -2929,4 +2948,5 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
 
