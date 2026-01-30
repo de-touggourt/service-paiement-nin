@@ -92,125 +92,6 @@ const categoryOrder = [
 
 
 const SECURE_DASHBOARD_HTML = `
-
-<style>
-    /* 1. الإعدادات العامة ونظام الزوم الذكي */
-    :root {
-      --primary-color: #4361ee;
-      --success-color: #2ec4b6;
-      --danger-color: #e63946;
-      --bg-light: #f8f9fa;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: var(--bg-light);
-      font-family: 'Cairo', sans-serif !important;
-      /* زوم تلقائي للحواسيب للحفاظ على اتساع الرؤية */
-      zoom: 90%;
-      -moz-transform: scale(0.9);
-      -moz-transform-origin: top center;
-    }
-
-    /* إلغاء الزوم في الهواتف لضمان وضوح الخط وسهولة اللمس */
-    @media screen and (max-width: 768px) {
-      body { zoom: 100%; -moz-transform: scale(1); }
-    }
-
-    /* 2. حاوية اللوحة الرئيسية المتجاوبة */
-    .dashboard-container {
-      width: 100% !important;
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 20px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    @media (max-width: 768px) {
-      .dashboard-container { padding: 10px; }
-      .header-area { flex-direction: column; text-align: center; gap: 15px; }
-      .header-area img { width: 60px; }
-    }
-
-    /* 3. شبكة الإحصائيات المرنة */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 15px;
-    }
-
-    /* 4. الجداول والنوافذ المنبثقة */
-    .table-container {
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    .table-responsive {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    /* تحسين النوافذ المنبثقة SweetAlert لتكون مركزية تماماً وتناسب الهاتف */
-    .swal2-popup {
-      font-family: 'Cairo', sans-serif !important;
-      max-width: 95vw !important;
-      max-height: 95vh !important;
-      border-radius: 15px !important;
-      padding: 1rem !important;
-    }
-
-    .edit-form-wrapper {
-      max-height: 70vh;
-      overflow-y: auto;
-      padding: 10px;
-    }
-
-    .edit-form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 15px;
-      text-align: right;
-    }
-
-    /* 5. شريط الأدوات والفلاتر */
-    .controls-bar, .filter-area {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      background: white;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .filter-select, .search-input {
-      flex: 1 1 180px;
-      min-width: 150px;
-    }
-
-    @media (max-width: 600px) {
-      .controls-bar button, .controls-bar select {
-        width: 100% !important;
-        flex: none;
-      }
-      .swal2-actions {
-        flex-direction: column;
-        width: 100%;
-      }
-      .swal2-actions button {
-        width: 100% !important;
-        margin: 5px 0 !important;
-      }
-    }
-  </style>
-
   <div class="dashboard-container" style="display:block;">
     <div class="header-area">
       <div style="display:flex; align-items:center; gap:15px;">
@@ -2948,6 +2829,11 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
+
+
+
+
+
 
 
 
