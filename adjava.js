@@ -2627,9 +2627,11 @@ window.openFirebaseManager = async function() {
     const { value: password } = await Swal.fire({
         title: 'منطقة أمنية محظورة',
         input: 'password',
-        inputLabel: 'أدخل رمز المسؤول',
+        inputLabel: 'أدخل رمز مسؤول',
         inputPlaceholder: '••••••••',
         confirmButtonColor: '#e63946',
+        showCancelButton: true,
+        cancelButtonText: 'إلغاء',
         inputAttributes: {
             autocapitalize: 'off',
             autocorrect: 'off',
@@ -2638,24 +2640,40 @@ window.openFirebaseManager = async function() {
     });
 
     if (password) {
-       
-        const encodedInput = btoa(password.trim());
-        
-        const secretKey = "ZmVoQDA5";
+        Swal.fire({
+            title: 'جاري التحقق من الصلاحيات...',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false
+        });
 
-        if (encodedInput === secretKey) {
-           
-            Swal.close(); 
-            setTimeout(() => {
-                window.showFirebaseEditorModal();
-            }, 100);
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'خطأ',
-                text: 'الرمز غير صحيح!',
-                confirmButtonColor: '#e63946'
-            });
+        try {
+            // جلب الوثيقة من Firestore
+            const docRef = doc(db, "config", "pass");
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                // جلب القيمة من الحقل المطلوب service_pay_base
+                const realPass = docSnap.data().service_pay_base;
+
+                if (String(password).trim() === String(realPass).trim()) {
+                    Swal.close(); 
+                    setTimeout(() => {
+                        window.showFirebaseEditorModal();
+                    }, 100);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: 'رمز الدخول لقاعدة البيانات غير صحيح!',
+                        confirmButtonColor: '#e63946'
+                    });
+                }
+            } else {
+                Swal.fire('خطأ', 'لم يتم العثور على إعدادات الحماية في قاعدة البيانات', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('خطأ في الاتصال', 'تعذر الوصول لبيانات التحقق: ' + error.message, 'error');
         }
     }
 };
@@ -2829,11 +2847,4 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
-
-
-
-
-
-
-
 
