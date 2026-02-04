@@ -3,12 +3,12 @@
 // ============================================================
 
 const LOCAL_VERSION = "1.0.5"; 
-let CURRENT_SYSTEM_MODE = 1;
+let CURRENT_SYSTEM_MODE = 1; // متغير عام لحفظ الحالة
 
 const SYSTEM_CONFIG = {
     versionFile: "version.json",
     settingsFile: "settings.json",
-    checkInterval: 5000 // فحص كل 5 ثانية
+    checkInterval: 5000 // فحص كل 5 ثواني
 };
 
 async function performSystemCheck() {
@@ -17,13 +17,9 @@ async function performSystemCheck() {
     try {
         // 1. فحص الإصدار (Version Check)
         const vResponse = await fetch(`${SYSTEM_CONFIG.versionFile}?t=${timestamp}`);
-
-        if (sResponse.ok) {
-          const sData = await sResponse.json();
-          const mode = sData.currentMode; 
-          CURRENT_SYSTEM_MODE = mode;
-
-
+        if (vResponse.ok) {
+            const vData = await vResponse.json();
+            
             if (vData.version !== LOCAL_VERSION) {
                 Swal.fire({
                     title: 'تحديث للنظام',
@@ -37,15 +33,18 @@ async function performSystemCheck() {
                     }
                     window.location.reload(true);
                 });
-                return;
+                return; // إيقاف التنفيذ عند وجود تحديث
             }
         }
 
-        // 2. فحص وضعية المنصة (Mode Check 0, 1, 2)
+        // 2. فحص وضعية المنصة (Settings Check)
         const sResponse = await fetch(`${SYSTEM_CONFIG.settingsFile}?t=${timestamp}`);
         if (sResponse.ok) {
             const sData = await sResponse.json();
             const mode = sData.currentMode; // القيم: 0 أو 1 أو 2
+            
+            // ✅ تصحيح: حفظ الوضعية هنا في المتغير العام
+            CURRENT_SYSTEM_MODE = mode; 
             
             // تعريف العناصر
             const ccpInput = document.getElementById("ccpInput");
@@ -55,12 +54,10 @@ async function performSystemCheck() {
             const overlay = document.getElementById("systemLoginOverlay");
 
             // --- الحالة 0: غلق كلي (صيانة) ---
-            // نستخدم == بدلاً من === ليعمل سواء كتبتها كرقم 0 أو نص "0"
             if (mode == 0) {
                 if (container) container.style.display = "none";
                 if (overlay) overlay.style.display = "none";
                 
-                // إظهار رسالة الغلق إذا لم تكن ظاهرة
                 if (!Swal.isVisible() || Swal.getTitle()?.textContent !== 'المنصة مغلقة') {
                     Swal.fire({
                         icon: 'warning',
@@ -96,7 +93,7 @@ async function performSystemCheck() {
                     adminBtn.innerHTML = `<i class="fas fa-user-shield"></i> بوابة الإدارة (التسجيل مغلق)`;
                 }
                 
-                // إضافة رسالة توضيحية مكان خانة الإدخال
+                // إضافة رسالة توضيحية
                 let msgDiv = document.getElementById("temp-msg-lock");
                 if(!msgDiv) {
                     msgDiv = document.createElement("div");
@@ -107,23 +104,18 @@ async function performSystemCheck() {
                 } else {
                     msgDiv.innerText = sData.message || "التسجيل مغلق حالياً";
                 }
-
             } 
             
             // --- الحالة 1: الوضع الطبيعي (الكل يعمل) ---
             else if (mode == 1) {
-                // إعادة إظهار العناصر
                 if(ccpInput) ccpInput.style.display = "block";
                 if(loginBtn) loginBtn.style.display = "inline-block";
                 
-                // إرجاع زر الإدارة لطبيعته
                 if(adminBtn) {
                     adminBtn.style.display = "inline-block";
                     adminBtn.style.width = ""; 
                     adminBtn.innerHTML = `<i class="fas fa-file-alt"></i> استخراج القوائم والاستمارات`;
                 }
-
-                // إزالة رسالة الغلق المؤقت
                 const msgDiv = document.getElementById("temp-msg-lock");
                 if(msgDiv) msgDiv.remove();
             }
@@ -133,7 +125,6 @@ async function performSystemCheck() {
         console.warn("System check failed:", error);
     }
 }
-
 // تشغيل النظام
 document.addEventListener("DOMContentLoaded", () => {
     performSystemCheck();
@@ -1853,6 +1844,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
