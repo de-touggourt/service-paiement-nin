@@ -1,19 +1,17 @@
 // ============================================================
-// 🔒 SYSTEM GUARD: نظام الحماية، التحديث، والغلق المركزي
+// 🔒 SYSTEM GUARD V3.0: نظام الأرقام (1=نشط، 2=إدارة، 0=غلق)
 // ============================================================
 
-// ⚠️ هام: يجب تغيير هذا الرقم يدوياً في الملف هنا عند كل تحديث جديد للكود
 const LOCAL_VERSION = "1.0.5"; 
 
 const SYSTEM_CONFIG = {
     versionFile: "version.json",
     settingsFile: "settings.json",
-    checkInterval: 10000 // فحص الحالة كل 30 ثانية
+    checkInterval: 20000 // فحص كل 20 ثانية
 };
 
-// دالة الفحص الشامل (تحديث + غلق)
-async function performSystemCheck(isBlocking = false) {
-    const timestamp = new Date().getTime(); // لكسر الكاش
+async function performSystemCheck() {
+    const timestamp = new Date().getTime();
 
     try {
         // 1. فحص الإصدار (Version Check)
@@ -22,57 +20,106 @@ async function performSystemCheck(isBlocking = false) {
             const vData = await vResponse.json();
             if (vData.version !== LOCAL_VERSION) {
                 Swal.fire({
-                    title: 'تحديث ضروري',
-                    text: 'يوجد إصدار جديد من المنصة، سيتم تحديث الصفحة الآن.',
-                    icon: 'info',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    showConfirmButton: true,
-                    confirmButtonText: 'تحديث الآن'
+                    title: 'تحديث للنظام',
+                    text: 'جاري تطبيق تحديثات جديدة...',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    allowOutsideClick: false
                 }).then(() => {
-                    // مسح الكاش وإعادة التحميل
                     if ('caches' in window) {
-                        caches.keys().then((names) => {
-                            names.forEach((name) => { caches.delete(name); });
-                        });
+                        caches.keys().then((names) => names.forEach(name => caches.delete(name)));
                     }
                     window.location.reload(true);
                 });
-                return; // إيقاف التنفيذ
+                return;
             }
         }
 
-        // 2. فحص حالة المنصة (Status Check)
+        // 2. فحص وضعية المنصة (Mode Check 0, 1, 2)
         const sResponse = await fetch(`${SYSTEM_CONFIG.settingsFile}?t=${timestamp}`);
         if (sResponse.ok) {
             const sData = await sResponse.json();
+            const mode = sData.currentMode; // القيم: 0 أو 1 أو 2
             
-            // إذا كانت المنصة مغلقة
-            if (sData.registrationOpen === false) {
-                // إخفاء المحتوى فوراً
-                document.getElementById("interfaceCard").style.display = "none";
-                document.getElementById("systemLoginOverlay").style.display = "none";
+            // تعريف العناصر
+            const ccpInput = document.getElementById("ccpInput");
+            const loginBtn = document.getElementById("loginBtn");
+            const adminBtn = document.querySelector("button[onclick='openAdminModal()']");
+            const container = document.getElementById("interfaceCard");
+            const overlay = document.getElementById("systemLoginOverlay");
+
+            // --- الحالة 0: غلق كلي (صيانة) ---
+            // نستخدم == بدلاً من === ليعمل سواء كتبتها كرقم 0 أو نص "0"
+            if (mode == 0) {
+                if (container) container.style.display = "none";
+                if (overlay) overlay.style.display = "none";
                 
-                Swal.fire({
-                    icon: 'error',
-                    title: 'المنصة مغلقة مؤقتاً',
-                    html: `<h4 style="color: #555;">${sData.message}</h4>`,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    showConfirmButton: false, // إخفاء زر الموافقة لمنع الدخول
-                    footer: '<a href="#" onclick="location.reload()">تحقق مرة أخرى</a>'
-                });
-                return;
-            } else {
-                // إذا كانت المنصة مفتوحة وكان هناك تنبيه غلق سابق، نغلقه
-                if (Swal.isVisible() && Swal.getTitle()?.textContent === 'المنصة مغلقة مؤقتاً') {
-                    Swal.close();
-                    // نظهر واجهة تسجيل الدخول إذا لم نكن داخلين بالفعل
-                    if(!currentEmployeeData) { 
-                        document.getElementById("mainHeader").style.display = "block";
-                        // document.getElementById("interfaceCard").style.display = "block"; // حسب الحاجة
-                    }
+                // إظهار رسالة الغلق إذا لم تكن ظاهرة
+                if (!Swal.isVisible() || Swal.getTitle()?.textContent !== 'المنصة مغلقة') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'المنصة مغلقة',
+                        html: `<h3 style="color:#333;">${sData.message}</h3>`,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false
+                    });
                 }
+                return;
+            } 
+            
+            // إخفاء رسالة الغلق الكلي إذا تغير الوضع
+            if (Swal.isVisible() && Swal.getTitle()?.textContent === 'المنصة مغلقة') {
+                Swal.close();
+                if(container) container.style.display = "block";
+            }
+
+            // --- الحالة 2: غلق جزئي (إدارة فقط) ---
+            if (mode == 2) {
+                // إخفاء خانة الإدخال وزر الدخول
+                if(ccpInput) {
+                    ccpInput.style.display = "none";
+                    ccpInput.value = ""; 
+                }
+                if(loginBtn) loginBtn.style.display = "none";
+
+                // تعديل زر الإدارة ليملأ المكان
+                if(adminBtn) {
+                    adminBtn.style.display = "inline-block";
+                    adminBtn.style.width = "100%"; 
+                    adminBtn.innerHTML = `<i class="fas fa-user-shield"></i> بوابة الإدارة (التسجيل مغلق)`;
+                }
+                
+                // إضافة رسالة توضيحية مكان خانة الإدخال
+                let msgDiv = document.getElementById("temp-msg-lock");
+                if(!msgDiv) {
+                    msgDiv = document.createElement("div");
+                    msgDiv.id = "temp-msg-lock";
+                    msgDiv.style.cssText = "color: #dc3545; font-weight: bold; margin-bottom: 15px; background: #fff5f5; padding: 10px; border-radius: 8px; border: 1px dashed #dc3545;";
+                    msgDiv.innerText = sData.message || "التسجيل مغلق حالياً";
+                    if(adminBtn && adminBtn.parentNode) adminBtn.parentNode.insertBefore(msgDiv, adminBtn);
+                } else {
+                    msgDiv.innerText = sData.message || "التسجيل مغلق حالياً";
+                }
+
+            } 
+            
+            // --- الحالة 1: الوضع الطبيعي (الكل يعمل) ---
+            else if (mode == 1) {
+                // إعادة إظهار العناصر
+                if(ccpInput) ccpInput.style.display = "block";
+                if(loginBtn) loginBtn.style.display = "inline-block";
+                
+                // إرجاع زر الإدارة لطبيعته
+                if(adminBtn) {
+                    adminBtn.style.display = "inline-block";
+                    adminBtn.style.width = ""; 
+                    adminBtn.innerHTML = `<i class="fas fa-file-alt"></i> استخراج القوائم والاستمارات`;
+                }
+
+                // إزالة رسالة الغلق المؤقت
+                const msgDiv = document.getElementById("temp-msg-lock");
+                if(msgDiv) msgDiv.remove();
             }
         }
 
@@ -81,11 +128,10 @@ async function performSystemCheck(isBlocking = false) {
     }
 }
 
-// تشغيل الفحص عند تحميل الصفحة
+// تشغيل النظام
 document.addEventListener("DOMContentLoaded", () => {
-    performSystemCheck(true);
-    // تشغيل الفحص الدوري (كل 30 ثانية) لطرد المستخدمين إذا أغلقت المنصة وهم يعملون
-    setInterval(() => performSystemCheck(), SYSTEM_CONFIG.checkInterval);
+    performSystemCheck();
+    setInterval(performSystemCheck, SYSTEM_CONFIG.checkInterval);
 });
 
 // ============================================================
@@ -1786,6 +1832,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
