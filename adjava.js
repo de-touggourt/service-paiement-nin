@@ -157,7 +157,7 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzd
 let allData = [];
 let filteredData = [];
 let currentPage = 1;
-const rowsPerPage = 8;
+const rowsPerPage = 10;
 let nonRegisteredData = []; 
 
 // ==========================================
@@ -2338,6 +2338,7 @@ window.loadData = async function() {
     await originalLoad();
     window.loadCurrentStatus();
 };
+
 
 
 
