@@ -72,9 +72,7 @@ const SECURE_DASHBOARD_HTML = `
       <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
-    </div>
-
-    <div class="status-toggle-container" style="display:flex; align-items:center; gap:10px; background:#fff; padding:5px 15px; border-radius:10px; border:1px solid #ddd;">
+          <div class="status-toggle-container" style="display:flex; align-items:center; gap:10px; background:#fff; padding:5px 15px; border-radius:10px; border:1px solid #ddd;">
     <span style="font-weight:bold; font-size:13px;">حالة النظام:</span>
     <select id="systemStatusSelect" onchange="window.toggleSystemStatus(this.value)" style="padding:5px; border-radius:5px; border:1px solid #2575fc; font-weight:bold;">
         <option value="1">🟢 نشط</option>
@@ -82,6 +80,9 @@ const SECURE_DASHBOARD_HTML = `
         <option value="0">🔴 مغلق</option>
     </select>
 </div>
+    </div>
+
+
 
     <div style="background-color:#f1f3f5; padding:12px; border-radius:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; border:1px solid #dee2e6;">
       <div style="font-weight:bold; color:#495057; font-size:14px; margin-left:10px;">
@@ -2337,6 +2338,7 @@ window.loadData = async function() {
     await originalLoad();
     window.loadCurrentStatus();
 };
+
 
 
 
