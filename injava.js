@@ -8,7 +8,7 @@ const LOCAL_VERSION = "1.0.5";
 const SYSTEM_CONFIG = {
     versionFile: "version.json",
     settingsFile: "settings.json",
-    checkInterval: 30000 // فحص الحالة كل 30 ثانية
+    checkInterval: 10000 // فحص الحالة كل 30 ثانية
 };
 
 // دالة الفحص الشامل (تحديث + غلق)
@@ -1786,6 +1786,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
