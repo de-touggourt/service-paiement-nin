@@ -1591,7 +1591,7 @@ function showEmployeeDetails(ccp) {
         Swal.fire({
             icon: 'info',
             title: 'وضع القراءة فقط',
-            text: 'لا يمكن تعديل أو تأكيد بيانات الموظفين لأن التسجيل مغلق حالياً (الوضع 2).',
+            text: 'لا يمكن تعديل أو تأكيد بيانات الموظفين لأن التسجيل مغلق حالياً.',
             confirmButtonColor: '#333',
             confirmButtonText: 'حسناً'
         });
@@ -1844,6 +1844,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
