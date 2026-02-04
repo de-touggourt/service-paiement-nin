@@ -1,4 +1,96 @@
+// ============================================================
+// 🔒 SYSTEM GUARD: نظام الحماية، التحديث، والغلق المركزي
+// ============================================================
 
+// ⚠️ هام: يجب تغيير هذا الرقم يدوياً في الملف هنا عند كل تحديث جديد للكود
+const LOCAL_VERSION = "1.0.5"; 
+
+const SYSTEM_CONFIG = {
+    versionFile: "version.json",
+    settingsFile: "settings.json",
+    checkInterval: 30000 // فحص الحالة كل 30 ثانية
+};
+
+// دالة الفحص الشامل (تحديث + غلق)
+async function performSystemCheck(isBlocking = false) {
+    const timestamp = new Date().getTime(); // لكسر الكاش
+
+    try {
+        // 1. فحص الإصدار (Version Check)
+        const vResponse = await fetch(`${SYSTEM_CONFIG.versionFile}?t=${timestamp}`);
+        if (vResponse.ok) {
+            const vData = await vResponse.json();
+            if (vData.version !== LOCAL_VERSION) {
+                Swal.fire({
+                    title: 'تحديث ضروري',
+                    text: 'يوجد إصدار جديد من المنصة، سيتم تحديث الصفحة الآن.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: true,
+                    confirmButtonText: 'تحديث الآن'
+                }).then(() => {
+                    // مسح الكاش وإعادة التحميل
+                    if ('caches' in window) {
+                        caches.keys().then((names) => {
+                            names.forEach((name) => { caches.delete(name); });
+                        });
+                    }
+                    window.location.reload(true);
+                });
+                return; // إيقاف التنفيذ
+            }
+        }
+
+        // 2. فحص حالة المنصة (Status Check)
+        const sResponse = await fetch(`${SYSTEM_CONFIG.settingsFile}?t=${timestamp}`);
+        if (sResponse.ok) {
+            const sData = await sResponse.json();
+            
+            // إذا كانت المنصة مغلقة
+            if (sData.registrationOpen === false) {
+                // إخفاء المحتوى فوراً
+                document.getElementById("interfaceCard").style.display = "none";
+                document.getElementById("systemLoginOverlay").style.display = "none";
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'المنصة مغلقة مؤقتاً',
+                    html: `<h4 style="color: #555;">${sData.message}</h4>`,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false, // إخفاء زر الموافقة لمنع الدخول
+                    footer: '<a href="#" onclick="location.reload()">تحقق مرة أخرى</a>'
+                });
+                return;
+            } else {
+                // إذا كانت المنصة مفتوحة وكان هناك تنبيه غلق سابق، نغلقه
+                if (Swal.isVisible() && Swal.getTitle()?.textContent === 'المنصة مغلقة مؤقتاً') {
+                    Swal.close();
+                    // نظهر واجهة تسجيل الدخول إذا لم نكن داخلين بالفعل
+                    if(!currentEmployeeData) { 
+                        document.getElementById("mainHeader").style.display = "block";
+                        // document.getElementById("interfaceCard").style.display = "block"; // حسب الحاجة
+                    }
+                }
+            }
+        }
+
+    } catch (error) {
+        console.warn("System check failed:", error);
+    }
+}
+
+// تشغيل الفحص عند تحميل الصفحة
+document.addEventListener("DOMContentLoaded", () => {
+    performSystemCheck(true);
+    // تشغيل الفحص الدوري (كل 30 ثانية) لطرد المستخدمين إذا أغلقت المنصة وهم يعملون
+    setInterval(() => performSystemCheck(), SYSTEM_CONFIG.checkInterval);
+});
+
+// ============================================================
+// نهاية كود نظام الحماية
+// ============================================================
 // ============================================================
 // كود استقبال الإشارة السرية (postMessage)
 // ============================================================
