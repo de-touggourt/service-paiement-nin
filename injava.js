@@ -3,11 +3,12 @@
 // ============================================================
 
 const LOCAL_VERSION = "1.0.5"; 
+let CURRENT_SYSTEM_MODE = 1;
 
 const SYSTEM_CONFIG = {
     versionFile: "version.json",
     settingsFile: "settings.json",
-    checkInterval: 20000 // فحص كل 20 ثانية
+    checkInterval: 5000 // فحص كل 5 ثانية
 };
 
 async function performSystemCheck() {
@@ -16,8 +17,13 @@ async function performSystemCheck() {
     try {
         // 1. فحص الإصدار (Version Check)
         const vResponse = await fetch(`${SYSTEM_CONFIG.versionFile}?t=${timestamp}`);
-        if (vResponse.ok) {
-            const vData = await vResponse.json();
+
+        if (sResponse.ok) {
+          const sData = await sResponse.json();
+          const mode = sData.currentMode; 
+          CURRENT_SYSTEM_MODE = mode;
+
+
             if (vData.version !== LOCAL_VERSION) {
                 Swal.fire({
                     title: 'تحديث للنظام',
@@ -1489,6 +1495,9 @@ function generateEmployeesTable(data, schoolName) {
     const confirmedCount = data.filter(e => (e.confirmed === true || String(e.confirmed).toLowerCase() === "true")).length;
     const unconfirmedCount = total - confirmedCount;
 
+// تحديد شكل المؤشر بناءً على الوضع
+    const rowCursor = (CURRENT_SYSTEM_MODE == 2 || CURRENT_SYSTEM_MODE == 0) ? 'default' : 'pointer';
+
     // 2. بناء الأسطر
     let rows = '';
     data.forEach((emp, index) => {
@@ -1499,7 +1508,7 @@ function generateEmployeesTable(data, schoolName) {
             : `<span style="background-color:#f8d7da; color:#721c24; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; border: 1px solid #f5c6cb;">غير مؤكد</span>`;
 
         rows += `
-            <tr onclick="showEmployeeDetails('${emp.ccp}')" style="cursor:pointer; transition:all 0.1s ease; border-bottom: 1px solid #eee;">
+            <tr onclick="showEmployeeDetails('${emp.ccp}')" style="cursor:${rowCursor}; transition:all 0.1s ease; border-bottom: 1px solid #eee;">
                 <td style="font-weight:bold;">${index + 1}</td>
                 <td style="font-family: monospace; color:#555;">${emp.nin || '-'}</td>
                 <td style="color:#2c3e50; font-weight:600;">${emp.fmn}</td>
@@ -1510,7 +1519,6 @@ function generateEmployeesTable(data, schoolName) {
             </tr>
         `;
     });
-
     // 3. بناء الهيكل (CSS محسن للأزرار وضغط الجدول)
     const tableHtml = `
         <style>
@@ -1585,8 +1593,21 @@ function generateEmployeesTable(data, schoolName) {
     });
 }
 
-// عرض تفاصيل موظف من الجدول (معدلة لتوجيه غير المؤكدين للتأكيد)
+// عرض تفاصيل موظف من الجدول (معدلة للحماية في وضع الغلق)
 function showEmployeeDetails(ccp) {
+    // 🛑 فحص الوضعية: إذا كان الوضع 2 (إدارة فقط) أو 0 (غلق)، نمنع التعديل
+    if (CURRENT_SYSTEM_MODE == 2 || CURRENT_SYSTEM_MODE == 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'وضع القراءة فقط',
+            text: 'لا يمكن تعديل أو تأكيد بيانات الموظفين لأن التسجيل مغلق حالياً (الوضع 2).',
+            confirmButtonColor: '#333',
+            confirmButtonText: 'حسناً'
+        });
+        return; // إيقاف التنفيذ وعدم فتح النافذة
+    }
+
+    // الكود الأصلي يكمل العمل فقط إذا كان الوضع 1 (نشط)
     const emp = window.currentListContext.find(e => e.ccp == ccp || e.empId == ccp);
     if(emp) {
         currentEmployeeData = emp;
