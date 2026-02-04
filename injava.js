@@ -12,117 +12,61 @@ const SYSTEM_CONFIG = {
 };
 
 async function performSystemCheck() {
-    const timestamp = new Date().getTime();
-
     try {
-        // 1. فحص الإصدار (Version Check)
-        const vResponse = await fetch(`${SYSTEM_CONFIG.versionFile}?t=${timestamp}`);
-        if (vResponse.ok) {
-            const vData = await vResponse.json();
+        // جلب الإعدادات من Firestore (مسار config/pass)
+        const docSnap = await db.collection("config").doc("pass").get();
+        
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            const mode = data.status; // جلب القيمة من حقل status الجديد
             
-            if (vData.version !== LOCAL_VERSION) {
-                Swal.fire({
-                    title: 'تحديث للنظام',
-                    text: 'جاري تطبيق تحديثات جديدة...',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    allowOutsideClick: false
-                }).then(() => {
-                    if ('caches' in window) {
-                        caches.keys().then((names) => names.forEach(name => caches.delete(name)));
-                    }
-                    window.location.reload(true);
-                });
-                return; // إيقاف التنفيذ عند وجود تحديث
-            }
-        }
-
-        // 2. فحص وضعية المنصة (Settings Check)
-        const sResponse = await fetch(`${SYSTEM_CONFIG.settingsFile}?t=${timestamp}`);
-        if (sResponse.ok) {
-            const sData = await sResponse.json();
-            const mode = sData.currentMode; // القيم: 0 أو 1 أو 2
+            CURRENT_SYSTEM_MODE = mode; // تحديث المتغير العام
             
-            // ✅ تصحيح: حفظ الوضعية هنا في المتغير العام
-            CURRENT_SYSTEM_MODE = mode; 
-            
-            // تعريف العناصر
+            // تعريف العناصر المراد التحكم بها
             const ccpInput = document.getElementById("ccpInput");
             const loginBtn = document.getElementById("loginBtn");
             const adminBtn = document.querySelector("button[onclick='openAdminModal()']");
             const container = document.getElementById("interfaceCard");
-            const overlay = document.getElementById("systemLoginOverlay");
 
             // --- الحالة 0: غلق كلي (صيانة) ---
             if (mode == 0) {
                 if (container) container.style.display = "none";
-                if (overlay) overlay.style.display = "none";
-                
-                if (!Swal.isVisible() || Swal.getTitle()?.textContent !== 'المنصة مغلقة') {
+                if (!Swal.isVisible()) {
                     Swal.fire({
                         icon: 'warning',
                         title: 'المنصة مغلقة',
-                        html: `<h3 style="color:#333;">${sData.message}</h3>`,
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        showConfirmButton: false
+                        html: '<h3 style="color:#333;">نعتذر، المنصة في وضع صيانة حالياً</h3>',
+                        allowOutsideClick: false, showConfirmButton: false
                     });
                 }
                 return;
             } 
-            
-            // إخفاء رسالة الغلق الكلي إذا تغير الوضع
-            if (Swal.isVisible() && Swal.getTitle()?.textContent === 'المنصة مغلقة') {
-                Swal.close();
-                if(container) container.style.display = "block";
-            }
 
             // --- الحالة 2: غلق جزئي (إدارة فقط) ---
             if (mode == 2) {
-                // إخفاء خانة الإدخال وزر الدخول
-                if(ccpInput) {
-                    ccpInput.style.display = "none";
-                    ccpInput.value = ""; 
-                }
+                if(ccpInput) ccpInput.style.display = "none";
                 if(loginBtn) loginBtn.style.display = "none";
-
-                // تعديل زر الإدارة ليملأ المكان
                 if(adminBtn) {
                     adminBtn.style.display = "inline-block";
                     adminBtn.style.width = "100%"; 
-                    adminBtn.innerHTML = `<i class="fas fa-user-shield"></i> بوابة الإدارة (التسجيل مغلق)`;
-                }
-                
-                // إضافة رسالة توضيحية
-                let msgDiv = document.getElementById("temp-msg-lock");
-                if(!msgDiv) {
-                    msgDiv = document.createElement("div");
-                    msgDiv.id = "temp-msg-lock";
-                    msgDiv.style.cssText = "color: #dc3545; font-weight: bold; margin-bottom: 15px; background: #fff5f5; padding: 10px; border-radius: 8px; border: 1px dashed #dc3545;";
-                    msgDiv.innerText = sData.message || "التسجيل مغلق حالياً";
-                    if(adminBtn && adminBtn.parentNode) adminBtn.parentNode.insertBefore(msgDiv, adminBtn);
-                } else {
-                    msgDiv.innerText = sData.message || "التسجيل مغلق حالياً";
+                    adminBtn.innerHTML = `<i class="fas fa-user-shield"></i> بوابة الإدارة (التسجيل مغلق حالياً)`;
                 }
             } 
             
-            // --- الحالة 1: الوضع الطبيعي (الكل يعمل) ---
+            // --- الحالة 1: الوضع الطبيعي ---
             else if (mode == 1) {
                 if(ccpInput) ccpInput.style.display = "block";
                 if(loginBtn) loginBtn.style.display = "inline-block";
-                
                 if(adminBtn) {
                     adminBtn.style.display = "inline-block";
                     adminBtn.style.width = ""; 
                     adminBtn.innerHTML = `<i class="fas fa-file-alt"></i> استخراج القوائم والاستمارات`;
                 }
-                const msgDiv = document.getElementById("temp-msg-lock");
-                if(msgDiv) msgDiv.remove();
+                if (Swal.isVisible() && Swal.getTitle()?.textContent === 'المنصة مغلقة') Swal.close();
             }
         }
-
     } catch (error) {
-        console.warn("System check failed:", error);
+        console.warn("فشل فحص حالة النظام:", error);
     }
 }
 // تشغيل النظام
@@ -1844,15 +1788,3 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,7 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- إعدادات Firebase ---
 const firebaseConfig = {
@@ -16,80 +15,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-
-const gradeMap = {
-    "1006": "أستاذ إبتدائي (متعاقد)", "1007": "أستاذ تعليم إبتدائي قسم أول", "1008": "أستاذ تعليم إبتدائي قسم ثان",
-    "1009": "أستاذ مميز في التعليم الإبتدائي", "1010": "أستاذ التعليم الإبتدائي", "2021": "ناظر في التعليم الإبتدائي",
-    "2031": "مربي متخصص رئيسي في الدعم", "2100": "مدير مدرسة إبتدائية", "3010": "أستاذ مميز في التعليم المتوسط",
-    "3005": "أستاذ التعليم المتوسط قسم ثاني", "3001": "أستاذ التعليم المتوسط قسم أول", "3012": "أستاذ التعليم المتوسط / متعاقد",
-    "3020": "أستاذ ت م متعاقد ق 01 (13)", "4000": "مدير متوسطة", "4006": "ناظر في التعليم المتوسط",
-    "5019": "أستاذ تعليم ثانوي", "5020": "أستاذ تعليم ثانوي (متعاقد)", "5021": "أستاذ تعليم ثانوي مستخلف",
-    "5022": "أستاذ مميز في التعليم الثانوي", "5023": "أستاذ التعليم الثانوي قسم ثان", "5024": "أستاذ التعليم الثانوي قسم أول",
-    "6001": "مدير ثانوية", "6004": "ناظر في التعليم الثانوي", "4030": "مستشار التربية", "4031": "مستشار توجيه وارشاد مدرسي",
-    "4032": "مستشار محلل لتوجيه والارشاد", "4033": "مستشار رئيسي للتوجيه", "4034": "مستشار رئيس للتوجيه",
-    "6003": "مستشار رئيس توجيه وارشاد", "6008": "مستشار محلل توجيه وارشاد", "6009": "مستشار رئيسي توجيه وارشاد",
-    "6025": "مستشار للتوجيه المدرسي", "6035": "مستشار للتربية", "7160": "مستشار محلل للتوجيه والإرشاد المدرسي",
-    "7025": "مفتش التعليم الثانوي للتوجيه والإرشاد", "4025": "مقتصد", "4040": "نائب مقتصد مسير", "4060": "نائب مقتصد",
-    "4065": "مساعد رئيسي للمصالح الاقتصادية", "6010": "مقتصد رئيسي", "6015": "مقتصد", "6085": "نائب مقتصد",
-    "7220": "نائب مقتصد", "7260": "م مصالح اقتصادية رئيسي", "4087": "مشرف تربية", "4088": "مشرف رئيسي للتربية",
-    "4089": "مشرف رئيس للتربية", "4090": "مشرف عام للتربية", "4085": "مساعد رئيسي للتربية", "6006": "مشرف رئيس للتربية",
-    "6007": "مشرف عام للتربية", "6117": "مشرف رئيسي للتربية", "6118": "مشرف للتربية", "4072": "ملحق بالمخبر",
-    "4076": "ملحق رئيسي للمخبر", "4077": "ملحق رئيس بالمخابر", "4078": "ملحق مشرف بالمخابر", "6046": "ملحق رئيسي للمخبر",
-    "6047": "ملحق مشرف بالمخابر", "6048": "ملحق رئيس بالمخابر", "7005": "مدير التربية", "7682": "مدير التربية",
-    "7011": "الأمين العام", "7013": "رئيس مصلحة بمديرية التربية", "7071": "رئيس مصلحة بمديرية التربية",
-    "7073": "رئيس مكتب", "7074": "رئيس مكتب", "7023": "مفتش التعليم المتوسط تخصص مواد", "7024": "مفتش التعليم الثانوي تخصص مواد",
-    "7036": "مفتش تعليم متوسط تخصص إدارة", "7044": "مفتش ت.إ تخصص إدارة مدارس ابتدائي", "7045": "مفتش تغذية مدرسية",
-    "7046": "مفتش التغذية المدرسية", "7047": "مفتش التعليم الابتدائي تخصص مواد", "7042": "مفتش التغذية المدرسية",
-    "6081": "ملحق إدارة", "7210": "ملحق إدارة", "7155": "ملحق إدارة رئيسي", "6100": "عون إدارة رئيسي",
-    "6185": "عون إدارة", "7311": "عون إدارة", "8380": "عون إدارة", "6194": "كاتب مديرية", "6195": "كاتب",
-    "6215": "عون حفظ بيانات", "7345": "عون حجز بيانات", "6082": "مساعد وثائقي أمين محفوظات", "6083": "أمين وثائقي للمحفوظات رئيسي",
-    "7271": "مساعد وثائقي أمين محفوظات", "7075": "مهندس دولة في الإعلام الآلي", "7095": "مهندس مستوى أول في الإحصاء",
-    "7105": "تقني سامي في الاعلام الآلي", "7150": "تقني سامي في الاعلام الآلي مستوى 3", "7099": "متصرف محلل",
-    "7100": "متصرف", "7445": "متصرف محلل", "6038": "ممرض حاصل على شهادة دولة", "6041": "ممرض للصحة العمومية",
-    "7032": "نفساني عيادي للصحة العمومية", "7033": "نفساني عيادي للصحة العمومية", "6140": "رئيس فرقة للامن و الوقاية",
-    "6165": "عون أمن ووقاية", "6225": "عون أمن ووقاية", "6201": "سائق سيارة مستوى أول", "6110": "عامل مهني خارج الصنف",
-    "6155": "عامل مهني الصنف 1", "6161": "عامل مهني مستوى ثالث", "6205": "عامل مهني الصنف 2", "6221": "عامل مهني مستوى ثاني",
-    "6241": "عامل مهني مستوى أول", "7280": "عامل مهني مستوى أول", "7310": "عامل مهني مستوى أول", "7434": "عامل مهني مستوى 1"
-};
-
-
-// دالة لتصنيف الموظفين حسب المجموعات المطلوبة بدقة
-const getCategoryByGrade = (gr) => {
-    if (!gr) return "موظفون لم يتم التعرف على وظيفتهم";
-    const g = String(gr);
-    
-    // أساتذة الابتدائي (تبدأ بـ 10)
-    if (g.startsWith('10')) return "أساتذة التعليم الإبتدائي";
-    
-    // أساتذة المتوسط (تبدأ بـ 30)
-    if (g.startsWith('30')) return "أساتذة التعليم المتوسط";
-    
-    // أساتذة الثانوي (تبدأ بـ 50)
-    if (g.startsWith('50')) return "أساتذة التعليم الثانوي";
-    
-    // العمال (أكواد العمال المهنيين وسائقي السيارات)
-    const workerCodes = ["6110", "6155", "6161", "6205", "6221", "6241", "7280", "7310", "7434", "6201", "6140", "6165", "6225"];
-    if (workerCodes.includes(g)) return "العمال المهنيين وأعوان الأمن";
-    
-    // الإداريين والمدراء وباقي الرتب المعروفة
-    if (gradeMap[g]) return "المدراء و الرتب الإدارية";
-    
-    // في حال وجود كود رتبة غير موجود في الخريطة
-    return "قائمة الموظفين الإضافية";
-};
-
-// الترتيب الذي ستظهر به المجموعات في صفحات الطباعة
-const categoryOrder = [
-    "أساتذة التعليم الإبتدائي",
-    "أساتذة التعليم المتوسط",
-    "أساتذة التعليم الثانوي",
-    "المدراء و الرتب الإدارية",
-    "العمال المهنيين وأعوان الأمن",
-    "قائمة الموظفين الإضافية"
-];
-
-
 
 const SECURE_DASHBOARD_HTML = `
   <div class="dashboard-container" style="display:block;">
@@ -142,14 +67,21 @@ const SECURE_DASHBOARD_HTML = `
 
       <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد<i class="fas fa-plus"></i></button>
       <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
-    
-<button class="btn" style="background-color:#e63946; color:white;" onclick="window.openFirebaseManager()">قاعدة البيانات<i class="fas fa-server"></i></button>
       <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة موظف<i class="fas fa-database"></i></button>
       <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
       <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
     </div>
+
+    <div class="status-toggle-container" style="display:flex; align-items:center; gap:10px; background:#fff; padding:5px 15px; border-radius:10px; border:1px solid #ddd;">
+    <span style="font-weight:bold; font-size:13px;">حالة النظام:</span>
+    <select id="systemStatusSelect" onchange="window.toggleSystemStatus(this.value)" style="padding:5px; border-radius:5px; border:1px solid #2575fc; font-weight:bold;">
+        <option value="1">🟢 نشط</option>
+        <option value="2">🟡 إدارة فقط</option>
+        <option value="0">🔴 مغلق</option>
+    </select>
+</div>
 
     <div style="background-color:#f1f3f5; padding:12px; border-radius:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; border:1px solid #dee2e6;">
       <div style="font-weight:bold; color:#495057; font-size:14px; margin-left:10px;">
@@ -224,7 +156,7 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbypaQgVu16EFOMnxN7fzd
 let allData = [];
 let filteredData = [];
 let currentPage = 1;
-const rowsPerPage = 10;
+const rowsPerPage = 8;
 let nonRegisteredData = []; 
 
 // ==========================================
@@ -1531,7 +1463,6 @@ window.printForm = function(index) {
 // =========================================================
 
 // الدالة الرئيسية للفحص والمقارنة
-// الدالة الرئيسية للفحص والمقارنة (محدثة لضمان دقة الحساب)
 window.checkNonRegistered = async function() {
     // 1. إظهار التحميل
     Swal.fire({
@@ -1544,56 +1475,48 @@ window.checkNonRegistered = async function() {
     });
 
     try {
-        // 2. تحديث البيانات المحلية (الجدول)
+        // 2. تحديث البيانات المحلية أولاً
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
         
         if (result.status !== "success") {
             throw new Error("فشل في تحديث البيانات المحلية");
         }
-        allData = result.data; 
+        allData = result.data; // البيانات المحلية المحدثة
 
-        // 3. جلب بيانات Firebase
+        // 3. جلب بيانات Firebase بالكامل
         const colRef = collection(db, "employeescompay");
         const snapshot = await getDocs(colRef);
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
-        // --- معالجة البيانات لضمان دقة الحساب ---
+       // 4. منطق المقارنة الذكي (التحويل لأرقام لتجنب مشكلة الأصفار البادئة)
+        // --- ⬇️ بداية التعديل الجذري للمطابقة ⬇️ ---
+        
+        // أ) بناء قائمة CCP المحلية (المسجلين) مع حذف الأصفار والمسافات
+        const localCCPs = new Set(allData.map(item => {
+            if (!item.ccp) return "";
+            // تحويل لنص -> حذف المسافات -> حذف الأصفار من اليسار
+            return String(item.ccp).trim().replace(/^0+/, '');
+        }));
 
-        // أ) بناء قائمة CCPs المسجلين فعلياً في الجدول (مع التنظيف)
-        const localCCPs = new Set(allData.map(item => 
-            item.ccp ? String(item.ccp).trim().replace(/^0+/, '') : ""
-        ));
-
-        // ب) توحيد موظفي Firebase (منع التكرار في القاعدة الأصلية)
-        const uniqueFirebaseMap = {};
-        firebaseData.forEach(emp => {
-            if (emp.ccp) {
-                const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
-                if (cleanCCP !== "") {
-                    uniqueFirebaseMap[cleanCCP] = emp;
-                }
-            }
+        // ب) تصفية بيانات Firebase (البحث عن غير المسجلين)
+        nonRegisteredData = firebaseData.filter(fbItem => {
+            if (!fbItem.ccp) return false;
+            
+            // تنظيف CCP الخاص بقاعدة البيانات بنفس الطريقة تماماً
+            const cleanFbCCP = String(fbItem.ccp).trim().replace(/^0+/, '');
+            
+            // المقارنة الآن ستتم بين (28925178) و (28925178) ولن يهم عدد الأصفار
+            return !localCCPs.has(cleanFbCCP) && cleanFbCCP !== "";
         });
 
-        // ج) تحويل الخريطة إلى مصفوفة موظفين فريدين
-        const uniqueFirebaseList = Object.values(uniqueFirebaseMap);
+        // --- ⬆️ نهاية التعديل ⬆️ ---
 
-        // د) الفرز بناءً على قائمة القاعدة الفريدة
-        // 1. استخراج غير المسجلين
-        nonRegisteredData = uniqueFirebaseList.filter(emp => {
-            const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
-            return !localCCPs.has(cleanCCP);
-        });
-
-        // 2. حساب الذين سجلوا فعلاً من أصل القاعدة
-        const registeredFromFirebaseCount = uniqueFirebaseList.length - nonRegisteredData.length;
-
-        // 5. حساب الإحصائيات الدقيقة
+        // 5. حساب الإحصائيات للإرسال للعرض
         const stats = {
-            totalFirebase: uniqueFirebaseList.length,           // الإجمالي الحقيقي (فريد)
-            totalRegistered: registeredFromFirebaseCount,       // من سجل منهم فعلاً
-            totalNonReg: nonRegisteredData.length              // الفرق الحسابي المتبقي
+            totalFirebase: firebaseData.length,      // الإجمالي في قاعدة البيانات
+            totalLocal: allData.length,              // المسجلين محلياً
+            totalNonReg: nonRegisteredData.length    // الفرق
         };
 
         // 6. عرض النتائج
@@ -1605,74 +1528,70 @@ window.checkNonRegistered = async function() {
     }
 };
 
+// دالة عرض النافذة المنبثقة مع الإحصائيات التفصيلية
 window.showNonRegisteredModal = function(stats) {
+    // بناء صفوف الجدول
     const tableRows = nonRegisteredData.map((row, index) => {
-        const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
         return `
-            <tr class="non-reg-row" data-search="${searchString}" style="border-bottom:1px solid #eee;">
-                <td style="padding:10px; width:50px;">${index + 1}</td>
-                <td style="padding:10px; font-weight:bold; color:#d63384; width:120px;">${row.ccp || '-'}</td>
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px;">${index + 1}</td>
+                <td style="padding:10px; font-weight:bold; color:#d63384;">${row.ccp || '-'}</td>
                 <td style="padding:10px; font-weight:bold;">${row.fmn || ''} ${row.frn || ''}</td>
-                <td style="padding:10px; width:100px;">${row.gr || '-'}</td>
-                <td style="padding:10px; width:150px;">${row.ass || '-'}</td>
-                <td style="padding:10px; width:100px;">${row.adm || '-'}</td>
+                <td style="padding:10px;">${row.gr || '-'}</td>
+                <td style="padding:10px;">${row.ass || '-'}</td>
+                <td style="padding:10px;">${row.adm || '-'}</td>
             </tr>
         `;
     }).join('');
 
+    // تصميم الهيدر الذي يحتوي على الإحصائيات
     const headerStats = `
         <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center; gap:10px;">
             <div style="background:#e3f2fd; padding:10px; border-radius:8px; flex:1; border:1px solid #90caf9;">
-                <div style="font-size:12px; color:#1565c0;">عدد الموظفين</div>
+                <div style="font-size:12px; color:#1565c0;">إجمالي الموظفين</div>
                 <div style="font-size:20px; font-weight:bold; color:#0d47a1;">${stats.totalFirebase}</div>
             </div>
             <div style="background:#e8f5e9; padding:10px; border-radius:8px; flex:1; border:1px solid #a5d6a7;">
-                <div style="font-size:12px; color:#2e7d32;">المسجلين حاليا</div>
-                <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalRegistered}</div>
+                <div style="font-size:12px; color:#2e7d32;">المسجلين حالياً</div>
+                <div style="font-size:20px; font-weight:bold; color:#1b5e20;">${stats.totalLocal}</div>
             </div>
             <div style="background:#ffebee; padding:10px; border-radius:8px; flex:1; border:1px solid #ef9a9a;">
-                <div style="font-size:12px; color:#c62828;">الغير مسجلين</div>
+                <div style="font-size:12px; color:#c62828;">الغير المسجلين</div>
                 <div style="font-size:20px; font-weight:bold; color:#b71c1c;">${stats.totalNonReg}</div>
             </div>
         </div>
     `;
 
+    // محتوى النافذة الكامل
+    // التعديل: تقليص max-height من 450px إلى 50vh لضمان ظهور زر الإغلاق في الشاشات الصغيرة
     const modalContent = `
         ${headerStats}
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
-            <div style="position:relative; flex-grow:1; min-width:250px;">
-                <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
-                <input type="text" id="modalSearchInput" oninput="window.filterModalTable()" 
-                       placeholder="بحث سريع بالاسم، رقم الحساب، أو الإدارة..." 
-                       style="width:100%; padding:10px 40px 10px 10px; border:1px solid #dee2e6; border-radius:10px; font-family:'Cairo'; outline:none;">
-            </div>
-            <div style="display:flex; gap:5px;">
-                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <div style="font-weight:bold;">قائمة الموظفين الغير مسجلين بعد:</div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="window.printNonRegistered()" class="btn" style="background-color:#2b2d42; color:white; font-size:13px;">
                     طباعة القائمة <i class="fas fa-print"></i>
                 </button>
-
-                <button onclick="window.printNonRegisteredWithNotes()" class="btn" style="background-color:#2b2d42; color:white; font-size:12px;">
-    طباعة القائمة <i class="fas fa-edit"></i>
-    </button>
-                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:12px;">
-                    Excel تحميل<i class="fas fa-file-excel"></i>
+                <button onclick="window.exportNonRegisteredExcel()" class="btn" style="background-color:#198754; color:white; font-size:13px;">
+                    Excel <i class="fas fa-file-excel"></i>
                 </button>
             </div>
         </div>
 
-        <div class="table-responsive" style="height:450px; overflow-y:auto; direction:rtl; border:1px solid #eee; border-radius:8px; background:#fff;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right; table-layout: fixed;">
-                <thead style="position: sticky; top: 0; z-index: 100; background: #f8f9fa; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);">
+        <div class="table-responsive" style="max-height:50vh; overflow-y:auto; direction:rtl;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:right;">
+                <thead style="background:#f8f9fa; color:#495057; position:sticky; top:0; z-index:10;">
                     <tr>
-                        <th style="padding:12px; width:50px; border-bottom:2px solid #dee2e6;">#</th>
-                        <th style="padding:12px; width:120px; border-bottom:2px solid #dee2e6;">CCP</th>
-                        <th style="padding:12px; border-bottom:2px solid #dee2e6;">الاسم واللقب</th>
-                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">الرتبة</th>
-                        <th style="padding:12px; width:150px; border-bottom:2px solid #dee2e6;">الضمان (ASS)</th>
-                        <th style="padding:12px; width:100px; border-bottom:2px solid #dee2e6;">كود الإدارة</th>
+                        <th style="padding:12px;">الرقم</th>
+                        <th style="padding:12px;">CCP</th>
+                        <th style="padding:12px;">الاسم واللقب</th>
+                        <th style="padding:12px;">الرتبة</th>
+                        <th style="padding:12px;">الضمان (ASS)</th>
+                        <th style="padding:12px;">كود الإدارة</th>
                     </tr>
                 </thead>
-                <tbody id="modalTableBody">
+                <tbody>
                     ${nonRegisteredData.length > 0 ? tableRows : '<tr><td colspan="6" style="text-align:center; padding:20px;">جميع الموظفين مسجلين! ✅</td></tr>'}
                 </tbody>
             </table>
@@ -1685,176 +1604,69 @@ window.showNonRegisteredModal = function(stats) {
         width: '1000px',
         showConfirmButton: true,
         confirmButtonText: 'إغلاق',
-        allowOutsideClick: false,
         customClass: { popup: 'swal-wide' }
     });
 };
 
 // دالة طباعة القائمة الجديدة (معدلة لتكون عمودية فقط)
 window.printNonRegistered = function() {
-    if (nonRegisteredData.length === 0) return;
-
     const printDate = new Date().toLocaleDateString('ar-DZ');
-    const grouped = nonRegisteredData.reduce((acc, row) => {
-        const cat = getCategoryByGrade(row.gr);
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(row);
-        return acc;
-    }, {});
-
-    let fullHTML = '';
-
-    categoryOrder.forEach(category => {
-        const members = grouped[category];
-        if (!members || members.length === 0) return;
-
-        const rows = members.map((row, index) => `
+    
+    const printRows = nonRegisteredData.map((row, index) => {
+        return `
             <tr>
-                <td style="width:40px;">${index + 1}</td>
-                <td style="font-weight:700; width:120px;">${row.ccp}</td>
-                <td style="text-align:right; padding-right:8px;">${row.fmn} ${row.frn}</td>
-                <td style="text-align:right; padding-right:8px;">${gradeMap[row.gr] || '---'}</td>
-                <td style="width:80px;">${row.gr}</td>
-                <td style="width:80px;">${row.adm}</td>
+                <td>${index + 1}</td>
+                <td style="font-weight:bold;">${row.ccp}</td>
+                <td>${row.fmn} ${row.frn}</td>
+                <td>${row.gr || ''}</td>
+                <td>${row.ass || ''}</td>
+                <td>${row.adm || ''}</td>
             </tr>
-        `).join('');
-
-        fullHTML += `
-            <div class="print-page">
-                <div class="official-header">
-                    <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
-                    <p>وزارة التربية الوطنية</p>
-                    <p>مديرية التربية لولاية توقرت</p>
-                    <p>مصلحة تسيير نفقات المستخدمين</p>
-                </div>
-
-                <div class="report-title-section">
-                    <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
-                    <div class="category-info">قائمة الموظفين: ${category} (العدد: ${members.length})</div>
-                </div>
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>الرقم</th>
-                            <th>رقم الحساب (CCP)</th>
-                            <th>الاسم واللقب</th>
-                            <th>الوظيفة</th>
-                            <th>الرتبة</th>
-                            <th>ADM</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-                
-                <div class="print-footer-info">
-                    تاريخ الاستخراج: ${printDate} | مستخرج من المنصة الرقمية لمديرية التربية
-                </div>
-            </div>
         `;
-    });
+    }).join('');
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html dir="rtl" lang="ar">
         <head>
-            <title>تقرير غير المسجلين</title>
-            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+            <title>قائمة غير المسجلين</title>
             <style>
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+                
+                /* فرض الطباعة العمودية */
                 @page { 
-                    size: A4 portrait; 
-                    margin: 15mm 10mm 10mm 10mm; /* زيادة الهامش العلوي واليمين */
-                }
-                * { box-sizing: border-box; }
-                body { 
-                    font-family: 'Cairo', sans-serif; 
-                    margin: 0; padding: 0; background: #fff; 
-                    width: 100%;
-                }
-                .print-page { 
-                    page-break-after: always;
-                    display: flex;
-                    flex-direction: column;
-                    width: 100%;
-                    padding-right: 5px; /* مسافة أمان إضافية للحد الأيمن */
-                }
-                .official-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    line-height: 1.3;
-                    font-weight: 700;
-                    font-size: 13px;
-                }
-                .official-header p { margin: 2px 0; }
-                
-                .report-title-section {
-                    text-align: center;
-                    margin-bottom: 20px;
-                }
-                .main-title {
-                    margin: 0;
-                    font-size: 19px;
-                    text-decoration: underline;
-                    font-weight: 800;
-                }
-                .category-info {
-                    margin-top: 10px;
-                    padding: 5px 15px;
-                    border: 1.5px solid #000;
-                    display: inline-block;
-                    font-size: 15px;
-                    font-weight: 700;
+                    size: portrait; 
+                    margin: 10mm; 
                 }
                 
-                .data-table { 
-                    width: 99%; /* تقليل العرض قليلاً لضمان عدم ملامسة الحواف */
-                    border-collapse: collapse; 
-                    margin-top: 10px;
-                    margin-right: auto;
-                    margin-left: auto;
-                    border: 1.5px solid #000; /* تقوية الإطار الخارجي */
-                }
-                .data-table th, .data-table td { 
-                    border: 1px solid #000; 
-                    padding: 8px 5px; 
-                    text-align: center; 
-                    font-size: 12px; 
-                }
-                .data-table th { 
-                    background-color: #f2f2f2 !important; 
-                    -webkit-print-color-adjust: exact;
-                    font-weight: 800;
-                }
-
-                .print-footer-info {
-                    margin-top: 20px;
-                    font-size: 11px;
-                    font-style: italic;
-                    text-align: left;
-                    padding-left: 10px;
-                }
-
-                @media print {
-                    body { -webkit-print-color-adjust: exact; }
-                    .print-page { margin: 0; }
-                    .data-table { width: 100% !important; }
-                }
+                body { font-family: 'Cairo', sans-serif; padding: 20px; }
+                .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+                th { background-color: #eee; font-weight: bold; }
             </style>
         </head>
         <body>
-            ${fullHTML}
-            <script>
-                window.onload = function() { 
-                    setTimeout(() => { window.print(); }, 800); 
-                }
-            </script>
+            <div class="header">
+                <h3>مديرية التربية لولاية توقرت</h3>
+                <h2>قائمة الموظفين غير المسجلين</h2>
+                <p>تاريخ: ${printDate} - العدد: ${nonRegisteredData.length}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>CCP</th><th>الاسم واللقب</th><th>الرتبة</th><th>ASS</th><th>ADM</th></tr>
+                </thead>
+                <tbody>
+                    ${printRows}
+                </tbody>
+            </table>
+            <script>window.onload = function() { window.print(); }</script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
+
 // دالة تصدير Excel للقائمة الجديدة (Client-Side) - تم التعديل لفرض النص
 window.exportNonRegisteredExcel = function() {
     let tableContent = `
@@ -2479,372 +2291,55 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
     });
 };
 
-// دالة الفلترة فائقة السرعة والسلاسة
-window.filterModalTable = function() {
-    const query = document.getElementById("modalSearchInput").value.toLowerCase();
-    const rows = document.getElementsByClassName("non-reg-row");
+import { updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+window.toggleSystemStatus = async function(newStatus) {
+    const statusRef = doc(db, "config", "pass"); // المسار المطلوب
     
-    // استخدام requestAnimationFrame يضمن سلاسة بصرية تامة
-    requestAnimationFrame(() => {
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            const isMatch = row.getAttribute('data-search').indexOf(query) > -1;
-            
-            // تحديث العرض فقط إذا لزم الأمر لمنع الوميض (Flickering)
-            if (isMatch) {
-                if (row.style.display === "none") row.style.display = "table-row";
-            } else {
-                if (row.style.display !== "none") row.style.display = "none";
-            }
-        }
-    });
-};
-
-// دالة طباعة القائمة مع عمود ملاحظات فارغ (دمج الرتبة والإدارة)
-window.printNonRegisteredWithNotes = function() {
-    if (nonRegisteredData.length === 0) return;
-
-    const printDate = new Date().toLocaleDateString('ar-DZ');
-    const grouped = nonRegisteredData.reduce((acc, row) => {
-        const cat = getCategoryByGrade(row.gr);
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(row);
-        return acc;
-    }, {});
-
-    let fullHTML = '';
-
-    categoryOrder.forEach(category => {
-        const members = grouped[category];
-        if (!members || members.length === 0) return;
-
-        // تعديل هنا: دمج عمودي الرتبة والإدارة في خلية واحدة فارغة للملاحظات
-        const rows = members.map((row, index) => `
-            <tr>
-                <td style="width:40px;">${index + 1}</td>
-                <td style="font-weight:700; width:120px;">${row.ccp}</td>
-                <td style="text-align:right; padding-right:8px;">${row.fmn} ${row.frn}</td>
-                <td style="text-align:right; padding-right:8px;">${gradeMap[row.gr] || '---'}</td>
-                <td style="width:160px;"></td> 
-            </tr>
-        `).join('');
-
-        fullHTML += `
-            <div class="print-page">
-                <div class="official-header">
-                    <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
-                    <p>وزارة التربية الوطنية</p>
-                    <p>مديرية التربية لولاية توقرت</p>
-                    <p>مصلحة تسيير نفقات المستخدمين</p>
-                </div>
-
-                <div class="report-title-section">
-                    <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
-                    <div class="category-info">قائمة الموظفين: ${category} (العدد: ${members.length})</div>
-                </div>
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>الرقم</th>
-                            <th>رقم الحساب (CCP)</th>
-                            <th>الاسم واللقب</th>
-                            <th>الوظيفة</th>
-                            <th style="width:160px;">ملاحظات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-                
-                <div class="print-footer-info">
-                    تاريخ الاستخراج: ${printDate} | مستخرج من المنصة الرقمية لمديرية التربية
-                </div>
-            </div>
-        `;
-    });
-
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html dir="rtl" lang="ar">
-        <head>
-            <title>تقرير غير المسجلين - ملاحظات</title>
-            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-            <style>
-                @page { 
-                    size: A4 portrait; 
-                    margin: 10mm 10mm 10mm 10mm;
-                }
-                * { box-sizing: border-box; }
-                body { 
-                    font-family: 'Cairo', sans-serif; 
-                    margin: 0; padding: 0; background: #fff; 
-                    width: 100%;
-                }
-                .print-page { 
-                    page-break-after: always;
-                    display: flex;
-                    flex-direction: column;
-                    width: 100%;
-                    padding-right: 5px;
-                }
-                .official-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    line-height: 1.3;
-                    font-weight: 700;
-                    font-size: 13px;
-                }
-                .official-header p { margin: 2px 0; }
-                .report-title-section { text-align: center; margin-bottom: 20px; }
-                .main-title { margin: 0; font-size: 19px; text-decoration: underline; font-weight: 800; }
-                .category-info { margin-top: 10px; padding: 5px 15px; border: 1.5px solid #000; display: inline-block; font-size: 15px; font-weight: 700; }
-                .data-table { width: 99%; border-collapse: collapse; margin-top: 10px; margin-right: auto; margin-left: auto; border: 1.5px solid #000; }
-                .data-table th, .data-table td { border: 1px solid #000; padding: 8px 5px; text-align: center; font-size: 12px; height: 35px; }
-                .data-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; font-weight: 800; }
-                .print-footer-info { margin-top: 20px; font-size: 11px; font-style: italic; text-align: left; padding-left: 10px; }
-                @media print { body { -webkit-print-color-adjust: exact; } .print-page { margin: 0; } .data-table { width: 100% !important; } }
-            </style>
-        </head>
-        <body>
-            ${fullHTML}
-            <script>
-                window.onload = function() { 
-                    setTimeout(() => { window.print(); }, 800); 
-                }
-            </script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-};
-
-
-
-// --- 1. دالة الدخول لمدير Firebase المحدثة ---
-window.openFirebaseManager = async function() {
-    const { value: password } = await Swal.fire({
-        title: 'منطقة أمنية محظورة',
-        input: 'password',
-        inputLabel: 'أدخل رمز مسؤول',
-        inputPlaceholder: '••••••••',
-        confirmButtonColor: '#e63946',
-        showCancelButton: true,
-        cancelButtonText: 'إلغاء',
-        inputAttributes: {
-            autocapitalize: 'off',
-            autocorrect: 'off',
-            style: 'text-align: center; font-family: monospace;' 
-        }
-    });
-
-    if (password) {
-        Swal.fire({
-            title: 'جاري التحقق من الصلاحيات...',
-            didOpen: () => Swal.showLoading(),
-            allowOutsideClick: false
-        });
-
-        try {
-            // جلب الوثيقة من Firestore
-            const docRef = doc(db, "config", "pass");
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                // جلب القيمة من الحقل المطلوب service_pay_base
-                const realPass = docSnap.data().service_pay_base;
-
-                if (String(password).trim() === String(realPass).trim()) {
-                    Swal.close(); 
-                    setTimeout(() => {
-                        window.showFirebaseEditorModal();
-                    }, 100);
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'خطأ',
-                        text: 'رمز الدخول لقاعدة البيانات غير صحيح!',
-                        confirmButtonColor: '#e63946'
-                    });
-                }
-            } else {
-                Swal.fire('خطأ', 'لم يتم العثور على إعدادات الحماية في قاعدة البيانات', 'error');
-            }
-        } catch (error) {
-            console.error(error);
-            Swal.fire('خطأ في الاتصال', 'تعذر الوصول لبيانات التحقق: ' + error.message, 'error');
-        }
-    }
-};
-// --- 2. واجهة عرض بيانات Firestore ---
-window.showFirebaseEditorModal = async function() {
     Swal.fire({
-        title: 'جاري جلب قاعدة البيانات الرئيسية...',
-        didOpen: () => Swal.showLoading()
-    });
-
-    try {
-        const colRef = collection(db, "employeescompay");
-        const snapshot = await getDocs(colRef);
-        const fbData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const modalHtml = `
-            <div style="direction:rtl; text-align:right; font-family:'Cairo';">
-                <div style="position:relative; margin-bottom:15px;">
-                    <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
-                    <input type="text" id="fbSearchInput" onkeyup="window.filterFirebaseTable()" 
-                           placeholder="بحث سريع..." 
-                           style="width:100%; padding:12px 40px 12px 10px; border:1px solid #ddd; border-radius:10px; outline:none; border:2px solid #3498db;">
-                </div>
-                <div style="max-height:500px; overflow-y:auto; border-radius:8px; border:1px solid #eee;">
-                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                        <thead style="background:#2c3e50; color:white; position:sticky; top:0; z-index:10;">
-                            <tr>
-                                <th style="padding:12px; border:1px solid #444;">CCP</th>
-                                <th style="padding:12px; border:1px solid #444;">الاسم واللقب</th>
-                                <th style="padding:12px; border:1px solid #444;">الرتبة</th>
-                                <th style="padding:12px; border:1px solid #444;">إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fbTableBody">
-                            ${fbData.map(emp => {
-                                // دمج الاسم واللقب والبحث العكسي لضمان نتائج دقيقة
-                                const fullName = `${emp.fmn} ${emp.frn}`;
-                                const reverseName = `${emp.frn} ${emp.fmn}`;
-                                const searchKey = `${emp.ccp} ${fullName} ${reverseName} ${emp.gr}`.toLowerCase();
-                                
-                                return `
-                                <tr class="fb-row" data-search="${searchKey}" style="border-bottom:1px solid #eee;">
-                                    <td style="padding:10px; border:1px solid #ddd; font-weight:bold; color:#e63946;">${emp.ccp}</td>
-                                    <td style="padding:10px; border:1px solid #ddd;">${fullName}</td>
-                                    <td style="padding:10px; border:1px solid #ddd;">${emp.gr || '-'}</td>
-                                    <td style="padding:10px; border:1px solid #ddd; text-align:center; display:flex; gap:5px; justify-content:center;">
-                                        <button onclick="window.editFirebaseDoc('${emp.id}')" class="btn-edit" style="background:#3498db; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;"><i class="fas fa-pen"></i></button>
-                                        <button onclick="window.deleteFirebaseDoc('${emp.id}')" class="btn-delete" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
-                                    </td>
-                                </tr>`;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        Swal.fire({
-            title: 'مدير قاعدة بيانات الرئيسية',
-            html: modalHtml,
-            width: '950px',
-            showConfirmButton: false,
-            showCloseButton: true,
-            customClass: { popup: 'swal-wide' }
-        });
-
-    } catch (e) {
-        Swal.fire('خطأ', 'فشل تحميل البيانات: ' + e.message, 'error');
-    }
-};
-
-// --- 3. نظام البحث المتقدم (اللحظي) ---
-window.filterFirebaseTable = function() {
-    const q = document.getElementById("fbSearchInput").value.toLowerCase();
-    const rows = document.getElementsByClassName("fb-row");
-    for (let row of rows) {
-        row.style.display = row.getAttribute('data-search').includes(q) ? "" : "none";
-    }
-};
-
-// --- 4. تعديل جميع الحقول في Firebase ---
-// --- تحديث دالة التعديل لتشمل تغيير رقم الحساب (ID) ---
-window.editFirebaseDoc = async function(oldId) {
-    try {
-        const docRef = doc(db, "employeescompay", oldId);
-        const snap = await getDoc(docRef);
-        const d = snap.data();
-
-        const { value: formValues } = await Swal.fire({
-            title: `تعديل بيانات الموظف`,
-            width: '700px',
-            html: `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; direction:rtl; text-align:right; font-family:'Cairo'; padding:10px;">
-                    <div style="grid-column: span 2;">
-                        <label style="font-weight:bold; color:#e63946;">رقم الحساب (CCP) - تغيير هذا الحقل سيغير معرف ملف الموظف</label>
-                        <input id="fb-ccp" class="swal2-input" style="width:100%; margin:5px 0; border:2px solid #e63946;" value="${d.ccp || oldId}">
-                    </div>
-                    <div><label style="font-weight:bold;">اللقب (FMN)</label><input id="fb-fmn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.fmn || ''}"></div>
-                    <div><label style="font-weight:bold;">الاسم (FRN)</label><input id="fb-frn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.frn || ''}"></div>
-                    <div><label style="font-weight:bold;">الرتبة (GR)</label><input id="fb-gr" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.gr || ''}"></div>
-                    <div><label style="font-weight:bold;">الضمان (ASS)</label><input id="fb-ass" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.ass || ''}"></div>
-                    <div><label style="font-weight:bold;">كود الإدارة (ADM)</label><input id="fb-adm" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.adm || ''}"></div>
-                    <div><label style="font-weight:bold;">الرقم التسلسلي (MTR)</label><input id="fb-mtr" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.mtr || ''}"></div>
-                </div>
-            `,
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'حفظ التغييرات',
-            cancelButtonText: 'إلغاء',
-            preConfirm: () => ({
-                newCcp: document.getElementById('fb-ccp').value.trim(),
-                fmn: document.getElementById('fb-fmn').value,
-                frn: document.getElementById('fb-frn').value,
-                gr: document.getElementById('fb-gr').value,
-                ass: document.getElementById('fb-ass').value,
-                adm: document.getElementById('fb-adm').value,
-                mtr: document.getElementById('fb-mtr').value
-            })
-        });
-
-        if (formValues) {
-            Swal.fire({ title: 'جاري تحديث البيانات والروابط...', didOpen: () => Swal.showLoading() });
-
-            const newId = formValues.newCcp;
-            const updatedData = {
-                ccp: newId,
-                fmn: formValues.fmn,
-                frn: formValues.frn,
-                gr: formValues.gr,
-                ass: formValues.ass,
-                adm: formValues.adm,
-                mtr: formValues.mtr,
-                last_update: new Date()
-            };
-
-            if (newId !== oldId) {
-                // حالة تغيير رقم الحساب: إنشاء وثيقة جديدة وحذف القديمة
-                await setDoc(doc(db, "employeescompay", newId), updatedData);
-                await deleteDoc(doc(db, "employeescompay", oldId));
-            } else {
-                // حالة تحديث البيانات فقط دون تغيير رقم الحساب
-                await setDoc(docRef, updatedData);
-            }
-
-            Swal.fire('تم التحديث بنجاح', 'تم تحديث الملف وكافة البيانات بداخله', 'success')
-                .then(() => window.showFirebaseEditorModal());
-        }
-    } catch (e) {
-        Swal.fire('خطأ في التعديل', e.message, 'error');
-    }
-};
-
-// --- 5. حذف موظف نهائياً من Firebase ---
-window.deleteFirebaseDoc = function(id) {
-    Swal.fire({
-        title: 'تأكيد الحذف النهائي',
-        text: `هل أنت متأكد من حذف الموظف ذو الـ CCP: ${id} من قاعدة البيانات الرئيسية ؟`,
-        icon: 'warning',
+        title: 'تأكيد التغيير',
+        text: "هل تريد تغيير وضع النظام الحالي؟",
+        icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#e74c3c',
-        confirmButtonText: 'نعم، احذف نهائياً',
-        cancelButtonText: 'تراجع'
+        confirmButtonText: 'تحديث الآن',
+        cancelButtonText: 'إلغاء'
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
-                await deleteDoc(doc(db, "employeescompay", id));
-                Swal.fire('محذوف!', 'تم إزالة السجل من قاعدة البيانات.', 'success').then(() => window.showFirebaseEditorModal());
-            } catch (e) {
-                Swal.fire('خطأ', 'تعذر الحذف: ' + e.message, 'error');
+                // تحديث الحقل status داخل الدوكومنت pass
+                await updateDoc(statusRef, {
+                    status: parseInt(newStatus)
+                });
+                
+                Swal.fire({ icon: 'success', title: 'تم التحديث بنجاح', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                console.error("Error updating status:", error);
+                Swal.fire('خطأ', 'فشل في تحديث حالة النظام', 'error');
             }
+        } else {
+            window.loadCurrentStatus(); // إعادة الاختيار لما هو عليه في السيرفر
         }
     });
 };
+
+// جلب الحالة الحالية عند فتح اللوحة
+window.loadCurrentStatus = async function() {
+    const docSnap = await getDoc(doc(db, "config", "pass"));
+    if (docSnap.exists()) {
+        const currentStatus = docSnap.data().status || 1;
+        document.getElementById("systemStatusSelect").value = currentStatus;
+    }
+};
+
+// استدعاء التحميل مع loadData
+const originalLoad = window.loadData;
+window.loadData = async function() {
+    await originalLoad();
+    window.loadCurrentStatus();
+};
+
+
+
+
+
 
