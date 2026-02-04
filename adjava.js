@@ -72,14 +72,9 @@ const SECURE_DASHBOARD_HTML = `
       <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
       <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
-          <div class="status-toggle-container" style="display:flex; align-items:center; gap:10px; background:#fff; padding:5px 15px; border-radius:10px; border:1px solid #ddd;">
-    <span style="font-weight:bold; font-size:13px;">حالة المنصة:</span>
-    <select id="systemStatusSelect" onchange="window.toggleSystemStatus(this.value)" style="padding:5px; border-radius:5px; border:1px solid #2575fc; font-weight:bold;">
-        <option value="1">🟢 نشطة</option>
-        <option value="2">🟡 إدارية فقط</option>
-        <option value="0">🔴 مغلقة</option>
-    </select>
-</div>
+         
+      
+
     </div>
 
 
@@ -2338,6 +2333,7 @@ window.loadData = async function() {
     await originalLoad();
     window.loadCurrentStatus();
 };
+
 
 
 
