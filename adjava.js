@@ -2575,51 +2575,94 @@ window.deleteFirebaseDoc = function(id) {
 };
 
 
+// تأكد من أنك قمت باستيراد هذه الدوال في بداية الملف
+// import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 let devModeClicks = 0;
 let devModeTimer = null;
 
 window.initDevMode = function() {
-    // اختيار صورة البروفايل في الهيدر كزناد للتفعيل
     const profileImg = document.querySelector('.header-area img');
-    // جلب العناصر المطلوب التحكم في ظهورها بواسطة المعرفات الجديدة
     const managerBtn = document.getElementById("firebaseManagerBtn");
     const statusPanel = document.getElementById("secretStatusPanel");
 
     if (profileImg && managerBtn && statusPanel) {
-        profileImg.style.cursor = "pointer"; // تلميح بصري للمطور فقط
-        
+        profileImg.style.cursor = "pointer"; // مؤشر للمطور
+
         profileImg.addEventListener("click", () => {
             devModeClicks++;
-            
-            // إعادة ضبط العداد إذا توقف النقر لأكثر من ثانيتين
+
+            // تصفير العداد إذا توقف النقر لثانيتين
             clearTimeout(devModeTimer);
             devModeTimer = setTimeout(() => { devModeClicks = 0; }, 2000);
 
-            // عند الوصول لـ 5 نقرات متتالية
+            // عند الوصول لـ 5 نقرات
             if (devModeClicks === 5) {
-                // فحص الحالة الحالية (هل العناصر مخفية؟)
+                devModeClicks = 0; // تصفير العداد فوراً
+
                 const isHidden = managerBtn.style.display === "none";
-                
-                // تبديل الظهور: إظهار كـ inline-block للزر و flex للحاوية أو إخفاؤهما
-                managerBtn.style.display = isHidden ? "inline-block" : "none";
-                statusPanel.style.display = isHidden ? "flex" : "none";
 
-                // تنبيه "توست" احترافي لتأكيد العملية
-                const Toast = Swal.mixin({
-                    toast: true, 
-                    position: 'bottom-start', 
-                    showConfirmButton: false, 
-                    timer: 2000,
-                    timerProgressBar: true
-                });
+                // 1. إذا كانت الأدوات ظاهرة، قم بإخفائها فوراً (لا يحتاج كلمة سر للإخفاء)
+                if (!isHidden) {
+                    managerBtn.style.display = "none";
+                    statusPanel.style.display = "none";
+                    
+                    Swal.mixin({
+                        toast: true, position: 'bottom-start', showConfirmButton: false, timer: 2000
+                    }).fire({ icon: 'success', title: 'تم إخفاء أدوات المطور' });
+                    
+                    return;
+                }
 
-                Toast.fire({ 
-                    icon: 'success', 
-                    title: isHidden ? 'تم تفعيل وضع المطور بنجاح' : 'تم إغلاق أدوات المطور' 
+                // 2. إذا كانت مخفية، اطلب كلمة المرور
+                Swal.fire({
+                    title: '🔒 أدخل كود المطور',
+                    text: 'أدخل كلمة المرور الخاصة بقاعدة البيانات للمتابعة',
+                    input: 'password',
+                    inputPlaceholder: 'كلمة المرور...',
+                    showCancelButton: true,
+                    confirmButtonText: 'تحقق',
+                    cancelButtonText: 'إلغاء',
+                    confirmButtonColor: '#e63946',
+                    showLoaderOnConfirm: true,
+                    backdrop: `rgba(0,0,0,0.8)`,
+                    preConfirm: async (inputValue) => {
+                        try {
+                            const docRef = doc(db, "config", "pass");
+                            const docSnap = await getDoc(docRef);
+
+                            if (docSnap.exists()) {
+                                // ✅ هنا تم التعديل لاستخدام service_pay_base
+                                const realPass = docSnap.data().service_pay_base;
+                                
+                                if (String(inputValue) === String(realPass)) {
+                                    return true;
+                                } else {
+                                    Swal.showValidationMessage('❌ كلمة المرور خاطئة');
+                                }
+                            } else {
+                                Swal.showValidationMessage('خطأ: لا يمكن العثور على إعدادات الحماية');
+                            }
+                        } catch (error) {
+                            Swal.showValidationMessage(`فشل الاتصال: ${error.message}`);
+                        }
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // كلمة المرور صحيحة، إظهار الأدوات
+                        managerBtn.style.display = "inline-block";
+                        statusPanel.style.display = "flex";
+
+                        Swal.mixin({
+                            toast: true, position: 'bottom-start', showConfirmButton: false, timer: 3000, timerProgressBar: true
+                        }).fire({ 
+                            icon: 'success', 
+                            title: 'مرحباً أيها المطور! 🛠️',
+                            text: 'تم تفعيل وضع التحكم الكامل'
+                        });
+                    }
                 });
-                
-                // تصفير العداد بعد التفعيل
-                devModeClicks = 0;
             }
         });
     }
