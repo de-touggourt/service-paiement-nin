@@ -232,7 +232,7 @@ window.verifyAdminLogin = async function() {
         if (docSnap.exists()) {
             const realPass = docSnap.data().service_pay_adminn; 
 
-            if (String(passInput) === String(realPass)) {
+          if (String(passInput) === String(realPass)) {
                 const container = document.getElementById("secure-app-root");
                 container.innerHTML = SECURE_DASHBOARD_HTML;
                 
@@ -241,8 +241,14 @@ window.verifyAdminLogin = async function() {
                     document.getElementById("loginOverlay").style.display = "none";
                     container.classList.add("visible");
                     window.loadData();
+                    
+             
+                    window.initDevMode(); 
+                  
+                    
                 }, 500);
 
+        
                 const Toast = Swal.mixin({
                     toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
                 });
