@@ -2347,6 +2347,234 @@ window.loadData = async function() {
     window.loadCurrentStatus();
 };
 
+
+// --- 1. دالة الدخول لمدير Firebase المحدثة ---
+window.openFirebaseManager = async function() {
+    const { value: password } = await Swal.fire({
+        title: 'منطقة أمنية محظورة',
+        input: 'password',
+        inputLabel: 'أدخل رمز مسؤول',
+        inputPlaceholder: '••••••••',
+        confirmButtonColor: '#e63946',
+        showCancelButton: true,
+        cancelButtonText: 'إلغاء',
+        inputAttributes: {
+            autocapitalize: 'off',
+            autocorrect: 'off',
+            style: 'text-align: center; font-family: monospace;' 
+        }
+    });
+
+    if (password) {
+        Swal.fire({
+            title: 'جاري التحقق من الصلاحيات...',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false
+        });
+
+        try {
+            // جلب الوثيقة من Firestore
+            const docRef = doc(db, "config", "pass");
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                // جلب القيمة من الحقل المطلوب service_pay_base
+                const realPass = docSnap.data().service_pay_base;
+
+                if (String(password).trim() === String(realPass).trim()) {
+                    Swal.close(); 
+                    setTimeout(() => {
+                        window.showFirebaseEditorModal();
+                    }, 100);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: 'رمز الدخول لقاعدة البيانات غير صحيح!',
+                        confirmButtonColor: '#e63946'
+                    });
+                }
+            } else {
+                Swal.fire('خطأ', 'لم يتم العثور على إعدادات الحماية في قاعدة البيانات', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('خطأ في الاتصال', 'تعذر الوصول لبيانات التحقق: ' + error.message, 'error');
+        }
+    }
+};
+// --- 2. واجهة عرض بيانات Firestore ---
+window.showFirebaseEditorModal = async function() {
+    Swal.fire({
+        title: 'جاري جلب قاعدة البيانات الرئيسية...',
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const colRef = collection(db, "employeescompay");
+        const snapshot = await getDocs(colRef);
+        const fbData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const modalHtml = `
+            <div style="direction:rtl; text-align:right; font-family:'Cairo';">
+                <div style="position:relative; margin-bottom:15px;">
+                    <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#999;"></i>
+                    <input type="text" id="fbSearchInput" onkeyup="window.filterFirebaseTable()" 
+                           placeholder="بحث سريع..." 
+                           style="width:100%; padding:12px 40px 12px 10px; border:1px solid #ddd; border-radius:10px; outline:none; border:2px solid #3498db;">
+                </div>
+                <div style="max-height:500px; overflow-y:auto; border-radius:8px; border:1px solid #eee;">
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <thead style="background:#2c3e50; color:white; position:sticky; top:0; z-index:10;">
+                            <tr>
+                                <th style="padding:12px; border:1px solid #444;">CCP</th>
+                                <th style="padding:12px; border:1px solid #444;">الاسم واللقب</th>
+                                <th style="padding:12px; border:1px solid #444;">الرتبة</th>
+                                <th style="padding:12px; border:1px solid #444;">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fbTableBody">
+                            ${fbData.map(emp => {
+                                // دمج الاسم واللقب والبحث العكسي لضمان نتائج دقيقة
+                                const fullName = `${emp.fmn} ${emp.frn}`;
+                                const reverseName = `${emp.frn} ${emp.fmn}`;
+                                const searchKey = `${emp.ccp} ${fullName} ${reverseName} ${emp.gr}`.toLowerCase();
+                                
+                                return `
+                                <tr class="fb-row" data-search="${searchKey}" style="border-bottom:1px solid #eee;">
+                                    <td style="padding:10px; border:1px solid #ddd; font-weight:bold; color:#e63946;">${emp.ccp}</td>
+                                    <td style="padding:10px; border:1px solid #ddd;">${fullName}</td>
+                                    <td style="padding:10px; border:1px solid #ddd;">${emp.gr || '-'}</td>
+                                    <td style="padding:10px; border:1px solid #ddd; text-align:center; display:flex; gap:5px; justify-content:center;">
+                                        <button onclick="window.editFirebaseDoc('${emp.id}')" class="btn-edit" style="background:#3498db; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;"><i class="fas fa-pen"></i></button>
+                                        <button onclick="window.deleteFirebaseDoc('${emp.id}')" class="btn-delete" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        Swal.fire({
+            title: 'مدير قاعدة بيانات الرئيسية',
+            html: modalHtml,
+            width: '950px',
+            showConfirmButton: false,
+            showCloseButton: true,
+            customClass: { popup: 'swal-wide' }
+        });
+
+    } catch (e) {
+        Swal.fire('خطأ', 'فشل تحميل البيانات: ' + e.message, 'error');
+    }
+};
+
+// --- 3. نظام البحث المتقدم (اللحظي) ---
+window.filterFirebaseTable = function() {
+    const q = document.getElementById("fbSearchInput").value.toLowerCase();
+    const rows = document.getElementsByClassName("fb-row");
+    for (let row of rows) {
+        row.style.display = row.getAttribute('data-search').includes(q) ? "" : "none";
+    }
+};
+
+// --- 4. تعديل جميع الحقول في Firebase ---
+// --- تحديث دالة التعديل لتشمل تغيير رقم الحساب (ID) ---
+window.editFirebaseDoc = async function(oldId) {
+    try {
+        const docRef = doc(db, "employeescompay", oldId);
+        const snap = await getDoc(docRef);
+        const d = snap.data();
+
+        const { value: formValues } = await Swal.fire({
+            title: `تعديل بيانات الموظف`,
+            width: '700px',
+            html: `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; direction:rtl; text-align:right; font-family:'Cairo'; padding:10px;">
+                    <div style="grid-column: span 2;">
+                        <label style="font-weight:bold; color:#e63946;">رقم الحساب (CCP) - تغيير هذا الحقل سيغير معرف ملف الموظف</label>
+                        <input id="fb-ccp" class="swal2-input" style="width:100%; margin:5px 0; border:2px solid #e63946;" value="${d.ccp || oldId}">
+                    </div>
+                    <div><label style="font-weight:bold;">اللقب (FMN)</label><input id="fb-fmn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.fmn || ''}"></div>
+                    <div><label style="font-weight:bold;">الاسم (FRN)</label><input id="fb-frn" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.frn || ''}"></div>
+                    <div><label style="font-weight:bold;">الرتبة (GR)</label><input id="fb-gr" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.gr || ''}"></div>
+                    <div><label style="font-weight:bold;">الضمان (ASS)</label><input id="fb-ass" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.ass || ''}"></div>
+                    <div><label style="font-weight:bold;">كود الإدارة (ADM)</label><input id="fb-adm" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.adm || ''}"></div>
+                    <div><label style="font-weight:bold;">الرقم التسلسلي (MTR)</label><input id="fb-mtr" class="swal2-input" style="width:100%; margin:5px 0;" value="${d.mtr || ''}"></div>
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'حفظ التغييرات',
+            cancelButtonText: 'إلغاء',
+            preConfirm: () => ({
+                newCcp: document.getElementById('fb-ccp').value.trim(),
+                fmn: document.getElementById('fb-fmn').value,
+                frn: document.getElementById('fb-frn').value,
+                gr: document.getElementById('fb-gr').value,
+                ass: document.getElementById('fb-ass').value,
+                adm: document.getElementById('fb-adm').value,
+                mtr: document.getElementById('fb-mtr').value
+            })
+        });
+
+        if (formValues) {
+            Swal.fire({ title: 'جاري تحديث البيانات والروابط...', didOpen: () => Swal.showLoading() });
+
+            const newId = formValues.newCcp;
+            const updatedData = {
+                ccp: newId,
+                fmn: formValues.fmn,
+                frn: formValues.frn,
+                gr: formValues.gr,
+                ass: formValues.ass,
+                adm: formValues.adm,
+                mtr: formValues.mtr,
+                last_update: new Date()
+            };
+
+            if (newId !== oldId) {
+                // حالة تغيير رقم الحساب: إنشاء وثيقة جديدة وحذف القديمة
+                await setDoc(doc(db, "employeescompay", newId), updatedData);
+                await deleteDoc(doc(db, "employeescompay", oldId));
+            } else {
+                // حالة تحديث البيانات فقط دون تغيير رقم الحساب
+                await setDoc(docRef, updatedData);
+            }
+
+            Swal.fire('تم التحديث بنجاح', 'تم تحديث الملف وكافة البيانات بداخله', 'success')
+                .then(() => window.showFirebaseEditorModal());
+        }
+    } catch (e) {
+        Swal.fire('خطأ في التعديل', e.message, 'error');
+    }
+};
+
+// --- 5. حذف موظف نهائياً من Firebase ---
+window.deleteFirebaseDoc = function(id) {
+    Swal.fire({
+        title: 'تأكيد الحذف النهائي',
+        text: `هل أنت متأكد من حذف الموظف ذو الـ CCP: ${id} من قاعدة البيانات الرئيسية ؟`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        confirmButtonText: 'نعم، احذف نهائياً',
+        cancelButtonText: 'تراجع'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                await deleteDoc(doc(db, "employeescompay", id));
+                Swal.fire('محذوف!', 'تم إزالة السجل من قاعدة البيانات.', 'success').then(() => window.showFirebaseEditorModal());
+            } catch (e) {
+                Swal.fire('خطأ', 'تعذر الحذف: ' + e.message, 'error');
+            }
+        }
+    });
+};
+
+
 let devModeClicks = 0;
 let devModeTimer = null;
 
