@@ -1,6 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 
 // --- إعدادات Firebase ---
@@ -121,35 +121,44 @@ const SECURE_DASHBOARD_HTML = `
       </div>
     </div>
 
-    <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
-      
+   <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
     
-<div style="position:relative; flex-grow:1; display:flex; align-items:center; gap:10px;">
-    <div style="position:relative; flex-grow:1;">
-        <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
-        <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
+    <div style="position:relative; flex-grow:1; display:flex; align-items:center; gap:10px;">
+        <div style="position:relative; flex-grow:1;">
+            <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
+            <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
+        </div>
+        <div id="searchCounter" style="background:#e9ecef; padding:8px 15px; border-radius:8px; font-weight:bold; color:#495057; font-size:13px; white-space:nowrap; border:1px solid #dee2e6;">
+            النتائج: <span id="filteredCount">0</span>
+        </div>
     </div>
-    <div id="searchCounter" style="background:#e9ecef; padding:8px 15px; border-radius:8px; font-weight:bold; color:#495057; font-size:13px; white-space:nowrap; border:1px solid #dee2e6;">
-        النتائج: <span id="filteredCount">0</span>
-    </div>
-</div>
 
-      <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
+    <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
         <option value="all">عرض الكل</option>
         <option value="confirmed">✅ المؤكدة</option>
         <option value="pending">⏳ الغير مؤكدة</option>
-      </select>
+    </select>
 
-      <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد<i class="fas fa-plus"></i></button>
-      <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
-    
-<button class="btn" style="background-color:#e63946; color:white;" onclick="window.openFirebaseManager()">قاعدة البيانات<i class="fas fa-server"></i></button>
-      <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة موظف<i class="fas fa-database"></i></button>
-      <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
-      <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
-      <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
-      <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
+    <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد<i class="fas fa-plus"></i></button>
+    <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
+    <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
+    <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
+    <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
+    <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
+
+    <button id="firebaseManagerBtn" class="btn" style="background-color:#e63946; color:white; display:none;" onclick="window.openFirebaseManager()">قاعدة البيانات<i class="fas fa-server"></i></button>
+
+    <div id="secretStatusPanel" class="status-toggle-container" style="display:none; align-items:center; gap:10px; background:#fff; padding:5px 15px; border-radius:10px; border:1px solid #2575fc;">
+        <span style="font-weight:bold; font-size:13px;">حالة المنصة:</span>
+        <select id="systemStatusSelect" onchange="window.toggleSystemStatus(this.value)" style="padding:5px; border-radius:5px; border:1px solid #2575fc; font-weight:bold;">
+            <option value="1">🟢 نشطة</option>
+            <option value="2">🟡 إدارية فقط</option>
+            <option value="0">🔴 مغلقة</option>
+        </select>
     </div>
+
+</div>
+
 
     <div style="background-color:#f1f3f5; padding:12px; border-radius:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; border:1px solid #dee2e6;">
       <div style="font-weight:bold; color:#495057; font-size:14px; margin-left:10px;">
@@ -2846,4 +2855,98 @@ window.deleteFirebaseDoc = function(id) {
             }
         }
     });
+};
+
+
+// تأكد من أنك قمت باستيراد هذه الدوال في بداية الملف
+// import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+let devModeClicks = 0;
+let devModeTimer = null;
+
+window.initDevMode = function() {
+    const profileImg = document.querySelector('.header-area img');
+    const managerBtn = document.getElementById("firebaseManagerBtn");
+    const statusPanel = document.getElementById("secretStatusPanel");
+
+    if (profileImg && managerBtn && statusPanel) {
+        profileImg.style.cursor = "pointer"; // مؤشر للمطور
+
+        profileImg.addEventListener("click", () => {
+            devModeClicks++;
+
+            // تصفير العداد إذا توقف النقر لثانيتين
+            clearTimeout(devModeTimer);
+            devModeTimer = setTimeout(() => { devModeClicks = 0; }, 2000);
+
+            // عند الوصول لـ 5 نقرات
+            if (devModeClicks === 5) {
+                devModeClicks = 0; // تصفير العداد فوراً
+
+                const isHidden = managerBtn.style.display === "none";
+
+                // 1. إذا كانت الأدوات ظاهرة، قم بإخفائها فوراً (لا يحتاج كلمة سر للإخفاء)
+                if (!isHidden) {
+                    managerBtn.style.display = "none";
+                    statusPanel.style.display = "none";
+                    
+                    Swal.mixin({
+                        toast: true, position: 'bottom-start', showConfirmButton: false, timer: 2000
+                    }).fire({ icon: 'success', title: 'تم إخفاء أدوات المطور' });
+                    
+                    return;
+                }
+
+                // 2. إذا كانت مخفية، اطلب كلمة المرور
+                Swal.fire({
+                    title: '🔒 أدخل كود المطور',
+                    text: 'أدخل كلمة المرور الخاصة بقاعدة البيانات للمتابعة',
+                    input: 'password',
+                    inputPlaceholder: 'كلمة المرور...',
+                    showCancelButton: true,
+                    confirmButtonText: 'تحقق',
+                    cancelButtonText: 'إلغاء',
+                    confirmButtonColor: '#e63946',
+                    showLoaderOnConfirm: true,
+                    backdrop: `rgba(0,0,0,0.8)`,
+                    preConfirm: async (inputValue) => {
+                        try {
+                            const docRef = doc(db, "config", "pass");
+                            const docSnap = await getDoc(docRef);
+
+                            if (docSnap.exists()) {
+                                // ✅ هنا تم التعديل لاستخدام service_pay_base
+                                const realPass = docSnap.data().service_pay_base;
+                                
+                                if (String(inputValue) === String(realPass)) {
+                                    return true;
+                                } else {
+                                    Swal.showValidationMessage('❌ كلمة المرور خاطئة');
+                                }
+                            } else {
+                                Swal.showValidationMessage('خطأ: لا يمكن العثور على إعدادات الحماية');
+                            }
+                        } catch (error) {
+                            Swal.showValidationMessage(`فشل الاتصال: ${error.message}`);
+                        }
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // كلمة المرور صحيحة، إظهار الأدوات
+                        managerBtn.style.display = "inline-block";
+                        statusPanel.style.display = "flex";
+
+                        Swal.mixin({
+                            toast: true, position: 'bottom-start', showConfirmButton: false, timer: 3000, timerProgressBar: true
+                        }).fire({ 
+                            icon: 'success', 
+                            title: 'مرحباً أيها المطور! 🛠️',
+                            text: 'تم تفعيل وضع التحكم الكامل'
+                        });
+                    }
+                });
+            }
+        });
+    }
 };
