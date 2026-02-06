@@ -1470,7 +1470,6 @@ window.printForm = function(index) {
 // 🆕 تعديل دقيق: فحص غير المسجلين مع توحيد صيغة البيانات + تصغير النافذة
 // =========================================================
 
-// الدالة الرئيسية للفحص والمقارنة
 window.checkNonRegistered = async function() {
     // 1. إظهار التحميل
     Swal.fire({
@@ -1483,48 +1482,56 @@ window.checkNonRegistered = async function() {
     });
 
     try {
-        // 2. تحديث البيانات المحلية أولاً
+        // 2. تحديث البيانات المحلية (الجدول)
         const response = await fetch(scriptURL + "?action=read_all");
         const result = await response.json();
         
         if (result.status !== "success") {
             throw new Error("فشل في تحديث البيانات المحلية");
         }
-        allData = result.data; // البيانات المحلية المحدثة
+        allData = result.data; 
 
-        // 3. جلب بيانات Firebase بالكامل
+        // 3. جلب بيانات Firebase
         const colRef = collection(db, "employeescompay");
         const snapshot = await getDocs(colRef);
         const firebaseData = snapshot.docs.map(doc => doc.data());
 
-       // 4. منطق المقارنة الذكي (التحويل لأرقام لتجنب مشكلة الأصفار البادئة)
-        // --- ⬇️ بداية التعديل الجذري للمطابقة ⬇️ ---
-        
-        // أ) بناء قائمة CCP المحلية (المسجلين) مع حذف الأصفار والمسافات
-        const localCCPs = new Set(allData.map(item => {
-            if (!item.ccp) return "";
-            // تحويل لنص -> حذف المسافات -> حذف الأصفار من اليسار
-            return String(item.ccp).trim().replace(/^0+/, '');
-        }));
+        // --- معالجة البيانات لضمان دقة الحساب ---
 
-        // ب) تصفية بيانات Firebase (البحث عن غير المسجلين)
-        nonRegisteredData = firebaseData.filter(fbItem => {
-            if (!fbItem.ccp) return false;
-            
-            // تنظيف CCP الخاص بقاعدة البيانات بنفس الطريقة تماماً
-            const cleanFbCCP = String(fbItem.ccp).trim().replace(/^0+/, '');
-            
-            // المقارنة الآن ستتم بين (28925178) و (28925178) ولن يهم عدد الأصفار
-            return !localCCPs.has(cleanFbCCP) && cleanFbCCP !== "";
+        // أ) بناء قائمة CCPs المسجلين فعلياً في الجدول (مع التنظيف)
+        const localCCPs = new Set(allData.map(item => 
+            item.ccp ? String(item.ccp).trim().replace(/^0+/, '') : ""
+        ));
+
+        // ب) توحيد موظفي Firebase (منع التكرار في القاعدة الأصلية)
+        const uniqueFirebaseMap = {};
+        firebaseData.forEach(emp => {
+            if (emp.ccp) {
+                const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
+                if (cleanCCP !== "") {
+                    uniqueFirebaseMap[cleanCCP] = emp;
+                }
+            }
         });
 
-        // --- ⬆️ نهاية التعديل ⬆️ ---
+        // ج) تحويل الخريطة إلى مصفوفة موظفين فريدين
+        const uniqueFirebaseList = Object.values(uniqueFirebaseMap);
 
-        // 5. حساب الإحصائيات للإرسال للعرض
+        // د) الفرز بناءً على قائمة القاعدة الفريدة
+        // 1. استخراج غير المسجلين
+        nonRegisteredData = uniqueFirebaseList.filter(emp => {
+            const cleanCCP = String(emp.ccp).trim().replace(/^0+/, '');
+            return !localCCPs.has(cleanCCP);
+        });
+
+        // 2. حساب الذين سجلوا فعلاً من أصل القاعدة
+        const registeredFromFirebaseCount = uniqueFirebaseList.length - nonRegisteredData.length;
+
+        // 5. حساب الإحصائيات الدقيقة
         const stats = {
-            totalFirebase: firebaseData.length,      // الإجمالي في قاعدة البيانات
-            totalLocal: allData.length,              // المسجلين محلياً
-            totalNonReg: nonRegisteredData.length    // الفرق
+            totalFirebase: uniqueFirebaseList.length,           // الإجمالي الحقيقي (فريد)
+            totalRegistered: registeredFromFirebaseCount,       // من سجل منهم فعلاً
+            totalNonReg: nonRegisteredData.length              // الفرق الحسابي المتبقي
         };
 
         // 6. عرض النتائج
@@ -1535,7 +1542,6 @@ window.checkNonRegistered = async function() {
         Swal.fire('خطأ', 'حدثت مشكلة أثناء الفحص: ' + error.message, 'error');
     }
 };
-
 // دالة عرض النافذة المنبثقة مع الإحصائيات التفصيلية
 window.showNonRegisteredModal = function(stats) {
     const tableRows = nonRegisteredData.map((row, index) => {
@@ -2777,4 +2783,5 @@ window.initDevMode = function() {
         });
     }
 };
+
 
