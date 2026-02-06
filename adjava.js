@@ -2863,6 +2863,53 @@ window.deleteFirebaseDoc = function(id) {
 };
 
 
+window.toggleSystemStatus = async function(newStatus) {
+    const statusRef = doc(db, "config", "pass"); // المسار المطلوب
+    
+    Swal.fire({
+        title: 'تأكيد التغيير',
+        text: "هل تريد تغيير وضع النظام الحالي؟",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'تحديث الآن',
+        cancelButtonText: 'إلغاء'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                // تحديث الحقل status داخل الدوكومنت pass
+                await updateDoc(statusRef, {
+                    status: parseInt(newStatus)
+                });
+                
+                Swal.fire({ icon: 'success', title: 'تم التحديث بنجاح', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                console.error("Error updating status:", error);
+                Swal.fire('خطأ', 'فشل في تحديث حالة النظام', 'error');
+            }
+        } else {
+            window.loadCurrentStatus(); // إعادة الاختيار لما هو عليه في السيرفر
+        }
+    });
+};
+
+// جلب الحالة الحالية عند فتح اللوحة
+window.loadCurrentStatus = async function() {
+    const docSnap = await getDoc(doc(db, "config", "pass"));
+    if (docSnap.exists()) {
+        const currentStatus = docSnap.data().status || 1;
+        document.getElementById("systemStatusSelect").value = currentStatus;
+    }
+};
+
+// استدعاء التحميل مع loadData
+const originalLoad = window.loadData;
+window.loadData = async function() {
+    await originalLoad();
+    window.loadCurrentStatus();
+};
+
+
+
 // تأكد من أنك قمت باستيراد هذه الدوال في بداية الملف
 // import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -2955,4 +3002,5 @@ window.initDevMode = function() {
         });
     }
 };
+
 
