@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -2300,7 +2299,6 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
     });
 };
 
-import { updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 window.toggleSystemStatus = async function(newStatus) {
     const statusRef = doc(db, "config", "pass"); // المسار المطلوب
@@ -2666,5 +2664,4 @@ window.initDevMode = function() {
             }
         });
     }
-
 };
