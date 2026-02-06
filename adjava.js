@@ -1,5 +1,7 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 
 // --- إعدادات Firebase ---
 const firebaseConfig = {
@@ -14,6 +16,80 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+
+const gradeMap = {
+    "1006": "أستاذ إبتدائي (متعاقد)", "1007": "أستاذ تعليم إبتدائي قسم أول", "1008": "أستاذ تعليم إبتدائي قسم ثان",
+    "1009": "أستاذ مميز في التعليم الإبتدائي", "1010": "أستاذ التعليم الإبتدائي", "2021": "ناظر في التعليم الإبتدائي",
+    "2031": "مربي متخصص رئيسي في الدعم", "2100": "مدير مدرسة إبتدائية", "3010": "أستاذ مميز في التعليم المتوسط",
+    "3005": "أستاذ التعليم المتوسط قسم ثاني", "3001": "أستاذ التعليم المتوسط قسم أول", "3012": "أستاذ التعليم المتوسط / متعاقد",
+    "3020": "أستاذ ت م متعاقد ق 01 (13)", "4000": "مدير متوسطة", "4006": "ناظر في التعليم المتوسط",
+    "5019": "أستاذ تعليم ثانوي", "5020": "أستاذ تعليم ثانوي (متعاقد)", "5021": "أستاذ تعليم ثانوي مستخلف",
+    "5022": "أستاذ مميز في التعليم الثانوي", "5023": "أستاذ التعليم الثانوي قسم ثان", "5024": "أستاذ التعليم الثانوي قسم أول",
+    "6001": "مدير ثانوية", "6004": "ناظر في التعليم الثانوي", "4030": "مستشار التربية", "4031": "مستشار توجيه وارشاد مدرسي",
+    "4032": "مستشار محلل لتوجيه والارشاد", "4033": "مستشار رئيسي للتوجيه", "4034": "مستشار رئيس للتوجيه",
+    "6003": "مستشار رئيس توجيه وارشاد", "6008": "مستشار محلل توجيه وارشاد", "6009": "مستشار رئيسي توجيه وارشاد",
+    "6025": "مستشار للتوجيه المدرسي", "6035": "مستشار للتربية", "7160": "مستشار محلل للتوجيه والإرشاد المدرسي",
+    "7025": "مفتش التعليم الثانوي للتوجيه والإرشاد", "4025": "مقتصد", "4040": "نائب مقتصد مسير", "4060": "نائب مقتصد",
+    "4065": "مساعد رئيسي للمصالح الاقتصادية", "6010": "مقتصد رئيسي", "6015": "مقتصد", "6085": "نائب مقتصد",
+    "7220": "نائب مقتصد", "7260": "م مصالح اقتصادية رئيسي", "4087": "مشرف تربية", "4088": "مشرف رئيسي للتربية",
+    "4089": "مشرف رئيس للتربية", "4090": "مشرف عام للتربية", "4085": "مساعد رئيسي للتربية", "6006": "مشرف رئيس للتربية",
+    "6007": "مشرف عام للتربية", "6117": "مشرف رئيسي للتربية", "6118": "مشرف للتربية", "4072": "ملحق بالمخبر",
+    "4076": "ملحق رئيسي للمخبر", "4077": "ملحق رئيس بالمخابر", "4078": "ملحق مشرف بالمخابر", "6046": "ملحق رئيسي للمخبر",
+    "6047": "ملحق مشرف بالمخابر", "6048": "ملحق رئيس بالمخابر", "7005": "مدير التربية", "7682": "مدير التربية",
+    "7011": "الأمين العام", "7013": "رئيس مصلحة بمديرية التربية", "7071": "رئيس مصلحة بمديرية التربية",
+    "7073": "رئيس مكتب", "7074": "رئيس مكتب", "7023": "مفتش التعليم المتوسط تخصص مواد", "7024": "مفتش التعليم الثانوي تخصص مواد",
+    "7036": "مفتش تعليم متوسط تخصص إدارة", "7044": "مفتش ت.إ تخصص إدارة مدارس ابتدائي", "7045": "مفتش تغذية مدرسية",
+    "7046": "مفتش التغذية المدرسية", "7047": "مفتش التعليم الابتدائي تخصص مواد", "7042": "مفتش التغذية المدرسية",
+    "6081": "ملحق إدارة", "7210": "ملحق إدارة", "7155": "ملحق إدارة رئيسي", "6100": "عون إدارة رئيسي",
+    "6185": "عون إدارة", "7311": "عون إدارة", "8380": "عون إدارة", "6194": "كاتب مديرية", "6195": "كاتب",
+    "6215": "عون حفظ بيانات", "7345": "عون حجز بيانات", "6082": "مساعد وثائقي أمين محفوظات", "6083": "أمين وثائقي للمحفوظات رئيسي",
+    "7271": "مساعد وثائقي أمين محفوظات", "7075": "مهندس دولة في الإعلام الآلي", "7095": "مهندس مستوى أول في الإحصاء",
+    "7105": "تقني سامي في الاعلام الآلي", "7150": "تقني سامي في الاعلام الآلي مستوى 3", "7099": "متصرف محلل",
+    "7100": "متصرف", "7445": "متصرف محلل", "6038": "ممرض حاصل على شهادة دولة", "6041": "ممرض للصحة العمومية",
+    "7032": "نفساني عيادي للصحة العمومية", "7033": "نفساني عيادي للصحة العمومية", "6140": "رئيس فرقة للامن و الوقاية",
+    "6165": "عون أمن ووقاية", "6225": "عون أمن ووقاية", "6201": "سائق سيارة مستوى أول", "6110": "عامل مهني خارج الصنف",
+    "6155": "عامل مهني الصنف 1", "6161": "عامل مهني مستوى ثالث", "6205": "عامل مهني الصنف 2", "6221": "عامل مهني مستوى ثاني",
+    "6241": "عامل مهني مستوى أول", "7280": "عامل مهني مستوى أول", "7310": "عامل مهني مستوى أول", "7434": "عامل مهني مستوى 1"
+};
+
+
+// دالة لتصنيف الموظفين حسب المجموعات المطلوبة بدقة
+const getCategoryByGrade = (gr) => {
+    if (!gr) return "موظفون لم يتم التعرف على وظيفتهم";
+    const g = String(gr);
+    
+    // أساتذة الابتدائي (تبدأ بـ 10)
+    if (g.startsWith('10')) return "أساتذة التعليم الإبتدائي";
+    
+    // أساتذة المتوسط (تبدأ بـ 30)
+    if (g.startsWith('30')) return "أساتذة التعليم المتوسط";
+    
+    // أساتذة الثانوي (تبدأ بـ 50)
+    if (g.startsWith('50')) return "أساتذة التعليم الثانوي";
+    
+    // العمال (أكواد العمال المهنيين وسائقي السيارات)
+    const workerCodes = ["6110", "6155", "6161", "6205", "6221", "6241", "7280", "7310", "7434", "6201", "6140", "6165", "6225"];
+    if (workerCodes.includes(g)) return "العمال المهنيين وأعوان الأمن";
+    
+    // الإداريين والمدراء وباقي الرتب المعروفة
+    if (gradeMap[g]) return "المدراء و الرتب الإدارية";
+    
+    // في حال وجود كود رتبة غير موجود في الخريطة
+    return "قائمة الموظفين الإضافية";
+};
+
+// الترتيب الذي ستظهر به المجموعات في صفحات الطباعة
+const categoryOrder = [
+    "أساتذة التعليم الإبتدائي",
+    "أساتذة التعليم المتوسط",
+    "أساتذة التعليم الثانوي",
+    "المدراء و الرتب الإدارية",
+    "العمال المهنيين وأعوان الأمن",
+    "قائمة الموظفين الإضافية"
+];
+
+
 
 const SECURE_DASHBOARD_HTML = `
   <div class="dashboard-container" style="display:block;">
@@ -46,44 +122,34 @@ const SECURE_DASHBOARD_HTML = `
     </div>
 
     <div class="controls-bar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
+      
     
-    <div style="position:relative; flex-grow:1; display:flex; align-items:center; gap:10px;">
-        <div style="position:relative; flex-grow:1;">
-            <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
-            <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
-        </div>
-        <div id="searchCounter" style="background:#e9ecef; padding:8px 15px; border-radius:8px; font-weight:bold; color:#495057; font-size:13px; white-space:nowrap; border:1px solid #dee2e6;">
-            النتائج: <span id="filteredCount">0</span>
-        </div>
+<div style="position:relative; flex-grow:1; display:flex; align-items:center; gap:10px;">
+    <div style="position:relative; flex-grow:1;">
+        <i class="fas fa-search" style="position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#adb5bd;"></i>
+        <input type="text" id="searchInput" class="search-input" style="padding-right:40px;" placeholder="بحث سريع..." onkeyup="window.applyFilters()">
     </div>
+    <div id="searchCounter" style="background:#e9ecef; padding:8px 15px; border-radius:8px; font-weight:bold; color:#495057; font-size:13px; white-space:nowrap; border:1px solid #dee2e6;">
+        النتائج: <span id="filteredCount">0</span>
+    </div>
+</div>
 
-    <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
+      <select id="statusFilter" class="filter-select" onchange="window.applyFilters()" style="min-width:150px;">
         <option value="all">عرض الكل</option>
         <option value="confirmed">✅ المؤكدة</option>
         <option value="pending">⏳ الغير مؤكدة</option>
-    </select>
+      </select>
 
-    <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد<i class="fas fa-plus"></i></button>
-    <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
-    <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
-    <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
-    <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
-    <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
-
-    <button id="firebaseManagerBtn" class="btn" style="background-color:#e63946; color:white; display:none;" onclick="window.openFirebaseManager()">قاعدة البيانات<i class="fas fa-server"></i></button>
-
-    <div id="secretStatusPanel" class="status-toggle-container" style="display:none; align-items:center; gap:10px; background:#fff; padding:5px 15px; border-radius:10px; border:1px solid #2575fc;">
-        <span style="font-weight:bold; font-size:13px;">حالة المنصة:</span>
-        <select id="systemStatusSelect" onchange="window.toggleSystemStatus(this.value)" style="padding:5px; border-radius:5px; border:1px solid #2575fc; font-weight:bold;">
-            <option value="1">🟢 نشطة</option>
-            <option value="2">🟡 إدارية فقط</option>
-            <option value="0">🔴 مغلقة</option>
-        </select>
+      <button class="btn btn-add" onclick="window.openDirectRegister()">تسجيل جديد<i class="fas fa-plus"></i></button>
+      <button class="btn btn-refresh" onclick="window.loadData()">تحديث <i class="fas fa-sync-alt"></i></button>
+    
+<button class="btn" style="background-color:#e63946; color:white;" onclick="window.openFirebaseManager()">قاعدة البيانات<i class="fas fa-server"></i></button>
+      <button class="btn btn-firebase" onclick="window.openFirebaseModal()">إضافة موظف<i class="fas fa-database"></i></button>
+      <button class="btn btn-excel" onclick="window.downloadExcel()">Excel تحميل<i class="fas fa-file-excel"></i></button>
+      <button class="btn btn-pending-list" style="background-color:#6f42c1; color:white;" onclick="window.openPendingListModal()">قائمة الغير مؤكدة<i class="fas fa-clipboard-list"></i></button>
+      <button class="btn" style="background-color:#FF00AA; color:white;" onclick="window.checkNonRegistered()">تقرير التسجيل<i class="fas fa-clipboard-list"></i></button>
+      <button class="btn" style="background-color:#0d6efd; color:white;" onclick="window.openBatchPrintModal()">طباعة الاستمارات<i class="fas fa-print"></i></button>
     </div>
-
-</div>
-
-
 
     <div style="background-color:#f1f3f5; padding:12px; border-radius:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; border:1px solid #dee2e6;">
       <div style="font-weight:bold; color:#495057; font-size:14px; margin-left:10px;">
@@ -231,7 +297,7 @@ window.verifyAdminLogin = async function() {
         if (docSnap.exists()) {
             const realPass = docSnap.data().service_pay_adminn; 
 
-          if (String(passInput) === String(realPass)) {
+            if (String(passInput) === String(realPass)) {
                 const container = document.getElementById("secure-app-root");
                 container.innerHTML = SECURE_DASHBOARD_HTML;
                 
@@ -240,14 +306,8 @@ window.verifyAdminLogin = async function() {
                     document.getElementById("loginOverlay").style.display = "none";
                     container.classList.add("visible");
                     window.loadData();
-                    
-             
-                    window.initDevMode(); 
-                  
-                    
                 }, 500);
 
-        
                 const Toast = Swal.mixin({
                     toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
                 });
@@ -1470,6 +1530,8 @@ window.printForm = function(index) {
 // 🆕 تعديل دقيق: فحص غير المسجلين مع توحيد صيغة البيانات + تصغير النافذة
 // =========================================================
 
+// الدالة الرئيسية للفحص والمقارنة
+// الدالة الرئيسية للفحص والمقارنة (محدثة لضمان دقة الحساب)
 window.checkNonRegistered = async function() {
     // 1. إظهار التحميل
     Swal.fire({
@@ -1542,7 +1604,7 @@ window.checkNonRegistered = async function() {
         Swal.fire('خطأ', 'حدثت مشكلة أثناء الفحص: ' + error.message, 'error');
     }
 };
-// دالة عرض النافذة المنبثقة مع الإحصائيات التفصيلية
+
 window.showNonRegisteredModal = function(stats) {
     const tableRows = nonRegisteredData.map((row, index) => {
         const searchString = `${row.ccp} ${row.fmn} ${row.frn} ${row.adm}`.toLowerCase();
@@ -2417,51 +2479,147 @@ window.updateDashMaps = function(source) { // source: 'level' | 'daaira' | 'bala
     });
 };
 
-
-window.toggleSystemStatus = async function(newStatus) {
-    const statusRef = doc(db, "config", "pass"); // المسار المطلوب
+// دالة الفلترة فائقة السرعة والسلاسة
+window.filterModalTable = function() {
+    const query = document.getElementById("modalSearchInput").value.toLowerCase();
+    const rows = document.getElementsByClassName("non-reg-row");
     
-    Swal.fire({
-        title: 'تأكيد التغيير',
-        text: "هل تريد تغيير وضع النظام الحالي؟",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'تحديث الآن',
-        cancelButtonText: 'إلغاء'
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            try {
-                // تحديث الحقل status داخل الدوكومنت pass
-                await updateDoc(statusRef, {
-                    status: parseInt(newStatus)
-                });
-                
-                Swal.fire({ icon: 'success', title: 'تم التحديث بنجاح', timer: 1500, showConfirmButton: false });
-            } catch (error) {
-                console.error("Error updating status:", error);
-                Swal.fire('خطأ', 'فشل في تحديث حالة النظام', 'error');
+    // استخدام requestAnimationFrame يضمن سلاسة بصرية تامة
+    requestAnimationFrame(() => {
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const isMatch = row.getAttribute('data-search').indexOf(query) > -1;
+            
+            // تحديث العرض فقط إذا لزم الأمر لمنع الوميض (Flickering)
+            if (isMatch) {
+                if (row.style.display === "none") row.style.display = "table-row";
+            } else {
+                if (row.style.display !== "none") row.style.display = "none";
             }
-        } else {
-            window.loadCurrentStatus(); // إعادة الاختيار لما هو عليه في السيرفر
         }
     });
 };
 
-// جلب الحالة الحالية عند فتح اللوحة
-window.loadCurrentStatus = async function() {
-    const docSnap = await getDoc(doc(db, "config", "pass"));
-    if (docSnap.exists()) {
-        const currentStatus = docSnap.data().status || 1;
-        document.getElementById("systemStatusSelect").value = currentStatus;
-    }
+// دالة طباعة القائمة مع عمود ملاحظات فارغ (دمج الرتبة والإدارة)
+window.printNonRegisteredWithNotes = function() {
+    if (nonRegisteredData.length === 0) return;
+
+    const printDate = new Date().toLocaleDateString('ar-DZ');
+    const grouped = nonRegisteredData.reduce((acc, row) => {
+        const cat = getCategoryByGrade(row.gr);
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(row);
+        return acc;
+    }, {});
+
+    let fullHTML = '';
+
+    categoryOrder.forEach(category => {
+        const members = grouped[category];
+        if (!members || members.length === 0) return;
+
+        // تعديل هنا: دمج عمودي الرتبة والإدارة في خلية واحدة فارغة للملاحظات
+        const rows = members.map((row, index) => `
+            <tr>
+                <td style="width:40px;">${index + 1}</td>
+                <td style="font-weight:700; width:120px;">${row.ccp}</td>
+                <td style="text-align:right; padding-right:8px;">${row.fmn} ${row.frn}</td>
+                <td style="text-align:right; padding-right:8px;">${gradeMap[row.gr] || '---'}</td>
+                <td style="width:160px;"></td> 
+            </tr>
+        `).join('');
+
+        fullHTML += `
+            <div class="print-page">
+                <div class="official-header">
+                    <p>الجمهورية الجزائرية الديمقراطية الشعبية</p>
+                    <p>وزارة التربية الوطنية</p>
+                    <p>مديرية التربية لولاية توقرت</p>
+                    <p>مصلحة تسيير نفقات المستخدمين</p>
+                </div>
+
+                <div class="report-title-section">
+                    <h2 class="main-title">قائمة الموظفين غير المسجلين في المنصة</h2>
+                    <div class="category-info">قائمة الموظفين: ${category} (العدد: ${members.length})</div>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الرقم</th>
+                            <th>رقم الحساب (CCP)</th>
+                            <th>الاسم واللقب</th>
+                            <th>الوظيفة</th>
+                            <th style="width:160px;">ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+                
+                <div class="print-footer-info">
+                    تاريخ الاستخراج: ${printDate} | مستخرج من المنصة الرقمية لمديرية التربية
+                </div>
+            </div>
+        `;
+    });
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html dir="rtl" lang="ar">
+        <head>
+            <title>تقرير غير المسجلين - ملاحظات</title>
+            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+            <style>
+                @page { 
+                    size: A4 portrait; 
+                    margin: 10mm 10mm 10mm 10mm;
+                }
+                * { box-sizing: border-box; }
+                body { 
+                    font-family: 'Cairo', sans-serif; 
+                    margin: 0; padding: 0; background: #fff; 
+                    width: 100%;
+                }
+                .print-page { 
+                    page-break-after: always;
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                    padding-right: 5px;
+                }
+                .official-header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    line-height: 1.3;
+                    font-weight: 700;
+                    font-size: 13px;
+                }
+                .official-header p { margin: 2px 0; }
+                .report-title-section { text-align: center; margin-bottom: 20px; }
+                .main-title { margin: 0; font-size: 19px; text-decoration: underline; font-weight: 800; }
+                .category-info { margin-top: 10px; padding: 5px 15px; border: 1.5px solid #000; display: inline-block; font-size: 15px; font-weight: 700; }
+                .data-table { width: 99%; border-collapse: collapse; margin-top: 10px; margin-right: auto; margin-left: auto; border: 1.5px solid #000; }
+                .data-table th, .data-table td { border: 1px solid #000; padding: 8px 5px; text-align: center; font-size: 12px; height: 35px; }
+                .data-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; font-weight: 800; }
+                .print-footer-info { margin-top: 20px; font-size: 11px; font-style: italic; text-align: left; padding-left: 10px; }
+                @media print { body { -webkit-print-color-adjust: exact; } .print-page { margin: 0; } .data-table { width: 100% !important; } }
+            </style>
+        </head>
+        <body>
+            ${fullHTML}
+            <script>
+                window.onload = function() { 
+                    setTimeout(() => { window.print(); }, 800); 
+                }
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 };
 
-// استدعاء التحميل مع loadData
-const originalLoad = window.loadData;
-window.loadData = async function() {
-    await originalLoad();
-    window.loadCurrentStatus();
-};
 
 
 // --- 1. دالة الدخول لمدير Firebase المحدثة ---
@@ -2689,99 +2847,3 @@ window.deleteFirebaseDoc = function(id) {
         }
     });
 };
-
-
-// تأكد من أنك قمت باستيراد هذه الدوال في بداية الملف
-// import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-let devModeClicks = 0;
-let devModeTimer = null;
-
-window.initDevMode = function() {
-    const profileImg = document.querySelector('.header-area img');
-    const managerBtn = document.getElementById("firebaseManagerBtn");
-    const statusPanel = document.getElementById("secretStatusPanel");
-
-    if (profileImg && managerBtn && statusPanel) {
-        profileImg.style.cursor = "pointer"; // مؤشر للمطور
-
-        profileImg.addEventListener("click", () => {
-            devModeClicks++;
-
-            // تصفير العداد إذا توقف النقر لثانيتين
-            clearTimeout(devModeTimer);
-            devModeTimer = setTimeout(() => { devModeClicks = 0; }, 2000);
-
-            // عند الوصول لـ 5 نقرات
-            if (devModeClicks === 5) {
-                devModeClicks = 0; // تصفير العداد فوراً
-
-                const isHidden = managerBtn.style.display === "none";
-
-                // 1. إذا كانت الأدوات ظاهرة، قم بإخفائها فوراً (لا يحتاج كلمة سر للإخفاء)
-                if (!isHidden) {
-                    managerBtn.style.display = "none";
-                    statusPanel.style.display = "none";
-                    
-                    Swal.mixin({
-                        toast: true, position: 'bottom-start', showConfirmButton: false, timer: 2000
-                    }).fire({ icon: 'success', title: 'تم إخفاء أدوات المطور' });
-                    
-                    return;
-                }
-
-                // 2. إذا كانت مخفية، اطلب كلمة المرور
-                Swal.fire({
-                    title: '🔒 أدخل كود المطور',
-                    text: 'أدخل كلمة المرور الخاصة بقاعدة البيانات للمتابعة',
-                    input: 'password',
-                    inputPlaceholder: 'كلمة المرور...',
-                    showCancelButton: true,
-                    confirmButtonText: 'تحقق',
-                    cancelButtonText: 'إلغاء',
-                    confirmButtonColor: '#e63946',
-                    showLoaderOnConfirm: true,
-                    backdrop: `rgba(0,0,0,0.8)`,
-                    preConfirm: async (inputValue) => {
-                        try {
-                            const docRef = doc(db, "config", "pass");
-                            const docSnap = await getDoc(docRef);
-
-                            if (docSnap.exists()) {
-                                // ✅ هنا تم التعديل لاستخدام service_pay_base
-                                const realPass = docSnap.data().service_pay_base;
-                                
-                                if (String(inputValue) === String(realPass)) {
-                                    return true;
-                                } else {
-                                    Swal.showValidationMessage('❌ كلمة المرور خاطئة');
-                                }
-                            } else {
-                                Swal.showValidationMessage('خطأ: لا يمكن العثور على إعدادات الحماية');
-                            }
-                        } catch (error) {
-                            Swal.showValidationMessage(`فشل الاتصال: ${error.message}`);
-                        }
-                    },
-                    allowOutsideClick: () => !Swal.isLoading()
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // كلمة المرور صحيحة، إظهار الأدوات
-                        managerBtn.style.display = "inline-block";
-                        statusPanel.style.display = "flex";
-
-                        Swal.mixin({
-                            toast: true, position: 'bottom-start', showConfirmButton: false, timer: 3000, timerProgressBar: true
-                        }).fire({ 
-                            icon: 'success', 
-                            title: 'مرحباً أيها المطور! 🛠️',
-                            text: 'تم تفعيل وضع التحكم الكامل'
-                        });
-                    }
-                });
-            }
-        });
-    }
-};
-
-
