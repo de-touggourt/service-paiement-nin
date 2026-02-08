@@ -11,6 +11,29 @@ const SYSTEM_CONFIG = {
     checkInterval: 5000 // فحص كل 5 ثواني
 };
 
+
+// متغيرات لعد النقرات السرية
+let secretClickCount = 0;
+let secretClickTimer = null;
+
+// دالة معالجة النقرات
+window.handleSecretClick = function() {
+    secretClickCount++;
+    
+    // إعادة تعيين العداد إذا توقف النقر لأكثر من ثانية (لضمان أن النقرات متتالية)
+    if (secretClickTimer) clearTimeout(secretClickTimer);
+    secretClickTimer = setTimeout(() => {
+        secretClickCount = 0;
+    }, 1000);
+
+    // إذا وصل العدد لـ 10 نقرات
+    if (secretClickCount >= 10) {
+        secretClickCount = 0; // تصفير العداد
+        triggerSecretAdminLogin(); // تشغيل نافذة الدخول
+    }
+};
+
+
 // متغير عالمي لحفظ معرف المؤقت لإيقافه لاحقاً
 window.systemCheckIntervalId = null; 
 
@@ -33,13 +56,18 @@ async function performSystemCheck() {
             const container = document.getElementById("interfaceCard");
 
             // --- الحالة 0: غلق كلي (صيانة) ---
-            if (mode == 0) {
+           if (mode == 0) {
                 if (container) container.style.display = "none";
-                if (!Swal.isVisible()) {
+                
+                // التحقق من أن نافذة الغلق ليست ظاهرة بالفعل لتجنب التكرار
+                // إلا إذا كنا بصدد إعادة إظهارها بعد إلغاء الدخول السري
+                const isClosedPopupVisible = Swal.isVisible() && Swal.getTitle()?.textContent.includes('المنصة مغلقة');
+
+                if (!isClosedPopupVisible) {
                    Swal.fire({
                     icon: 'warning',
-                    // 👇👇👇 تم التعديل هنا: إضافة حدث النقر السري على العنوان 👇👇👇
-                    title: '<span style="color: #c0392b; cursor: pointer;" onclick="triggerSecretAdminLogin()">المنصة مغلقة</span>',
+                    // 👇 التعديل هنا: إضافة العداد، وإخفاء خصائص النقر 👇
+                    title: '<span style="cursor: default; user-select: none;" onclick="handleSecretClick()">المنصة مغلقة</span>',
                     html: `
                         <div style="text-align: center; direction: rtl; line-height: 1.8;">
                             <p style="margin-bottom: 15px; font-size: 1.1em; color: #34495e;">
@@ -65,12 +93,13 @@ async function performSystemCheck() {
                         </div>
                     `,
                     allowOutsideClick: false,
+                    allowEscapeKey: false, // منع الإغلاق بزر ESC
                     showConfirmButton: false,
                     width: '450px'
                 });
                 }
                 return;
-            } 
+            }
 
             // ... باقي الحالات (1 و 2) تبقى كما هي دون تغيير ...
             if (mode == 2) {
@@ -1824,64 +1853,85 @@ function exportTableToExcel(tableId, filename = 'export') {
 // 🕵️‍♂️ دالة الدخول السري (Backdoor)
 // ============================================================
 window.triggerSecretAdminLogin = async function() {
-    // نطلب كلمة المرور في نافذة جديدة فوق النافذة الحالية
-    const { value: password } = await Swal.fire({
-        title: 'الدخول الإداري الطارئ',
-        input: 'password',
-        inputPlaceholder: 'أدخل كود المسؤول...',
-        inputAttributes: {
-            autocapitalize: 'off',
-            autocorrect: 'off'
-        },
-        showCancelButton: true,
-        confirmButtonText: 'دخول',
-        cancelButtonText: 'إلغاء',
-        confirmButtonColor: '#d33', // لون أحمر لتمييز الحالة
-        background: '#fff',
-        customClass: {
-            container: 'admin-auth-modal' // لضمان ظهورها فوق النافذة السابقة
-        }
-    });
+    // 1. نقوم بإغلاق نافذة "المنصة مغلقة" مؤقتاً لفتح المجال لإدخال الباسوورد
+    Swal.close();
 
-    if (password) {
-        Swal.fire({ title: 'جاري التحقق...', didOpen: () => Swal.showLoading() });
-
-        try {
-            // التحقق من الكود مباشرة من فايربيس
-            const docSnap = await db.collection("config").doc("pass").get();
-            
-            if (docSnap.exists) {
-                const data = docSnap.data();
-                // مقارنة الكود المدخل مع كود الأدمن (service_pay_admin)
-                if (String(password) === String(data.service_pay_admin)) {
-                    
-                    // 1. إيقاف الفحص التلقائي حتى لا تعود نافذة الغلق
-                    if (window.systemCheckIntervalId) clearInterval(window.systemCheckIntervalId);
-                    
-                    // 2. تعيين مؤشر لتجاهل الفحص
-                    sessionStorage.setItem("admin_bypass", "true");
-                    sessionStorage.setItem("admin_secure_access", "granted_by_backdoor");
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'تم التحقق',
-                        text: 'جارٍ توجيهك للوحة التحكم...',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        // 3. التوجيه لصفحة الأدمن
-                        window.location.href = ADMIN_DASHBOARD_URL;
-                    });
-
-                } else {
-                    Swal.fire('خطأ', 'كود الدخول غير صحيح', 'error');
-                }
+    // تأخير بسيط جداً لضمان عدم تداخل النوافذ
+    setTimeout(async () => {
+        // نطلب كلمة المرور ونستقبل النتيجة + سبب الإغلاق (dismiss)
+        const { value: password, dismiss } = await Swal.fire({
+            title: 'الدخول الإداري الطارئ',
+            input: 'password',
+            inputPlaceholder: 'أدخل كود المسؤول...',
+            inputAttributes: {
+                autocapitalize: 'off',
+                autocorrect: 'off'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'دخول',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#d33',
+            background: '#fff',
+            allowOutsideClick: false, // نمنع النقر في الخارج لضمان التحكم في المسار
+            customClass: {
+                container: 'admin-auth-modal'
             }
-        } catch (error) {
-            console.error(error);
-            Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error');
+        });
+
+        // --- الحالة 1: المستخدم أدخل كود وضغط دخول ---
+        if (password) {
+            Swal.fire({ title: 'جاري التحقق...', didOpen: () => Swal.showLoading() });
+
+            try {
+                // التحقق من الكود مباشرة من فايربيس
+                const docSnap = await db.collection("config").doc("pass").get();
+                
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    // مقارنة الكود المدخل مع كود الأدمن
+                    if (String(password) === String(data.service_pay_admin)) {
+                        
+                        // ✅ نجاح: إيقاف الفحص وتخزين الصلاحية
+                        if (window.systemCheckIntervalId) clearInterval(window.systemCheckIntervalId);
+                        
+                        sessionStorage.setItem("admin_bypass", "true");
+                        sessionStorage.setItem("admin_secure_access", "granted_by_backdoor");
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم التحقق',
+                            text: 'جارٍ توجيهك للوحة التحكم...',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = ADMIN_DASHBOARD_URL;
+                        });
+
+                    } else {
+                        // ❌ فشل: كود خاطئ -> عرض خطأ ثم إعادة القفل
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'خطأ',
+                            text: 'كود الدخول غير صحيح',
+                            confirmButtonColor: '#d33'
+                        }).then(() => {
+                            performSystemCheck(); // 🔒 إعادة إظهار نافذة الغلق
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error').then(() => {
+                     performSystemCheck(); // 🔒 إعادة إظهار نافذة الغلق عند الخطأ
+                });
+            }
+        } 
+        // --- الحالة 2: المستخدم ضغط "إلغاء" أو أغلق النافذة ---
+        else if (dismiss === Swal.DismissReason.cancel || dismiss === Swal.DismissReason.backdrop || dismiss === Swal.DismissReason.esc) {
+            // 🔒 إعادة إظهار نافذة الغلق فوراً
+            performSystemCheck();
         }
-    }
+    }, 100);
 };
 
 
