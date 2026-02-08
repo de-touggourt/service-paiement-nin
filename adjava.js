@@ -2991,6 +2991,7 @@ window.initDevMode = function() {
                     confirmButtonColor: '#e63946',
                     showLoaderOnConfirm: true,
                     backdrop: `rgba(0,0,0,0.8)`,
+                    allowOutsideClick: false,
                     preConfirm: async (inputValue) => {
                         try {
                             const docRef = doc(db, "config", "pass");
@@ -3032,6 +3033,7 @@ window.initDevMode = function() {
         });
     }
 };
+
 
 
 
