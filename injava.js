@@ -32,19 +32,20 @@ async function performSystemCheck() {
             if (mode == 0) {
                 if (container) container.style.display = "none";
                 if (!Swal.isVisible()) {
-    Swal.fire({
+   Swal.fire({
     icon: 'warning',
-    title: '<span style="color: #c0392b; font-family: sans-serif;">المنصة مغلقة</span>', // لون عنوان مخصص
+    // تم إزالة تحديد الخط من العنوان
+    title: '<span style="color: #c0392b;">المنصة مغلقة</span>',
     html: `
-        <div style="text-align: center; direction: rtl; line-height: 1.8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <div style="text-align: center; direction: rtl; line-height: 1.8;">
             
             <p style="margin-bottom: 15px; font-size: 1.1em; color: #34495e;">
                 ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً
                 <br>
-                <b style="color: #c0392b; font-size: 1.15em;">لانتهاء الآجال المحددة</b>.
+                <b style="color: #c0392b;">لانتهاء الآجال المحددة</b>.
             </p>
 
-            <div style="margin: 15px auto; width: 50%; height: 1px; background-color: #e0e0e0;"></div>
+            <div style="margin: 15px auto; width: 60%; height: 1px; background-color: #e0e0e0;"></div>
 
             <p style="font-size: 1em; color: #555;">
                 لأي استفسار، يرجى التواصل مع
@@ -56,18 +57,17 @@ async function performSystemCheck() {
                 </strong>
             </p>
 
-            <div style="margin-top: 10px;">
+            <div style="margin-top: 15px; direction: ltr;">
                 <a href="tel:0664446349" style="
                     display: inline-block;
                     text-decoration: none;
                     color: #fff;
                     background-color: #2980b9;
-                    padding: 8px 20px;
-                    border-radius: 25px;
+                    padding: 8px 25px;
+                    border-radius: 50px;
                     font-weight: bold;
-                    font-size: 1.1em;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                    transition: background-color 0.3s ease;
+                    font-size: 1.2em;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                 ">
                     📞 0664 44 63 49
                 </a>
@@ -76,8 +76,7 @@ async function performSystemCheck() {
     `,
     allowOutsideClick: false,
     showConfirmButton: false,
-    background: '#ffffff', // خلفية بيضاء نقية
-    width: '450px' // عرض مناسب للنافذة
+    width: '450px'
 });
                 }
                 return;
@@ -1829,6 +1828,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
