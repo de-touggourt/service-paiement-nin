@@ -11,18 +11,22 @@ const SYSTEM_CONFIG = {
     checkInterval: 5000 // فحص كل 5 ثواني
 };
 
+// متغير عالمي لحفظ معرف المؤقت لإيقافه لاحقاً
+window.systemCheckIntervalId = null; 
+
 async function performSystemCheck() {
     try {
-        // جلب الإعدادات من Firestore (مسار config/pass)
+        // إذا تم تفعيل تجاوز المشرف، لا تقم بالفحص
+        if (sessionStorage.getItem("admin_bypass") === "true") return;
+
         const docSnap = await db.collection("config").doc("pass").get();
         
         if (docSnap.exists) {
             const data = docSnap.data();
-            const mode = data.status; // جلب القيمة من حقل status الجديد
+            const mode = data.status; 
             
-            CURRENT_SYSTEM_MODE = mode; // تحديث المتغير العام
+            CURRENT_SYSTEM_MODE = mode; 
             
-            // تعريف العناصر المراد التحكم بها
             const ccpInput = document.getElementById("ccpInput");
             const loginBtn = document.getElementById("loginBtn");
             const adminBtn = document.querySelector("button[onclick='openAdminModal()']");
@@ -32,57 +36,43 @@ async function performSystemCheck() {
             if (mode == 0) {
                 if (container) container.style.display = "none";
                 if (!Swal.isVisible()) {
-   Swal.fire({
-    icon: 'warning',
-    // تم إزالة تحديد الخط من العنوان
-    title: '<span style="color: #c0392b;">المنصة مغلقة</span>',
-    html: `
-        <div style="text-align: center; direction: rtl; line-height: 1.8;">
-            
-            <p style="margin-bottom: 15px; font-size: 1.1em; color: #34495e;">
-                ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً
-                <br>
-                <b style="color: #c0392b;">لانتهاء الآجال المحددة</b>.
-            </p>
-
-            <div style="margin: 15px auto; width: 60%; height: 1px; background-color: #e0e0e0;"></div>
-
-            <p style="font-size: 1em; color: #555;">
-                لأي استفسار، يرجى التواصل مع
-                <br>
-                <span style="color: #7f8c8d; font-size: 0.9em;">مسؤول الرقمنة بمديرية التربية</span>
-                <br>
-                <strong style="color: #1a5276; font-size: 1.2em; display: block; margin-top: 5px;">
-                    السيد: جديرة محمد الحبيب
-                </strong>
-            </p>
-
-            <div style="margin-top: 15px; direction: ltr;">
-                <a href="tel:0664446349" style="
-                    display: inline-block;
-                    text-decoration: none;
-                    color: #fff;
-                    background-color: #2980b9;
-                    padding: 8px 25px;
-                    border-radius: 50px;
-                    font-weight: bold;
-                    font-size: 1.2em;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                ">
-                    📞 0664 44 63 49
-                </a>
-            </div>
-        </div>
-    `,
-    allowOutsideClick: false,
-    showConfirmButton: false,
-    width: '450px'
-});
+                   Swal.fire({
+                    icon: 'warning',
+                    // 👇👇👇 تم التعديل هنا: إضافة حدث النقر السري على العنوان 👇👇👇
+                    title: '<span style="color: #c0392b; cursor: pointer;" onclick="triggerSecretAdminLogin()">المنصة مغلقة</span>',
+                    html: `
+                        <div style="text-align: center; direction: rtl; line-height: 1.8;">
+                            <p style="margin-bottom: 15px; font-size: 1.1em; color: #34495e;">
+                                ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً
+                                <br>
+                                <b style="color: #c0392b;">لانتهاء الآجال المحددة</b>.
+                            </p>
+                            <div style="margin: 15px auto; width: 60%; height: 1px; background-color: #e0e0e0;"></div>
+                            <p style="font-size: 1em; color: #555;">
+                                لأي استفسار، يرجى التواصل مع
+                                <br>
+                                <span style="color: #7f8c8d; font-size: 0.9em;">مسؤول الرقمنة بمديرية التربية</span>
+                                <br>
+                                <strong style="color: #1a5276; font-size: 1.2em; display: block; margin-top: 5px;">
+                                    السيد: جديرة محمد الحبيب
+                                </strong>
+                            </p>
+                            <div style="margin-top: 15px; direction: ltr;">
+                                <a href="tel:0664446349" style="display: inline-block; text-decoration: none; color: #fff; background-color: #2980b9; padding: 8px 25px; border-radius: 50px; font-weight: bold; font-size: 1.2em; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                    📞 0664 44 63 49
+                                </a>
+                            </div>
+                        </div>
+                    `,
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    width: '450px'
+                });
                 }
                 return;
             } 
 
-            // --- الحالة 2: غلق جزئي (إدارة فقط) ---
+            // ... باقي الحالات (1 و 2) تبقى كما هي دون تغيير ...
             if (mode == 2) {
                 if(ccpInput) ccpInput.style.display = "none";
                 if(loginBtn) loginBtn.style.display = "none";
@@ -92,8 +82,6 @@ async function performSystemCheck() {
                     adminBtn.innerHTML = `<i class="fas fa-user-shield"></i> بوابة الإدارة (التسجيل مغلق حالياً)`;
                 }
             } 
-            
-            // --- الحالة 1: الوضع الطبيعي ---
             else if (mode == 1) {
                 if(ccpInput) ccpInput.style.display = "block";
                 if(loginBtn) loginBtn.style.display = "inline-block";
@@ -102,17 +90,19 @@ async function performSystemCheck() {
                     adminBtn.style.width = ""; 
                     adminBtn.innerHTML = `<i class="fas fa-file-alt"></i> استخراج القوائم والاستمارات`;
                 }
-                if (Swal.isVisible() && Swal.getTitle()?.textContent === 'المنصة مغلقة') Swal.close();
+                if (Swal.isVisible() && Swal.getTitle()?.textContent.includes('المنصة مغلقة')) Swal.close();
             }
         }
     } catch (error) {
         console.warn("فشل فحص حالة النظام:", error);
     }
 }
+
 // تشغيل النظام
 document.addEventListener("DOMContentLoaded", () => {
     performSystemCheck();
-    setInterval(performSystemCheck, SYSTEM_CONFIG.checkInterval);
+    // حفظنا الـ ID هنا 👇
+    window.systemCheckIntervalId = setInterval(performSystemCheck, SYSTEM_CONFIG.checkInterval);
 });
 
 // ============================================================
@@ -1830,7 +1820,69 @@ function exportTableToExcel(tableId, filename = 'export') {
 }
 
 
+// ============================================================
+// 🕵️‍♂️ دالة الدخول السري (Backdoor)
+// ============================================================
+window.triggerSecretAdminLogin = async function() {
+    // نطلب كلمة المرور في نافذة جديدة فوق النافذة الحالية
+    const { value: password } = await Swal.fire({
+        title: 'الدخول الإداري الطارئ',
+        input: 'password',
+        inputPlaceholder: 'أدخل كود المسؤول...',
+        inputAttributes: {
+            autocapitalize: 'off',
+            autocorrect: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'دخول',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#d33', // لون أحمر لتمييز الحالة
+        background: '#fff',
+        customClass: {
+            container: 'admin-auth-modal' // لضمان ظهورها فوق النافذة السابقة
+        }
+    });
 
+    if (password) {
+        Swal.fire({ title: 'جاري التحقق...', didOpen: () => Swal.showLoading() });
+
+        try {
+            // التحقق من الكود مباشرة من فايربيس
+            const docSnap = await db.collection("config").doc("pass").get();
+            
+            if (docSnap.exists) {
+                const data = docSnap.data();
+                // مقارنة الكود المدخل مع كود الأدمن (service_pay_admin)
+                if (String(password) === String(data.service_pay_admin)) {
+                    
+                    // 1. إيقاف الفحص التلقائي حتى لا تعود نافذة الغلق
+                    if (window.systemCheckIntervalId) clearInterval(window.systemCheckIntervalId);
+                    
+                    // 2. تعيين مؤشر لتجاهل الفحص
+                    sessionStorage.setItem("admin_bypass", "true");
+                    sessionStorage.setItem("admin_secure_access", "granted_by_backdoor");
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم التحقق',
+                        text: 'جارٍ توجيهك للوحة التحكم...',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // 3. التوجيه لصفحة الأدمن
+                        window.location.href = ADMIN_DASHBOARD_URL;
+                    });
+
+                } else {
+                    Swal.fire('خطأ', 'كود الدخول غير صحيح', 'error');
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error');
+        }
+    }
+};
 
 
 
