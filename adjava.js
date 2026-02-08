@@ -3013,7 +3013,7 @@ window.initDevMode = function() {
                             Swal.showValidationMessage(`فشل الاتصال: ${error.message}`);
                         }
                     },
-                    allowOutsideClick: () => !Swal.isLoading()
+                    
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // كلمة المرور صحيحة، إظهار الأدوات
@@ -3033,6 +3033,7 @@ window.initDevMode = function() {
         });
     }
 };
+
 
 
 
