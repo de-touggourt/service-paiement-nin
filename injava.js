@@ -35,7 +35,7 @@ async function performSystemCheck() {
                     Swal.fire({
                         icon: 'warning',
                         title: 'المنصة مغلقة',
-                        html: '<h3 style="color:#333;">نعتذر، المنصة مغلقة حالياً وذلك لانتهاء الآجال محددة </h3>',
+                        html: '<h3 style="color:#333;">نعتذر، المنصة مغلقة حالياً وذلك لانتهاء الآجال محددة ،لأي استفسار يمكنكم التواصل مع  السيد جديرة محمد الحبيب مسؤول الرقمنة بمديرية التربية على الرقم التالي : 0664446349</h3>',
                         allowOutsideClick: false, showConfirmButton: false
                     });
                 }
@@ -1788,4 +1788,5 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
