@@ -1603,16 +1603,21 @@ function generateEmployeesTable(data, schoolName) {
 // عرض تفاصيل موظف من الجدول (معدلة للحماية في وضع الغلق)
 function showEmployeeDetails(ccp) {
     // 🛑 فحص الوضعية: إذا كان الوضع 2 (إدارة فقط) أو 0 (غلق)، نمنع التعديل
-    if (CURRENT_SYSTEM_MODE == 2 || CURRENT_SYSTEM_MODE == 0) {
-        Swal.fire({
-            icon: 'info',
-            title: 'وضع القراءة فقط',
-            text: 'لا يمكن تعديل أو تأكيد بيانات الموظفين لأن التسجيل مغلق حالياً.',
-            confirmButtonColor: '#333',
-            confirmButtonText: 'حسناً'
-        });
-        return; // إيقاف التنفيذ وعدم فتح النافذة
-    }
+    
+// الكود المعدل (يسمح لك بالعمل):
+const isAdmin = sessionStorage.getItem("admin_bypass") === "true";
+
+// نمنع التعديل في الحالة 0 أو 2، لكن نستثني المشرف (isAdmin)
+if ((CURRENT_SYSTEM_MODE == 2 || CURRENT_SYSTEM_MODE == 0) && !isAdmin) {
+    Swal.fire({
+        icon: 'info',
+        title: 'وضع القراءة فقط',
+        text: 'لا يمكن تعديل أو تأكيد بيانات الموظفين لأن التسجيل مغلق حالياً.',
+        confirmButtonColor: '#333',
+        confirmButtonText: 'حسناً'
+    });
+    return; 
+}
 
     // الكود الأصلي يكمل العمل فقط إذا كان الوضع 1 (نشط)
     const emp = window.currentListContext.find(e => e.ccp == ccp || e.empId == ccp);

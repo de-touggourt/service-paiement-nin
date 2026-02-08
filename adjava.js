@@ -317,9 +317,9 @@ window.verifyAdminLogin = async function() {
                     container.classList.add("visible");
                     window.loadData();
                     
-             
                     window.initDevMode(); 
-                  
+                    
+                    window.loadCurrentStatus();
                     
                 }, 500);
 
@@ -2893,12 +2893,41 @@ window.toggleSystemStatus = async function(newStatus) {
     });
 };
 
-// جلب الحالة الحالية عند فتح اللوحة
 window.loadCurrentStatus = async function() {
-    const docSnap = await getDoc(doc(db, "config", "pass"));
-    if (docSnap.exists()) {
-        const currentStatus = docSnap.data().status || 1;
-        document.getElementById("systemStatusSelect").value = currentStatus;
+    try {
+        const docSnap = await getDoc(doc(db, "config", "pass"));
+        if (docSnap.exists()) {
+            // 1. إصلاح الخطأ: نتحقق هل القيمة موجودة فعلاً بدلاً من استخدام ||
+            const val = docSnap.data().status;
+            // إذا كانت القيمة غير موجودة نعتبرها 1، وإلا نأخذها كما هي (حتى لو كانت 0)
+            const currentStatus = (val !== undefined && val !== null) ? val : 1;
+            
+            // 2. تحديث القائمة المنسدلة
+            const selectEl = document.getElementById("systemStatusSelect");
+            if (selectEl) {
+                selectEl.value = currentStatus;
+            }
+
+            // 3. تحديث لون الإطار لتمييز الحالة بصرياً
+            const panelEl = document.getElementById("secretStatusPanel");
+            if (panelEl) {
+                if (currentStatus == 0) {
+                    // 🔴 مغلقة: أحمر
+                    panelEl.style.borderColor = "#dc3545"; 
+                    panelEl.style.backgroundColor = "#fff5f5";
+                } else if (currentStatus == 2) {
+                    // 🟡 إدارة فقط: برتقالي
+                    panelEl.style.borderColor = "#ffc107";
+                    panelEl.style.backgroundColor = "#fff";
+                } else {
+                    // 🟢 نشطة: أزرق/أخضر (الافتراضي)
+                    panelEl.style.borderColor = "#2575fc";
+                    panelEl.style.backgroundColor = "#fff";
+                }
+            }
+        }
+    } catch (error) {
+        console.error("فشل جلب حالة المنصة:", error);
     }
 };
 
@@ -2989,7 +3018,7 @@ window.initDevMode = function() {
                         // كلمة المرور صحيحة، إظهار الأدوات
                         managerBtn.style.display = "inline-block";
                         statusPanel.style.display = "flex";
-
+                        window.loadCurrentStatus();
                         Swal.mixin({
                             toast: true, position: 'bottom-start', showConfirmButton: false, timer: 3000, timerProgressBar: true
                         }).fire({ 
