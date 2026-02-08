@@ -39,13 +39,12 @@ window.handleSecretClick = function() {
 window.systemCheckIntervalId = null; 
 
 async function performSystemCheck() {
-  try {
-        // 👇👇👇 الإضافة الجديدة: إذا كنا نحاول الدخول السري، توقف ولا تفعل شيئاً
-        if (isSecretLoginActive) return; 
+    try {
+        // 👇👇👇 إذا كنا نحاول الدخول السري، توقف ولا تفعل شيئاً
+        if (typeof isSecretLoginActive !== 'undefined' && isSecretLoginActive) return;
         // 👆👆👆
 
-        // إذا تم تفعيل تجاوز المشرف، لا تقم بالفحص
-        if (sessionStorage.getItem("admin_bypass") === "true") return;
+        // ❌ تم حذف سطر "admin_bypass" من هنا لكي يتم تحديث حالة النظام دائماً حتى للمشرف
 
         const docSnap = await db.collection("config").doc("pass").get();
         
@@ -53,57 +52,66 @@ async function performSystemCheck() {
             const data = docSnap.data();
             const mode = data.status; 
             
-            CURRENT_SYSTEM_MODE = mode; 
+            CURRENT_SYSTEM_MODE = mode; // ✅ ستبقى الحالة 0 (مغلق) حتى للمشرف
             
             const ccpInput = document.getElementById("ccpInput");
             const loginBtn = document.getElementById("loginBtn");
             const adminBtn = document.querySelector("button[onclick='openAdminModal()']");
             const container = document.getElementById("interfaceCard");
+            const isAdmin = sessionStorage.getItem("admin_bypass") === "true"; // هل المستخدم أدمن؟
 
             // --- الحالة 0: غلق كلي (صيانة) ---
-           if (mode == 0) {
-                if (container) container.style.display = "none";
+            if (mode == 0) {
                 
-                // التحقق من أن نافذة الغلق ليست ظاهرة بالفعل لتجنب التكرار
-                // إلا إذا كنا بصدد إعادة إظهارها بعد إلغاء الدخول السري
-                const isClosedPopupVisible = Swal.isVisible() && Swal.getTitle()?.textContent.includes('المنصة مغلقة');
+                // 👇👇👇 التعديل الجديد: التفريق بين المشرف والزائر 👇👇👇
+                if (isAdmin) {
+                    // إذا كان أدمن: أظهر المحتوى وأغلق نافذة التنبيه إن وجدت
+                    if (container) container.style.display = "block";
+                    if (Swal.isVisible() && Swal.getTitle()?.textContent.includes('المنصة مغلقة')) {
+                        Swal.close();
+                    }
+                } else {
+                    // إذا كان زائراً عادياً: أخفِ المحتوى وأظهر نافذة الغلق
+                    if (container) container.style.display = "none";
+                    
+                    const isClosedPopupVisible = Swal.isVisible() && Swal.getTitle()?.textContent.includes('المنصة مغلقة');
 
-                if (!isClosedPopupVisible) {
-                   Swal.fire({
-                    icon: 'warning',
-                    // 👇 التعديل هنا: إضافة العداد، وإخفاء خصائص النقر 👇
-                    title: '<span style="cursor: default; user-select: none;" onclick="handleSecretClick()">المنصة مغلقة</span>',
-                    html: `
-                        <div style="text-align: center; direction: rtl; line-height: 1.8;">
-                            <p style="margin-bottom: 15px; font-size: 1.1em; color: #34495e;">
-                                ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً
-                                <br>
-                                <b style="color: #c0392b;">لانتهاء الآجال المحددة</b>.
-                            </p>
-                            <div style="margin: 15px auto; width: 60%; height: 1px; background-color: #e0e0e0;"></div>
-                            <p style="font-size: 1em; color: #555;">
-                                لأي استفسار، يرجى التواصل مع
-                                <br>
-                                <span style="color: #7f8c8d; font-size: 0.9em;">مسؤول الرقمنة بمديرية التربية</span>
-                                <br>
-                                <strong style="color: #1a5276; font-size: 1.2em; display: block; margin-top: 5px;">
-                                    السيد: جديرة محمد الحبيب
-                                </strong>
-                            </p>
-                            <div style="margin-top: 15px; direction: ltr;">
-                                <a href="tel:0664446349" style="display: inline-block; text-decoration: none; color: #fff; background-color: #2980b9; padding: 8px 25px; border-radius: 50px; font-weight: bold; font-size: 1.2em; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                    📞 0664 44 63 49
-                                </a>
-                            </div>
-                        </div>
-                    `,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false, // منع الإغلاق بزر ESC
-                    showConfirmButton: false,
-                    width: '450px'
-                });
+                    if (!isClosedPopupVisible) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '<span style="cursor: default; user-select: none;" onclick="handleSecretClick()">المنصة مغلقة</span>',
+                            html: `
+                                <div style="text-align: center; direction: rtl; line-height: 1.8;">
+                                    <p style="margin-bottom: 15px; font-size: 1.1em; color: #34495e;">
+                                        ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً
+                                        <br>
+                                        <b style="color: #c0392b;">لانتهاء الآجال المحددة</b>.
+                                    </p>
+                                    <div style="margin: 15px auto; width: 60%; height: 1px; background-color: #e0e0e0;"></div>
+                                    <p style="font-size: 1em; color: #555;">
+                                        لأي استفسار، يرجى التواصل مع
+                                        <br>
+                                        <span style="color: #7f8c8d; font-size: 0.9em;">مسؤول الرقمنة بمديرية التربية</span>
+                                        <br>
+                                        <strong style="color: #1a5276; font-size: 1.2em; display: block; margin-top: 5px;">
+                                            السيد: جديرة محمد الحبيب
+                                        </strong>
+                                    </p>
+                                    <div style="margin-top: 15px; direction: ltr;">
+                                        <a href="tel:0664446349" style="display: inline-block; text-decoration: none; color: #fff; background-color: #2980b9; padding: 8px 25px; border-radius: 50px; font-weight: bold; font-size: 1.2em; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                            📞 0664 44 63 49
+                                        </a>
+                                    </div>
+                                </div>
+                            `,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            width: '450px'
+                        });
+                    }
                 }
-                return;
+                return; // الخروج من الدالة بعد معالجة حالة الغلق
             }
 
             // ... باقي الحالات (1 و 2) تبقى كما هي دون تغيير ...
