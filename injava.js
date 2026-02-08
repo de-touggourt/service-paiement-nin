@@ -32,18 +32,32 @@ async function performSystemCheck() {
             if (mode == 0) {
                 if (container) container.style.display = "none";
                 if (!Swal.isVisible()) {
-                    Swal.fire({
-    icon: 'info', // تم تغيير الأيقونة إلى info لأنها تناسب الإشعارات الإدارية
-    title: 'إعلان غلق المنصة',
+     Swal.fire({
+    icon: 'warning',
+    title: 'المنصة مغلقة',
     html: `
-        <p style="margin-bottom: 10px;">نحيطكم علماً بانتهاء فترة التسجيل وغلق المنصة.</p>
-        <p style="font-size: 0.9em; color: #666;">
-            للمراجعة التقنية، يمكن التواصل مع السيد <b>جديرة محمد الحبيب</b> (مسؤول الرقمنة) على الرقم: 
-            <span dir="ltr">0664 44 63 49</span>
-        </p>
+        <div style="text-align: right; direction: rtl; line-height: 1.6;">
+            <p style="margin-bottom: 15px; font-size: 1.1em;">
+                ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً <b>لانتهاء الآجال المحددة</b>.
+            </p>
+            <hr style="border-top: 1px solid #eee; margin: 10px 0;">
+            <p style="font-size: 0.95em; color: #555;">
+                لأي استفسار، يرجى التواصل مع مسؤول الرقمنة بمديرية التربية:
+                <br>
+                <b>السيد: جديرة محمد الحبيب</b>
+                <br>
+                <span style="display: inline-block; direction: ltr; margin-top: 5px;">
+                    <a href="tel:0664446349" style="text-decoration: none; color: #3085d6; font-weight: bold;">
+                        0664 44 63 49
+                    </a>
+                </span>
+            </p>
+        </div>
     `,
     allowOutsideClick: false,
-    showConfirmButton: false
+    showConfirmButton: false,
+    // خيار إضافي: يمكنك إضافة زر إغلاق مخصص إذا رغبت
+    // showCloseButton: true
 });
                 }
                 return;
@@ -1795,6 +1809,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
