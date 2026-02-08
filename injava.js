@@ -1879,7 +1879,7 @@ window.triggerSecretAdminLogin = async function() {
 
     setTimeout(async () => {
         const { value: password, dismiss } = await Swal.fire({
-            title: 'الدخول الإداري الطارئ',
+            title: 'منطقة أمنية محظورة خاصة بالمطور',
             input: 'password',
             inputPlaceholder: 'أدخل كود المسؤول...',
             inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
@@ -1938,4 +1938,5 @@ window.triggerSecretAdminLogin = async function() {
         }
     }, 100);
 };
+
 
