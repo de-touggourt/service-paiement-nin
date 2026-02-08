@@ -4,6 +4,7 @@
 
 const LOCAL_VERSION = "1.0.5"; 
 let CURRENT_SYSTEM_MODE = 1; // متغير عام لحفظ الحالة
+let isSecretLoginActive = false; // متغير لمنع المقاطعة أثناء الدخول السري
 
 const SYSTEM_CONFIG = {
     versionFile: "version.json",
@@ -38,7 +39,11 @@ window.handleSecretClick = function() {
 window.systemCheckIntervalId = null; 
 
 async function performSystemCheck() {
-    try {
+  try {
+        // 👇👇👇 الإضافة الجديدة: إذا كنا نحاول الدخول السري، توقف ولا تفعل شيئاً
+        if (isSecretLoginActive) return; 
+        // 👆👆👆
+
         // إذا تم تفعيل تجاوز المشرف، لا تقم بالفحص
         if (sessionStorage.getItem("admin_bypass") === "true") return;
 
@@ -1853,29 +1858,25 @@ function exportTableToExcel(tableId, filename = 'export') {
 // 🕵️‍♂️ دالة الدخول السري (Backdoor)
 // ============================================================
 window.triggerSecretAdminLogin = async function() {
-    // 1. نقوم بإغلاق نافذة "المنصة مغلقة" مؤقتاً لفتح المجال لإدخال الباسوورد
+    // 1. تفعيل وضع الدخول السري لإيقاف المقاطعة من performSystemCheck
+    isSecretLoginActive = true; 
+
+    // إغلاق نافذة الغلق
     Swal.close();
 
-    // تأخير بسيط جداً لضمان عدم تداخل النوافذ
     setTimeout(async () => {
-        // نطلب كلمة المرور ونستقبل النتيجة + سبب الإغلاق (dismiss)
         const { value: password, dismiss } = await Swal.fire({
             title: 'الدخول الإداري الطارئ',
             input: 'password',
             inputPlaceholder: 'أدخل كود المسؤول...',
-            inputAttributes: {
-                autocapitalize: 'off',
-                autocorrect: 'off'
-            },
+            inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
             showCancelButton: true,
             confirmButtonText: 'دخول',
             cancelButtonText: 'إلغاء',
             confirmButtonColor: '#d33',
             background: '#fff',
-            allowOutsideClick: false, // نمنع النقر في الخارج لضمان التحكم في المسار
-            customClass: {
-                container: 'admin-auth-modal'
-            }
+            allowOutsideClick: false,
+            customClass: { container: 'admin-auth-modal' }
         });
 
         // --- الحالة 1: المستخدم أدخل كود وضغط دخول ---
@@ -1883,56 +1884,45 @@ window.triggerSecretAdminLogin = async function() {
             Swal.fire({ title: 'جاري التحقق...', didOpen: () => Swal.showLoading() });
 
             try {
-                // التحقق من الكود مباشرة من فايربيس
                 const docSnap = await db.collection("config").doc("pass").get();
-                
                 if (docSnap.exists) {
                     const data = docSnap.data();
-                    // مقارنة الكود المدخل مع كود الأدمن
                     if (String(password) === String(data.service_pay_admin)) {
                         
-                        // ✅ نجاح: إيقاف الفحص وتخزين الصلاحية
+                        // نجاح: لا نعيد isSecretLoginActive للخطأ لأننا سننتقل للوحة التحكم
                         if (window.systemCheckIntervalId) clearInterval(window.systemCheckIntervalId);
                         
                         sessionStorage.setItem("admin_bypass", "true");
                         sessionStorage.setItem("admin_secure_access", "granted_by_backdoor");
 
                         Swal.fire({
-                            icon: 'success',
-                            title: 'تم التحقق',
-                            text: 'جارٍ توجيهك للوحة التحكم...',
-                            timer: 1500,
-                            showConfirmButton: false
+                            icon: 'success', 
+                            title: 'تم التحقق', 
+                            timer: 1500, 
+                            showConfirmButton: false 
                         }).then(() => {
                             window.location.href = ADMIN_DASHBOARD_URL;
                         });
 
                     } else {
-                        // ❌ فشل: كود خاطئ -> عرض خطأ ثم إعادة القفل
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'خطأ',
-                            text: 'كود الدخول غير صحيح',
-                            confirmButtonColor: '#d33'
-                        }).then(() => {
-                            performSystemCheck(); // 🔒 إعادة إظهار نافذة الغلق
+                        // فشل: كود خاطئ
+                        Swal.fire('خطأ', 'كود الدخول غير صحيح', 'error').then(() => {
+                            isSecretLoginActive = false; // 🔓 السماح للنظام بالعمل مجدداً
+                            performSystemCheck(); // إعادة القفل
                         });
                     }
                 }
             } catch (error) {
                 console.error(error);
-                Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error').then(() => {
-                     performSystemCheck(); // 🔒 إعادة إظهار نافذة الغلق عند الخطأ
-                });
+                isSecretLoginActive = false; // 🔓 السماح للنظام بالعمل مجدداً
+                performSystemCheck();
             }
         } 
-        // --- الحالة 2: المستخدم ضغط "إلغاء" أو أغلق النافذة ---
-        else if (dismiss === Swal.DismissReason.cancel || dismiss === Swal.DismissReason.backdrop || dismiss === Swal.DismissReason.esc) {
-            // 🔒 إعادة إظهار نافذة الغلق فوراً
-            performSystemCheck();
+        // --- الحالة 2: المستخدم ضغط إلغاء ---
+        else if (dismiss) {
+            isSecretLoginActive = false; // 🔓 السماح للنظام بالعمل مجدداً
+            performSystemCheck(); // إعادة نافذة الغلق فوراً
         }
     }, 100);
 };
-
-
 
