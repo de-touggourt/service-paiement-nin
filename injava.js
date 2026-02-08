@@ -32,32 +32,52 @@ async function performSystemCheck() {
             if (mode == 0) {
                 if (container) container.style.display = "none";
                 if (!Swal.isVisible()) {
-     Swal.fire({
+    Swal.fire({
     icon: 'warning',
-    title: 'المنصة مغلقة',
+    title: '<span style="color: #c0392b; font-family: sans-serif;">المنصة مغلقة</span>', // لون عنوان مخصص
     html: `
-        <div style="text-align: right; direction: rtl; line-height: 1.6;">
-            <p style="margin-bottom: 15px; font-size: 1.1em;">
-                ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً <b>لانتهاء الآجال المحددة</b>.
-            </p>
-            <hr style="border-top: 1px solid #eee; margin: 10px 0;">
-            <p style="font-size: 0.95em; color: #555;">
-                لأي استفسار، يرجى التواصل مع مسؤول الرقمنة بمديرية التربية:
+        <div style="text-align: center; direction: rtl; line-height: 1.8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            
+            <p style="margin-bottom: 15px; font-size: 1.1em; color: #34495e;">
+                ننهي إلى علمكم أن المنصة مغلقة حالياً نظراً
                 <br>
-                <b>السيد: جديرة محمد الحبيب</b>
-                <br>
-                <span style="display: inline-block; direction: ltr; margin-top: 5px;">
-                    <a href="tel:0664446349" style="text-decoration: none; color: #3085d6; font-weight: bold;">
-                        0664 44 63 49
-                    </a>
-                </span>
+                <b style="color: #c0392b; font-size: 1.15em;">لانتهاء الآجال المحددة</b>.
             </p>
+
+            <div style="margin: 15px auto; width: 50%; height: 1px; background-color: #e0e0e0;"></div>
+
+            <p style="font-size: 1em; color: #555;">
+                لأي استفسار، يرجى التواصل مع
+                <br>
+                <span style="color: #7f8c8d; font-size: 0.9em;">مسؤول الرقمنة بمديرية التربية</span>
+                <br>
+                <strong style="color: #1a5276; font-size: 1.2em; display: block; margin-top: 5px;">
+                    السيد: جديرة محمد الحبيب
+                </strong>
+            </p>
+
+            <div style="margin-top: 10px;">
+                <a href="tel:0664446349" style="
+                    display: inline-block;
+                    text-decoration: none;
+                    color: #fff;
+                    background-color: #2980b9;
+                    padding: 8px 20px;
+                    border-radius: 25px;
+                    font-weight: bold;
+                    font-size: 1.1em;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    transition: background-color 0.3s ease;
+                ">
+                    📞 0664 44 63 49
+                </a>
+            </div>
         </div>
     `,
     allowOutsideClick: false,
     showConfirmButton: false,
-    // خيار إضافي: يمكنك إضافة زر إغلاق مخصص إذا رغبت
-    // showCloseButton: true
+    background: '#ffffff', // خلفية بيضاء نقية
+    width: '450px' // عرض مناسب للنافذة
 });
                 }
                 return;
@@ -1809,6 +1829,7 @@ function exportTableToExcel(tableId, filename = 'export') {
     a.click();
     document.body.removeChild(a);
 }
+
 
 
 
