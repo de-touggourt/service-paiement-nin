@@ -2185,48 +2185,43 @@ function getCardHtmlTemplate(emp, serialYear) {
 function getPrintStyles() {
     return `
     <style>
-        /* استرجاع المتغيرات الأصلية */
         :root {
             --primary-green: #006233;
             --primary-red: #D22B2B;
-            --text-dark: #2c3e50;
+            --text-dark: #2c3e50; /* اللون الموحد للعناوين */
             --text-light: #7f8c8d;
         }
         @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap');
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* إعدادات الصفحة: 6 بطاقات موزعة بمسافات للقص */
+        /* إعدادات الصفحة - تم تقليل الحواف والفراغات لمنع القص */
         .page-a4 {
             width: 210mm;
-            height: 296mm; 
+            height: 296mm; /* تحديد ارتفاع ثابت */
             background: white;
-            padding: 15mm 10mm; /* هامش علوي لرفع البطاقات */
+            padding: 5mm 10mm; /* تقليل الهامش العلوي والسفلي إلى 5مم */
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(3, auto); /* 3 صفوف = 6 بطاقات */
-            column-gap: 10mm; /* مسافة للقص */
-            row-gap: 12mm;    /* مسافة للقص */
-            align-content: start; /* تجميع البطاقات في الأعلى */
-            justify-content: center;
+            grid-template-rows: repeat(4, 1fr); /* توزيع متساوي للأسطر */
+            column-gap: 5mm;
+            row-gap: 2mm; /* تقليل الفراغ بين البطاقات عمودياً */
             page-break-after: always;
             margin: 0 auto;
         }
-
-        .page-a4:last-child { page-break-after: auto; }
 
         .card-wrapper {
             width: 85.6mm;
             height: 54mm;
             position: relative;
-            border: 1px dashed #ddd; /* حدود خفيفة جداً للمساعدة في القص */
+            border: 1px solid #eee; /* تخفيف لون الإطار */
             border-radius: 4px;
             overflow: hidden;
             background: white;
-            page-break-inside: avoid;
+            align-self: center; /* توسيط البطاقة داخل الخلية */
+            justify-self: center;
         }
 
-        /* --- تصميم البطاقة الأصلي (كما في الملف) --- */
         .card {
             width: 750px;
             height: 474px;
@@ -2239,6 +2234,7 @@ function getPrintStyles() {
             background-image: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
         }
 
+        /* العلامة المائية */
         .watermark {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 300px; height: 300px;
@@ -2251,113 +2247,113 @@ function getPrintStyles() {
         .bar-green { flex: 2; background-color: var(--primary-green); }
         .bar-red { flex: 1; background-color: var(--primary-red); }
 
+        /* الهيدر */
         .header {
-            position: relative; z-index: 2; padding: 10px 15px 0 15px;
-            display: flex; justify-content: space-between; align-items: center; height: 100px;
+            position: relative; z-index: 2; padding: 5px 15px 0 15px;
+            display: flex; justify-content: space-between; align-items: center; height: 90px;
         }
         
         .main-title { 
-            font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700; 
-            color: var(--text-dark); margin-top: -30px; 
+            font-family: 'Cairo', sans-serif; font-size: 18px; font-weight: 700; 
+            color: var(--text-dark); margin-top: -20px; 
         }
         
         .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
         
-        /* استرجاع الظل الأصلي للشعار */
         .header-logo { 
-            width: 70px; height: 70px; object-fit: contain; 
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1)); 
+            width: 60px; height: 60px; object-fit: contain; 
+            mix-blend-mode: multiply; /* يجعل الخلفية البيضاء للشعار شفافة */
         }
         
-        /* استرجاع الخط الأصلي */
+        /* توحيد اللون هنا */
         .logo-text { 
-            font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; 
-            /* لا نحدد لون هنا ليأخذ الافتراضي (الأسود) كما كان */
+            font-size: 13px; font-weight: 900; margin-top: 2px; white-space: nowrap; 
+            color: var(--text-dark); /* تغيير اللون ليطابق الجمهورية */
         }
 
+        /* جسم البطاقة */
         .card-body { 
             position: relative; z-index: 2; display: flex; flex-grow: 1; 
-            padding: 5px 25px 0 25px; 
+            padding: 12px 25px 0 25px; /* الحفاظ على الانزلاق */
+            align-items: flex-start; 
         }
         
-        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: center; }
+        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 5px; }
         
         .card-name-title {
-            font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700;
-            color: var(--primary-green); border-bottom: 2px solid var(--primary-red);
-            margin-bottom: 10px; width: fit-content;
+            font-family: 'Cairo', sans-serif; font-size: 24px;
+            font-weight: 700; color: var(--primary-green); 
+            border-bottom: 2px solid var(--primary-red);
+            margin-bottom: 8px; width: fit-content;
         }
 
-        /* توسيع المسافات بين الأسطر قليلاً كما طلبت */
-        .info-row { display: flex; align-items: baseline; margin-bottom: 7px; font-size: 20px; }
-        
+        .info-row { display: flex; align-items: baseline; margin-bottom: 2px; }
         .label { 
-            font-weight: 700; color: #555; min-width: 135px; 
-            font-family: 'Cairo', sans-serif; font-size: 15px; 
+            font-weight: 700; color: #555; min-width: 110px;
+            font-family: 'Cairo', sans-serif; font-size: 14px;
         }
         .value { 
-            font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; 
+            font-weight: 700; color: #000; margin-right: 5px; 
+            font-size: 18px; line-height: 1.2;
         }
 
         .photo-section {
             flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; padding-top: 40px; gap: 0;
+            justify-content: flex-start; padding-top: 20px; gap: 0;
         }
         
         .serial-number {
-            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px;
+            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 14px;
             color: var(--primary-red); background: rgba(210, 43, 43, 0.05);
-            padding: 2px 8px; border-radius: 8px; width: 180px;
-            display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px;
+            padding: 2px 8px; border-radius: 8px; width: 160px;
+            display: flex; justify-content: space-between; margin-top: -20px; margin-bottom: 15px;
         }
         
         .photo-frame {
-            width: 130px; height: 170px; background-color: #fafafa;
+            width: 120px; height: 160px; background-color: #fafafa;
             border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
         }
         
         .signature-title {
-            font-weight: 700; font-size: 18px; color: var(--text-dark);
+            font-weight: 700; font-size: 16px; color: var(--text-dark);
             border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
         }
 
-        /* --- تعديلات الباركود المطلوبة --- */
+        /* حاوية الباركود المعدلة */
         .barcode-container {
             width: 100%; display: flex; 
             flex-direction: column; /* ترتيب عمودي */
             justify-content: center; align-items: center;
-            margin-top: auto; 
-            margin-bottom: 15px; /* رفع الباركود عن الفوتر */
-            z-index: 5; 
+            margin-top: auto; margin-bottom: 5px; z-index: 5; 
+            height: 50px; /* زيادة الارتفاع قليلاً لاستيعاب الرقم */
         }
         
-        .barcode-label {
-            font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 700; color: #333;
-            margin-bottom: 0px;
-        }
-
-        .barcode-number-large {
-            font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 800; color: #000;
-            letter-spacing: 2px; line-height: 1; margin-top: 2px;
+        /* تنسيق رقم التعريف الوظيفي الصغير */
+        .job-id-small {
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 1px;
+            margin-bottom: -2px; /* تقليل المسافة بين الرقم والباركود */
         }
 
         .footer {
             background-color: var(--primary-green); color: white;
             display: flex; justify-content: center; align-items: center;
-            width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif;
-            font-size: 15px; font-weight: 600; position: relative; z-index: 10;
+            width: 100%; padding: 4px 0; font-family: 'Cairo', sans-serif;
+            font-size: 13px; font-weight: 600; position: relative; z-index: 10;
         }
 
         @media print {
-            @page { margin: 0; size: A4; } 
             body { background: white; padding: 0; margin: 0; }
-            .page-a4 { width: 100%; height: 296mm; border: none; margin: 0; padding: 15mm 10mm; page-break-after: always; }
+            .page-a4 { width: 100%; height: 296mm; border: none; padding: 5mm 10mm; margin: 0; page-break-after: always; box-shadow: none; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             #interfaceCard, .swal2-container, #card-preview-overlay { display: none !important; }
         }
     </style>`;
 }
-
 
 
 // 5. Print All Cards Function
@@ -2488,3 +2484,4 @@ function printSinglePreview(ccp) {
     window.print();
     setTimeout(() => printContainer.innerHTML = originalContent, 1000);
 }
+
