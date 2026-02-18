@@ -1324,8 +1324,8 @@ function openAdminModal() {
   });
 }
 
-// 2. عرض لوحة الاستخراج (مقفلة ومنسقة)
-// [MODIFIED] 2. عرض لوحة الاستخراج (مقفلة ومنسقة) + زر البطاقات الجديد
+
+// 2. عرض لوحة الاستخراج (مقفلة ومنسقة) + زر البطاقات الجديد
 function showRestrictedAdminPanel(empData) {
   const schoolName = empData.schoolName || "غير محدد";
   const daaira = empData.daaira || "";
@@ -1333,7 +1333,6 @@ function showRestrictedAdminPanel(empData) {
   const level = empData.level || "";
   const directorName = `${empData.fmn} ${empData.frn}`;
 
-  // تنسيق CSS للحقول المقفلة
   const lockedStyle = `
     background: #f1f3f4; border: 1px solid #ced4da; color: #495057; 
     font-weight: 600; cursor: not-allowed; text-align: center; font-size: 14px;
@@ -1361,7 +1360,7 @@ function showRestrictedAdminPanel(empData) {
 
       <div style="margin-top: 20px; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">
         <button id="btnOpenCards" class="swal2-confirm swal2-styled" 
-                style="background-color: #006233; margin: 0 5px; font-family: 'Cairo';">
+                style="background-color: #006233; margin: 0 5px; font-family: 'Cairo'; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <i class="fas fa-id-card"></i> البطاقات المهنية
         </button>
       </div>
@@ -1381,24 +1380,28 @@ function showRestrictedAdminPanel(empData) {
     width: '500px',
     padding: '20px',
     didOpen: () => {
-        // Handle the new button click manually
+        // ✅ إصلاح الزر: عند الضغط، نغلق النافذة يدوياً ونستدعي الدالة مباشرة
+        // دون المرور عبر preConfirm الذي يسبب الخطأ
         const btn = document.getElementById('btnOpenCards');
         if(btn) {
             btn.addEventListener('click', () => {
-                Swal.clickConfirm(); // Close modal logic
-                fetchAndHandleData(schoolName, 'cards'); // Call with new mode
+                Swal.close(); // إغلاق النافذة الحالية
+                setTimeout(() => {
+                    fetchAndHandleData(schoolName, 'cards'); // استدعاء البطاقات
+                }, 300); // تأخير بسيط لضمان الإغلاق
             });
         }
     },
     preConfirm: () => { return { action: 'forms', school: schoolName }; },
     preDeny: () => { return { action: 'list', school: schoolName }; }
   }).then((result) => {
-    if (result.isConfirmed && !result.value) return; // Handled by event listener
+    // التحقق من أن النافذة أغلقت بسبب الزر الخاص بنا (تم تجاهلها)
+    if (result.isDismissed && result.dismiss === Swal.DismissReason.close) return; // تم الإغلاق يدوياً للكود
+    
     if (result.isConfirmed) fetchAndHandleData(result.value.school, 'forms');
     else if (result.isDenied) fetchAndHandleData(result.value.school, 'list');
   });
 }
-
 // 2. تحديث القوائم المنسدلة (Logic للفلاتر)
 function updateAdminBaladiya() {
     const daaira = document.getElementById("adminDaaira").value;
@@ -2034,7 +2037,7 @@ function generateCardsTable(data, schoolName) {
         allowOutsideClick: false,
         allowEscapeKey: false,
         allowEnterKey: false,
-        stopKeydownPropagation: false // Allows typing in inputs
+        stopKeydownPropagation: false 
        
     });
 }
@@ -2188,21 +2191,19 @@ function getPrintStyles() {
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* A4 Page Setup - EXACTLY 8 Cards */
         .page-a4 {
             width: 210mm;
             min-height: 297mm;
             background: white;
             padding: 10mm;
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 2 Columns */
-            grid-template-rows: repeat(4, auto); /* 4 Rows */
-            gap: 5mm; /* Gap from file */
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(4, auto);
+            gap: 5mm;
             page-break-after: always;
             margin: 0 auto;
         }
 
-        /* Card Wrapper Size */
         .card-wrapper {
             width: 85.6mm;
             height: 54mm;
@@ -2213,22 +2214,19 @@ function getPrintStyles() {
             background: white;
         }
 
-        /* The Scaled Card Content */
         .card {
             width: 750px;
             height: 474px;
             background-color: #fff;
             position: absolute;
-            top: 0;
-            right: 0;
-            transform: scale(0.431); /* The critical scale factor */
+            top: 0; right: 0;
+            transform: scale(0.431); /* تصغير المحتوى ليناسب البطاقة */
             transform-origin: top right;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             background-image: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
         }
 
-        /* Watermark */
+        /* تحسينات التصميم */
         .watermark {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 300px; height: 300px;
@@ -2237,76 +2235,85 @@ function getPrintStyles() {
             opacity: 0.1; z-index: 0;
         }
 
-        /* Bars */
         .top-deco-bar { width: 100%; height: 8px; display: flex; z-index: 10; }
         .bar-green { flex: 2; background-color: var(--primary-green); }
         .bar-red { flex: 1; background-color: var(--primary-red); }
 
-        /* Header */
+        /* الهيدر */
         .header {
-            position: relative; z-index: 2; padding: 10px 15px 0 15px;
-            display: flex; justify-content: space-between; align-items: center; height: 100px;
+            position: relative; z-index: 2; padding: 5px 15px 0 15px; /* تقليل البادينغ العلوي */
+            display: flex; justify-content: space-between; align-items: center; height: 90px; /* تقليل الارتفاع */
         }
-        .main-title { font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-dark); margin-top: -30px; }
+        .main-title { font-family: 'Cairo', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-dark); margin-top: -20px; }
         
         .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
-        .header-logo { width: 70px; height: 70px; object-fit: contain; }
-        .logo-text { font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; }
+        .header-logo { width: 60px; height: 60px; object-fit: contain; }
+        .logo-text { font-size: 13px; font-weight: 900; margin-top: 2px; white-space: nowrap; }
 
-        /* Body */
-        .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 5px 25px 0 25px; }
-        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: center; }
+        /* جسم البطاقة */
+        .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 0 25px 0 25px; align-items: flex-start; }
+        
+        /* قسم المعلومات - هنا تم التعديل الأكبر */
+        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 5px; }
         
         .card-name-title {
-            font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700;
-            color: var(--primary-green); border-bottom: 2px solid var(--primary-red);
-            margin-bottom: 10px; width: fit-content;
+            font-family: 'Cairo', sans-serif; font-size: 24px; /* تصغير العنوان */
+            font-weight: 700; color: var(--primary-green); 
+            border-bottom: 2px solid var(--primary-red);
+            margin-bottom: 8px; width: fit-content;
         }
 
-        .info-row { display: flex; align-items: baseline; margin-bottom: 5px; font-size: 20px; }
-        .label { font-weight: 700; color: #555; min-width: 135px; font-family: 'Cairo', sans-serif; font-size: 15px; }
-        .value { font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; }
+        /* تصغير البيانات لتناسب الأسماء الطويلة */
+        .info-row { display: flex; align-items: baseline; margin-bottom: 2px; } /* تقليل المسافة بين الأسطر */
+        .label { 
+            font-weight: 700; color: #555; 
+            min-width: 110px; /* تقليل العرض المخصص للعنوان */
+            font-family: 'Cairo', sans-serif; font-size: 14px; /* تصغير عنوان الحقل */
+        }
+        .value { 
+            font-weight: 700; color: #000; margin-right: 5px; 
+            font-size: 18px; /* تصغير حجم النص (الاسم واللقب) */
+            line-height: 1.2;
+        }
 
-        /* Photo Section */
+        /* قسم الصورة */
         .photo-section {
             flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; padding-top: 40px; gap: 0;
+            justify-content: flex-start; padding-top: 20px; gap: 0;
         }
         .serial-number {
-            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px;
+            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 14px;
             color: var(--primary-red); background: rgba(210, 43, 43, 0.05);
-            padding: 2px 8px; border-radius: 8px; width: 180px;
-            display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px;
+            padding: 2px 8px; border-radius: 8px; width: 160px;
+            display: flex; justify-content: space-between; margin-top: -20px; margin-bottom: 15px;
         }
         .photo-frame {
-            width: 130px; height: 170px; background-color: #fafafa;
+            width: 120px; height: 160px; background-color: #fafafa;
             border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
         }
         .signature-title {
-            font-weight: 700; font-size: 18px; color: var(--text-dark);
+            font-weight: 700; font-size: 16px; color: var(--text-dark);
             border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
         }
 
-        /* Barcode */
+        /* الباركود والفوتر */
         .barcode-container {
             width: 100%; display: flex; justify-content: center; align-items: center;
-            margin-top: auto; margin-bottom: 12px; z-index: 5;
+            margin-top: auto; margin-bottom: 5px; z-index: 5; height: 40px;
         }
 
-        /* Footer */
         .footer {
             background-color: var(--primary-green); color: white;
             display: flex; justify-content: center; align-items: center;
-            width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif;
-            font-size: 15px; font-weight: 600; position: relative; z-index: 10;
+            width: 100%; padding: 4px 0; font-family: 'Cairo', sans-serif;
+            font-size: 13px; font-weight: 600; position: relative; z-index: 10;
         }
 
         @media print {
             body { background: white; padding: 0; margin: 0; }
             .page-a4 { width: 100%; border: none; padding: 10mm; margin: 0; page-break-after: always; box-shadow: none; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            /* Hide the main interface when printing */
             #interfaceCard, .swal2-container, #card-preview-overlay { display: none !important; }
         }
     </style>`;
