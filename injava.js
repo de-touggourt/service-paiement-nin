@@ -2251,7 +2251,16 @@ function getPrintStyles() {
         .logo-text { font-size: 13px; font-weight: 900; margin-top: 2px; white-space: nowrap; }
 
         /* جسم البطاقة */
-        .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 0 25px 0 25px; align-items: flex-start; }
+      .card-body { 
+    position: relative; 
+    z-index: 2; 
+    display: flex; 
+    flex-grow: 1; 
+    
+    padding: 12px 25px 0 25px; 
+ 
+    align-items: flex-start; 
+}
         
         /* قسم المعلومات - هنا تم التعديل الأكبر */
         .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 5px; }
@@ -2458,3 +2467,4 @@ function printSinglePreview(ccp) {
     window.print();
     setTimeout(() => printContainer.innerHTML = originalContent, 1000);
 }
+
