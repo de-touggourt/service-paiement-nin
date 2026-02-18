@@ -2178,30 +2178,33 @@ function getCardHtmlTemplate(emp, serialYear) {
         </div>
     </div>`;
 }
+
 function getPrintStyles() {
     return `
     <style>
         :root {
             --primary-green: #006233;
             --primary-red: #D22B2B;
-            --text-dark: #2c3e50; /* اللون الموحد للعناوين */
+            --text-dark: #2c3e50;
             --text-light: #7f8c8d;
         }
         @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap');
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* إعدادات الصفحة - تم تقليل الحواف والفراغات لمنع القص */
+        /* إعدادات صفحة A4 */
         .page-a4 {
             width: 210mm;
-            height: 296mm; /* تحديد ارتفاع ثابت */
+            height: 296mm; 
             background: white;
-            padding: 5mm 10mm; /* تقليل الهامش العلوي والسفلي إلى 5مم */
+            /* هوامش الصفحة: تقليل الهوامش لضمان عدم القص */
+            padding: 10mm 10mm; 
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(4, 1fr); /* توزيع متساوي للأسطر */
+            grid-template-rows: repeat(4, auto); /* استخدام auto بدلاً من fr لمنع التمدد الزائد */
             column-gap: 5mm;
-            row-gap: 2mm; /* تقليل الفراغ بين البطاقات عمودياً */
+            row-gap: 2mm; /* تقليل المسافة بين البطاقات عمودياً */
+            align-content: start; /* ✅ هام: يجمع البطاقات في الأعلى لتجنب قص الأسفل */
             page-break-after: always;
             margin: 0 auto;
         }
@@ -2210,12 +2213,15 @@ function getPrintStyles() {
             width: 85.6mm;
             height: 54mm;
             position: relative;
-            border: 1px solid #eee; /* تخفيف لون الإطار */
+            border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
             background: white;
-            align-self: center; /* توسيط البطاقة داخل الخلية */
+            align-self: center;
             justify-self: center;
+            /* ✅ هام جداً: يمنع الطابعة من قص البطاقة من الداخل */
+            page-break-inside: avoid; 
+            break-inside: avoid;
         }
 
         .card {
@@ -2258,19 +2264,18 @@ function getPrintStyles() {
         
         .header-logo { 
             width: 60px; height: 60px; object-fit: contain; 
-            mix-blend-mode: multiply; /* يجعل الخلفية البيضاء للشعار شفافة */
+            mix-blend-mode: multiply; /* شفافية خلفية الشعار */
         }
         
-        /* توحيد اللون هنا */
         .logo-text { 
             font-size: 13px; font-weight: 900; margin-top: 2px; white-space: nowrap; 
-            color: var(--text-dark); /* تغيير اللون ليطابق الجمهورية */
+            color: var(--text-dark); /* توحيد اللون */
         }
 
         /* جسم البطاقة */
         .card-body { 
             position: relative; z-index: 2; display: flex; flex-grow: 1; 
-            padding: 12px 25px 0 25px; /* الحفاظ على الانزلاق */
+            padding: 12px 25px 0 25px; /* إنزال البيانات قليلاً */
             align-items: flex-start; 
         }
         
@@ -2316,23 +2321,23 @@ function getPrintStyles() {
             border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
         }
 
-        /* حاوية الباركود المعدلة */
+        /* حاوية الباركود */
         .barcode-container {
             width: 100%; display: flex; 
-            flex-direction: column; /* ترتيب عمودي */
+            flex-direction: column; 
             justify-content: center; align-items: center;
             margin-top: auto; margin-bottom: 5px; z-index: 5; 
-            height: 50px; /* زيادة الارتفاع قليلاً لاستيعاب الرقم */
+            height: 50px; 
         }
         
-        /* تنسيق رقم التعريف الوظيفي الصغير */
+        /* تنسيق رقم التعريف الوظيفي */
         .job-id-small {
             font-family: 'Cairo', sans-serif;
             font-size: 14px;
             font-weight: 700;
             color: #333;
             letter-spacing: 1px;
-            margin-bottom: -2px; /* تقليل المسافة بين الرقم والباركود */
+            margin-bottom: -2px; 
         }
 
         .footer {
@@ -2343,8 +2348,16 @@ function getPrintStyles() {
         }
 
         @media print {
+            /* ✅ إزالة هوامش الطابعة الافتراضية */
+            @page { margin: 0; size: A4; } 
+            
             body { background: white; padding: 0; margin: 0; }
-            .page-a4 { width: 100%; height: 296mm; border: none; padding: 5mm 10mm; margin: 0; page-break-after: always; box-shadow: none; }
+            .page-a4 { 
+                width: 100%; height: 296mm; 
+                border: none; margin: 0; 
+                padding: 10mm; /* إعادة البادينغ هنا */
+                page-break-after: always; box-shadow: none; 
+            }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             #interfaceCard, .swal2-container, #card-preview-overlay { display: none !important; }
         }
