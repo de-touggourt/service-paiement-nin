@@ -2,6 +2,7 @@
 // 🔒 SYSTEM GUARD V3.0: نظام الأرقام (1=نشط، 2=إدارة، 0=غلق)
 // ============================================================
 
+
 const LOCAL_VERSION = "1.0.5"; 
 let CURRENT_SYSTEM_MODE = 1; // متغير عام لحفظ الحالة
 let isSecretLoginActive = false; // متغير لمنع المقاطعة أثناء الدخول السري
@@ -1324,6 +1325,7 @@ function openAdminModal() {
 }
 
 // 2. عرض لوحة الاستخراج (مقفلة ومنسقة)
+// [MODIFIED] 2. عرض لوحة الاستخراج (مقفلة ومنسقة) + زر البطاقات الجديد
 function showRestrictedAdminPanel(empData) {
   const schoolName = empData.schoolName || "غير محدد";
   const daaira = empData.daaira || "";
@@ -1333,78 +1335,67 @@ function showRestrictedAdminPanel(empData) {
 
   // تنسيق CSS للحقول المقفلة
   const lockedStyle = `
-    background: #f1f3f4; 
-    border: 1px solid #ced4da; 
-    color: #495057; 
-    font-weight: 600; 
-    cursor: not-allowed;
-    text-align: center;
-    font-size: 14px;
-    height: 40px;
-    margin-bottom: 12px;
+    background: #f1f3f4; border: 1px solid #ced4da; color: #495057; 
+    font-weight: 600; cursor: not-allowed; text-align: center; font-size: 14px;
+    height: 40px; margin-bottom: 12px;
   `;
 
   const popupHtml = `
     <div style="font-family: 'Cairo', sans-serif; direction: rtl; text-align: right;">
-      
       <div style="background: linear-gradient(45deg, #2575fc, #6a11cb); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <div style="font-size: 12px; opacity: 0.9;">مرحباً بالسيد(ة) المدير(ة) أو المسؤول(ة):</div>
         <div style="font-size: 18px; font-weight: bold; margin-top: 5px;">${directorName}</div>
       </div>
-
+      
       <div style="display: flex; gap: 10px;">
-        <div style="flex: 1;">
-            <label style="font-size: 12px; font-weight:bold; color:#555;">الطور:</label>
-            <input type="text" value="${level}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
-        </div>
-        <div style="flex: 1;">
-            <label style="font-size: 12px; font-weight:bold; color:#555;">الدائرة:</label>
-            <input type="text" value="${daaira}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
-        </div>
+        <div style="flex: 1;"><label style="font-size: 12px; font-weight:bold; color:#555;">الطور:</label><input type="text" value="${level}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly></div>
+        <div style="flex: 1;"><label style="font-size: 12px; font-weight:bold; color:#555;">الدائرة:</label><input type="text" value="${daaira}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly></div>
       </div>
-
       <label style="font-size: 12px; font-weight:bold; color:#555;">البلدية:</label>
       <input type="text" value="${baladiya}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
-
       <label style="font-size: 12px; font-weight:bold; color:#2575fc;">المؤسسة (مثبتة):</label>
       <div style="position: relative;">
-        <input type="text" value="${schoolName}" class="swal2-input" 
-               style="${lockedStyle}; width: 100%; background: #e8f0fe; border-color: #2575fc; color: #1a73e8;" 
-               disabled readonly>
+        <input type="text" value="${schoolName}" class="swal2-input" style="${lockedStyle}; width: 100%; background: #e8f0fe; border-color: #2575fc; color: #1a73e8;" disabled readonly>
         <i class="fas fa-lock" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #2575fc;"></i>
       </div>
-      
-      <div style="text-align: center; margin-top: 10px; font-size: 11px; color: #dc3545;">
-        <i class="fas fa-info-circle"></i> لا يمكن تغيير المؤسسة لضمان سرية البيانات.
+
+      <div style="margin-top: 20px; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">
+        <button id="btnOpenCards" class="swal2-confirm swal2-styled" 
+                style="background-color: #006233; margin: 0 5px; font-family: 'Cairo';">
+            <i class="fas fa-id-card"></i> البطاقات المهنية
+        </button>
       </div>
     </div>
   `;
 
   Swal.fire({
-    title: '', // العنوان مدمج في التصميم
     html: popupHtml,
     showCancelButton: true,
     showDenyButton: true,
     confirmButtonText: '<i class="fas fa-print"></i> طباعة الاستمارات',
     denyButtonText: '<i class="fas fa-list"></i> عرض القائمة',
     cancelButtonText: 'خروج',
-    confirmButtonColor: '#333',     // لون زر الاستمارات (داكن/رسمي)
-    denyButtonColor: '#28a745',     // لون زر القائمة (أخضر)
+    confirmButtonColor: '#333',
+    denyButtonColor: '#28a745',
     cancelButtonColor: '#d33',
     width: '500px',
     padding: '20px',
-    preConfirm: () => {
-        return { action: 'forms', school: schoolName };
+    didOpen: () => {
+        // Handle the new button click manually
+        const btn = document.getElementById('btnOpenCards');
+        if(btn) {
+            btn.addEventListener('click', () => {
+                Swal.clickConfirm(); // Close modal logic
+                fetchAndHandleData(schoolName, 'cards'); // Call with new mode
+            });
+        }
     },
-    preDeny: () => {
-        return { action: 'list', school: schoolName };
-    }
+    preConfirm: () => { return { action: 'forms', school: schoolName }; },
+    preDeny: () => { return { action: 'list', school: schoolName }; }
   }).then((result) => {
-    if (result.isConfirmed) {
-      fetchAndHandleData(result.value.school, 'forms');
-    } else if (result.isDenied) {
-      fetchAndHandleData(result.value.school, 'list');
-    }
+    if (result.isConfirmed && !result.value) return; // Handled by event listener
+    if (result.isConfirmed) fetchAndHandleData(result.value.school, 'forms');
+    else if (result.isDenied) fetchAndHandleData(result.value.school, 'list');
   });
 }
 
@@ -1485,6 +1476,9 @@ async function fetchAndHandleData(schoolName, mode) {
 
         if (mode === 'forms') {
             generateBulkForms(filteredData, schoolName);
+        } else if (mode === 'cards') {
+          
+            generateCardsTable(filteredData, schoolName);
         } else {
             generateEmployeesTable(filteredData, schoolName);
         }
@@ -1939,4 +1933,357 @@ window.triggerSecretAdminLogin = async function() {
     }, 100);
 };
 
+// ============================================================
+// 💳 نظام البطاقات المهنية (New Feature)
+// ============================================================
+
+function generateCardsTable(data, schoolName) {
+    const total = data.length;
+
+    let rows = '';
+    data.forEach((emp, index) => {
+        // [NEW] Job ID Logic (Load from database or empty)
+        // Assuming 'jobId' is the field name in Firestore/Sheet. 
+        const jobId = emp.jobId || ""; 
+        const hasPhoto = emp.photoUrl ? true : false;
+        
+        const photoStatus = hasPhoto 
+            ? `<span style="color:#28a745; font-size:18px;"><i class="fas fa-check-circle"></i></span>` 
+            : `<span style="color:#dc3545; font-size:18px;"><i class="fas fa-times-circle"></i></span>`;
+
+        rows += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="font-weight:bold;">${index + 1}</td>
+                <td style="font-weight:600;">${emp.fmn} ${emp.frn}</td>
+                <td style="font-size:11px;">${getJob(emp.gr)}</td>
+                
+                <td>
+                    <input type="text" class="job-id-input" data-ccp="${emp.ccp}" value="${jobId}" 
+                           placeholder="أدخل الرقم"
+                           onchange="saveJobId('${emp.ccp}', this.value)"
+                           style="width:100px; text-align:center; border:1px solid #ddd; padding:4px; border-radius:4px;">
+                </td>
+
+                <td style="text-align:center;">
+                    ${photoStatus}
+                    <input type="file" id="file_${emp.ccp}" style="display:none" accept="image/*" onchange="uploadEmployeePhoto('${emp.ccp}', this)">
+                    <button onclick="document.getElementById('file_${emp.ccp}').click()" class="action-btn" style="background:#17a2b8;" title="رفع صورة"><i class="fas fa-upload"></i></button>
+                    ${hasPhoto ? `<button onclick="deleteEmployeePhoto('${emp.ccp}')" class="action-btn" style="background:#dc3545;" title="حذف صورة"><i class="fas fa-trash"></i></button>` : ''}
+                </td>
+
+                <td>
+                     <button onclick="previewCard('${emp.ccp}')" class="action-btn" style="background:#006233; padding: 4px 10px;">
+                        <i class="fas fa-eye"></i> معاينة
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    const htmlContent = `
+        <style>
+            .modern-table { width: 100%; border-collapse: collapse; text-align: right; direction: rtl; font-family: 'Cairo', sans-serif; }
+            .modern-table thead th { background: #006233; color: white; padding: 10px 5px; font-size: 13px; } /* Green header for Cards */
+            .modern-table tbody td { padding: 8px 5px; font-size: 12px; white-space: nowrap; vertical-align: middle; }
+            .modern-table tbody tr:nth-child(even) { background-color: #fbfbfb; }
+            .action-btn { padding: 5px 10px; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 0 2px; }
+        </style>
+
+        <div style="text-align:center; margin-bottom:15px;">
+            <h3 style="color:#006233; margin-bottom: 8px; font-family: 'Cairo';">إدارة البطاقات المهنية - ${schoolName}</h3>
+            
+            <div style="display:flex; justify-content:center; gap:10px; margin-top:10px;">
+                <button onclick="printAllCards('${schoolName}')" class="action-btn" style="background-color: #343a40; font-size:14px; padding: 8px 20px;">
+                    <i class="fas fa-print"></i> طباعة بطاقات الموظفين (A4)
+                </button>
+                <button onclick="Swal.close()" class="action-btn" style="background-color: #6c757d; font-size:14px; padding: 8px 20px;">
+                    <i class="fas fa-times"></i> إغلاق
+                </button>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto; overflow-y:auto; max-height:65vh; border: 1px solid #ddd; border-radius: 6px;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="25%">الموظف</th>
+                        <th width="25%">الرتبة</th>
+                        <th width="15%">رقم التعريف الوظيفي</th>
+                        <th width="15%">الصورة</th>
+                        <th width="10%">معاينة</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+
+    // Save context for other functions
+    window.currentCardContext = data;
+
+    Swal.fire({
+        title: '',
+        html: htmlContent,
+        width: '900px', // Wider for the extra columns
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: '#fff',
+        padding: '15px'
+    });
+}
+
+
+// 1. Save Job ID
+async function saveJobId(ccp, value) {
+    try {
+        // Update local context
+        const emp = window.currentCardContext.find(e => e.ccp == ccp);
+        if(emp) emp.jobId = value;
+
+        // Update Firestore (assuming 'employeescompay' is the collection)
+        // If you use Google Sheets only, you need to call scriptURL with a new action
+        await db.collection("employeescompay").doc(ccp).update({
+            jobId: value
+        });
+        
+        // Optional: Toast notification
+        const Toast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+        Toast.fire({ icon: 'success', title: 'تم حفظ الرقم' });
+
+    } catch (error) {
+        console.error("Error saving Job ID:", error);
+        // Fallback: If doc doesn't exist or other error, try scriptURL if applicable
+    }
+}
+
+// 2. Upload Photo (Requires Firebase Storage)
+async function uploadEmployeePhoto(ccp, input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Show loading
+    const loadingToast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false});
+    loadingToast.fire({ icon: 'info', title: 'جاري رفع الصورة...' });
+
+    try {
+        const storageRef = firebase.storage().ref();
+        const fileRef = storageRef.child(`photos/${ccp}_${Date.now()}`); // Unique name
+        await fileRef.put(file);
+        const url = await fileRef.getDownloadURL();
+
+        // Save URL to Firestore
+        await db.collection("employeescompay").doc(ccp).update({ photoUrl: url });
+
+        // Update local data
+        const emp = window.currentCardContext.find(e => e.ccp == ccp);
+        if(emp) emp.photoUrl = url;
+
+        Swal.close(); // Close table to refresh or re-render
+        // Re-render table to show checkmark
+        generateCardsTable(window.currentCardContext, emp.schoolName);
+        
+    } catch (error) {
+        console.error("Upload Error:", error);
+        Swal.fire("خطأ", "فشل رفع الصورة", "error");
+    }
+}
+
+// 3. Delete Photo
+async function deleteEmployeePhoto(ccp) {
+    if(!confirm("هل أنت متأكد من حذف الصورة؟")) return;
+
+    try {
+        await db.collection("employeescompay").doc(ccp).update({
+            photoUrl: firebase.firestore.FieldValue.delete()
+        });
+        
+        const emp = window.currentCardContext.find(e => e.ccp == ccp);
+        if(emp) delete emp.photoUrl;
+
+        generateCardsTable(window.currentCardContext, emp.schoolName);
+
+    } catch (error) {
+        console.error("Delete Error:", error);
+    }
+}
+
+
+
+// 4. Single Card HTML Generator (from your file)
+function getCardHtmlTemplate(emp, serialYear) {
+    const job = getJob(emp.gr);
+    const photoSrc = emp.photoUrl || "https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u"; // Fallback image
+    const jobId = emp.jobId || "................";
+    // Barcode value: Year + CCP (padded) or logic you prefer
+    const barcodeVal = `${serialYear}${emp.ccp}`; 
+
+    return `
+    <div class="card-wrapper">
+        <div class="card">
+            <div class="top-deco-bar"><div class="bar-green"></div><div class="bar-red"></div></div>
+            <div class="watermark"></div>
+            <div class="header">
+                <div class="logo-box">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                    <div class="logo-text">وزارة التربية الوطنية</div>
+                </div>
+                <div class="header-center"><div class="main-title">الجمهورية الجزائرية الديمقراطية الشعبية</div></div>
+                <div class="logo-box">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                    <div class="logo-text">مديرية التربية لولاية توقرت</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-section">
+                    <div class="card-name-title">بطاقة التعريف المهنية</div>
+                    <div class="info-row"><span class="label">اللقب والاسم:</span><span class="value">${emp.fmn} ${emp.frn}</span></div>
+                    <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value">${fmtDate(emp.diz)}</span></div>
+                    <div class="info-row"><span class="label">الرتبة:</span><span class="value">${job}</span></div>
+                    <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.schoolName}</span></div>
+                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${jobId}</span></div>
+                </div>
+                <div class="photo-section">
+                    <div class="serial-number"><span>الرقم:</span><span dir="ltr">${serialYear} / .....</span></div>
+                    <div class="photo-frame">
+                        ${emp.photoUrl ? `<img src="${emp.photoUrl}" style="width:100%; height:100%; object-fit:cover;">` : '<span style="color:#ccc; font-size:14px">صورة شمسية</span>'}
+                    </div>
+                    <div class="signature-title">مدير التربية</div>
+                </div>
+            </div>
+            
+            <div class="barcode-container">
+                <svg class="barcode-element"
+                    jsbarcode-value="${barcodeVal}"
+                    jsbarcode-format="CODE128"
+                    jsbarcode-displayValue="false"
+                    jsbarcode-height="28"
+                    jsbarcode-width="1.5"
+                    jsbarcode-margin="0"
+                    jsbarcode-background="transparent">
+                </svg>
+            </div>
+
+            <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
+        </div>
+    </div>`;
+}
+
+// 5. Print All Cards Function
+function printAllCards(schoolName) {
+    const data = window.currentCardContext;
+    if(!data || data.length === 0) return;
+
+    const printContainer = document.getElementById("printContainer");
+    const originalContent = printContainer.innerHTML;
+    const currentYear = new Date().getFullYear();
+
+    // CSS from your file
+    const styles = `
+    <style>
+        :root { --primary-green: #006233; --primary-red: #D22B2B; --text-dark: #2c3e50; }
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap');
+        
+        .page-a4 {
+            width: 210mm; min-height: 297mm; background: white; padding: 10mm;
+            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, auto);
+            gap: 5mm; page-break-after: always; margin: 0 auto;
+        }
+        .card-wrapper { width: 85.6mm; height: 54mm; position: relative; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+        .card {
+            width: 750px; height: 474px; background-color: #fff; position: absolute; top: 0; right: 0;
+            transform: scale(0.431); transform-origin: top right; display: flex; flex-direction: column;
+            background-image: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
+        }
+        /* ... (Paste the rest of the CSS from your HTML file here for exact look) ... */
+        .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 300px; background-image: url('https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u'); background-size: contain; background-repeat: no-repeat; opacity: 0.1; z-index: 0; }
+        .top-deco-bar { width: 100%; height: 8px; display: flex; z-index: 10; }
+        .bar-green { flex: 2; background-color: var(--primary-green); }
+        .bar-red { flex: 1; background-color: var(--primary-red); }
+        .header { position: relative; z-index: 2; padding: 10px 15px 0 15px; display: flex; justify-content: space-between; align-items: center; height: 100px; }
+        .main-title { font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-dark); margin-top: -30px; }
+        .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
+        .header-logo { width: 70px; height: 70px; object-fit: contain; }
+        .logo-text { font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; }
+        .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 5px 25px 0 25px; }
+        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: center; }
+        .card-name-title { font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700; color: var(--primary-green); border-bottom: 2px solid var(--primary-red); margin-bottom: 10px; width: fit-content; }
+        .info-row { display: flex; align-items: baseline; margin-bottom: 5px; font-size: 20px; }
+        .label { font-weight: 700; color: #555; min-width: 135px; font-family: 'Cairo', sans-serif; font-size: 15px; }
+        .value { font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; }
+        .photo-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; gap: 0; }
+        .serial-number { font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px; color: var(--primary-red); background: rgba(210, 43, 43, 0.05); padding: 2px 8px; border-radius: 8px; width: 180px; display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px; }
+        .photo-frame { width: 130px; height: 170px; background-color: #fafafa; border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
+        .signature-title { font-weight: 700; font-size: 18px; color: var(--text-dark); border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px; }
+        .barcode-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-top: auto; margin-bottom: 12px; z-index: 5; }
+        .footer { background-color: var(--primary-green); color: white; display: flex; justify-content: center; align-items: center; width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 600; position: relative; z-index: 10; }
+        @media print {
+            body { background: white; padding: 0; margin: 0;}
+            .page-a4 { width: 100%; border: none; padding: 10mm; margin: 0; page-break-after: always; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>`;
+
+    let allPagesHTML = styles;
+    
+    // Chunk logic: 8 cards per page
+    for (let i = 0; i < data.length; i += 8) {
+        const chunk = data.slice(i, i + 8);
+        let pageContent = '<div class="page-a4">';
+        chunk.forEach(emp => {
+            pageContent += getCardHtmlTemplate(emp, currentYear);
+        });
+        pageContent += '</div>';
+        allPagesHTML += pageContent;
+    }
+
+    printContainer.innerHTML = allPagesHTML;
+
+    // Initialize Barcodes
+    if(typeof JsBarcode !== 'undefined') {
+        JsBarcode(".barcode-element").init();
+    }
+
+    window.print();
+    
+    setTimeout(() => {
+        printContainer.innerHTML = originalContent;
+    }, 1000);
+}
+
+// 6. Preview Single Card
+function previewCard(ccp) {
+    const emp = window.currentCardContext.find(e => e.ccp == ccp);
+    if(!emp) return;
+
+    const currentYear = new Date().getFullYear();
+    const style = `<style>
+        /* Minimal styles for preview */
+        .card-wrapper { transform: scale(1); margin: 20px auto; } 
+    </style>`;
+
+    const cardHTML = getCardHtmlTemplate(emp, currentYear);
+
+    Swal.fire({
+        html: style + cardHTML,
+        width: '600px',
+        showConfirmButton: true,
+        confirmButtonText: 'طباعة هذه البطاقة',
+        showCancelButton: true,
+        cancelButtonText: 'إغلاق',
+        didOpen: () => {
+             if(typeof JsBarcode !== 'undefined') JsBarcode(".barcode-element").init();
+        }
+    }).then((res) => {
+        if(res.isConfirmed) {
+            // Print single card
+            const printContainer = document.getElementById("printContainer");
+            const originalContent = printContainer.innerHTML;
+            printContainer.innerHTML = style + '<div class="page-a4" style="display:flex; justify-content:center; align-items:center;">' + cardHTML + '</div>';
+            JsBarcode(".barcode-element").init();
+            window.print();
+            setTimeout(() => printContainer.innerHTML = originalContent, 1000);
+        }
+    });
+}
 
