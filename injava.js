@@ -2192,19 +2192,19 @@ function getPrintStyles() {
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* إعدادات صفحة A4 */
+        /* إعدادات صفحة A4 - تم التعديل لـ 6 بطاقات */
         .page-a4 {
             width: 210mm;
             height: 296mm; 
             background: white;
-            /* هوامش الصفحة: تقليل الهوامش لضمان عدم القص */
-            padding: 10mm 10mm; 
+            padding: 10mm; 
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(4, auto); /* استخدام auto بدلاً من fr لمنع التمدد الزائد */
-            column-gap: 5mm;
-            row-gap: 2mm; /* تقليل المسافة بين البطاقات عمودياً */
-            align-content: start; /* ✅ هام: يجمع البطاقات في الأعلى لتجنب قص الأسفل */
+            grid-template-rows: repeat(3, auto); /* 3 صفوف فقط = 6 بطاقات */
+            column-gap: 15mm; /* مسافة عرضية كبيرة للقص */
+            row-gap: 15mm;    /* مسافة طولية كبيرة للقص */
+            align-content: center; /* توسيط البطاقات في وسط الصفحة */
+            justify-content: center;
             page-break-after: always;
             margin: 0 auto;
         }
@@ -2213,13 +2213,12 @@ function getPrintStyles() {
             width: 85.6mm;
             height: 54mm;
             position: relative;
-            border: 1px solid #ddd;
+            border: 1px dashed #ccc; /* حدود منقطة خفيفة لتسهيل القص */
             border-radius: 4px;
             overflow: hidden;
             background: white;
             align-self: center;
             justify-self: center;
-            /* ✅ هام جداً: يمنع الطابعة من قص البطاقة من الداخل */
             page-break-inside: avoid; 
             break-inside: avoid;
         }
@@ -2264,18 +2263,18 @@ function getPrintStyles() {
         
         .header-logo { 
             width: 60px; height: 60px; object-fit: contain; 
-            mix-blend-mode: multiply; /* شفافية خلفية الشعار */
+            mix-blend-mode: multiply;
         }
         
         .logo-text { 
             font-size: 13px; font-weight: 900; margin-top: 2px; white-space: nowrap; 
-            color: var(--text-dark); /* توحيد اللون */
+            color: var(--text-dark);
         }
 
         /* جسم البطاقة */
         .card-body { 
             position: relative; z-index: 2; display: flex; flex-grow: 1; 
-            padding: 12px 25px 0 25px; /* إنزال البيانات قليلاً */
+            padding: 5px 25px 0 25px; /* تقليل البادينغ العلوي قليلاً لتعويض توسعة الأسطر */
             align-items: flex-start; 
         }
         
@@ -2285,10 +2284,15 @@ function getPrintStyles() {
             font-family: 'Cairo', sans-serif; font-size: 24px;
             font-weight: 700; color: var(--primary-green); 
             border-bottom: 2px solid var(--primary-red);
-            margin-bottom: 8px; width: fit-content;
+            margin-bottom: 10px; width: fit-content; /* زيادة المسافة تحت العنوان */
         }
 
-        .info-row { display: flex; align-items: baseline; margin-bottom: 2px; }
+        /* توسيع المسافات بين أسطر البيانات */
+        .info-row { 
+            display: flex; align-items: baseline; 
+            margin-bottom: 8px; /* ✅ زيادة المسافة بين الأسطر كما طلبت */
+        }
+        
         .label { 
             font-weight: 700; color: #555; min-width: 110px;
             font-family: 'Cairo', sans-serif; font-size: 14px;
@@ -2321,23 +2325,33 @@ function getPrintStyles() {
             border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
         }
 
-        /* حاوية الباركود */
+        /* حاوية الباركود المعدلة */
         .barcode-container {
             width: 100%; display: flex; 
             flex-direction: column; 
             justify-content: center; align-items: center;
-            margin-top: auto; margin-bottom: 5px; z-index: 5; 
-            height: 50px; 
+            margin-top: auto; margin-bottom: 2px; z-index: 5; 
+            height: 65px; /* زيادة الارتفاع لاستيعاب النصوص */
         }
         
-        /* تنسيق رقم التعريف الوظيفي */
-        .job-id-small {
+        /* النص فوق الباركود */
+        .barcode-label {
             font-family: 'Cairo', sans-serif;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
-            color: #333;
-            letter-spacing: 1px;
-            margin-bottom: -2px; 
+            color: #555;
+            margin-bottom: 2px;
+        }
+
+        /* الرقم تحت الباركود - كبير وواضح */
+        .barcode-number-large {
+            font-family: 'Cairo', sans-serif;
+            font-size: 18px; /* خط كبير */
+            font-weight: 800; /* خط عريض */
+            color: #000;
+            letter-spacing: 2px;
+            margin-top: 0px;
+            line-height: 1;
         }
 
         .footer {
@@ -2348,14 +2362,12 @@ function getPrintStyles() {
         }
 
         @media print {
-            /* ✅ إزالة هوامش الطابعة الافتراضية */
             @page { margin: 0; size: A4; } 
-            
             body { background: white; padding: 0; margin: 0; }
             .page-a4 { 
                 width: 100%; height: 296mm; 
                 border: none; margin: 0; 
-                padding: 10mm; /* إعادة البادينغ هنا */
+                padding: 10mm; 
                 page-break-after: always; box-shadow: none; 
             }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -2364,10 +2376,10 @@ function getPrintStyles() {
     </style>`;
 }
 
+
 // 5. Print All Cards Function
-// 5. Print All Cards Function (محسنة)
+
 function printAllCards(schoolName) {
-    // 1. التحقق من وجود بيانات
     const data = window.currentCardContext;
     if (!data || data.length === 0) {
         return Swal.fire("تنبيه", "لا توجد بيانات للطباعة", "warning");
@@ -2377,41 +2389,34 @@ function printAllCards(schoolName) {
     const originalContent = printContainer.innerHTML;
     const currentYear = new Date().getFullYear();
 
-    // 2. جلب الستايل (CSS) الخاص بالطباعة
-    // تأكد أن دالة getPrintStyles() موجودة في الملف كما شرحنا سابقاً
     let allPagesHTML = getPrintStyles();
     
-    // 3. تقسيم البيانات إلى صفحات (8 بطاقات في كل صفحة)
-    const cardsPerPage = 8;
+    // ✅ التغيير هنا: 6 بطاقات في الصفحة
+    const cardsPerPage = 6;
 
     for (let i = 0; i < data.length; i += cardsPerPage) {
         const chunk = data.slice(i, i + cardsPerPage);
         
         let pageContent = '<div class="page-a4">';
         
-        // إضافة بطاقات الموظفين
         chunk.forEach(emp => {
             pageContent += getCardHtmlTemplate(emp, currentYear);
         });
         
-        // 4. [مهم] ملء الفراغات للحفاظ على الشبكة (Grid Layout)
-        // إذا كانت الصفحة تحتوي على أقل من 8 بطاقات، نضيف بطاقات فارغة مخفية
+        // ملء الفراغات للحفاظ على الشبكة
         const remainingSlots = cardsPerPage - chunk.length;
         if (remainingSlots > 0) {
             for (let j = 0; j < remainingSlots; j++) {
-                // نضع div بنفس كلاس البطاقة ولكن نجعله مخفياً ليحجز مكاناً فقط
                 pageContent += '<div class="card-wrapper" style="visibility: hidden; border: 1px solid transparent;"></div>'; 
             }
         }
 
-        pageContent += '</div>'; // إغلاق الصفحة
+        pageContent += '</div>';
         allPagesHTML += pageContent;
     }
 
-    // 5. حقن الكود في حاوية الطباعة
     printContainer.innerHTML = allPagesHTML;
 
-    // 6. تهيئة الباركود (يجب أن يتم بعد الحقن في HTML)
     if (typeof JsBarcode !== 'undefined') {
         try {
             JsBarcode(".barcode-element").init();
@@ -2420,14 +2425,13 @@ function printAllCards(schoolName) {
         }
     }
 
-    // 7. تنفيذ أمر الطباعة
     window.print();
     
-    // 8. إعادة الموقع لحالته الأصلية بعد ثانية
     setTimeout(() => {
         printContainer.innerHTML = originalContent;
     }, 1000);
 }
+
 
 // 6. Preview Single Card
 
