@@ -2138,3 +2138,43 @@ function printSinglePreview(ccp) {
     window.print();
     setTimeout(() => { printContainer.innerHTML = originalContent; }, 1000);
 }
+
+// 5. Print All Cards Function (معدلة لفتح صفحة خارجية)
+function printAllCards(schoolName) {
+    const data = window.currentCardContext;
+    if (!data || data.length === 0) {
+        return Swal.fire("تنبيه", "لا توجد بيانات للطباعة", "warning");
+    }
+
+    const currentYear = new Date().getFullYear();
+
+    // 1. تجهيز البيانات وتنسيقها قبل إرسالها للصفحة الجديدة
+    const formattedData = data.map(emp => {
+        return {
+            ccp: emp.ccp,
+            fullName: `${emp.fmn} ${emp.frn}`,
+            dob: fmtDate(emp.diz), // نستخدم دالة التنسيق الموجودة في ملفك
+            jobTitle: getJob(emp.gr), // نستخدم دالة جلب الرتبة
+            school: emp.schoolName,
+            photoUrl: emp.photoUrl || null,
+            barcodeVal: emp.ccp,
+            jobId: emp.jobId || "................"
+        };
+    });
+
+    // 2. تجميع البيانات في كائن واحد
+    const printPayload = {
+        schoolName: schoolName,
+        year: currentYear,
+        employees: formattedData
+    };
+
+    // 3. حفظ البيانات في ذاكرة المتصفح المحلية
+    localStorage.setItem('printCardsData', JSON.stringify(printPayload));
+
+    // 4. فتح صفحة الطباعة في نافذة جديدة
+    // 🛑 تنبيه: ضع رابط صفحة card.html الموجودة على غيت هاب هنا 🛑
+    // مثال: window.open('https://yourusername.github.io/yourrepo/card.html', '_blank');
+    window.open('card2.html', '_blank'); 
+}
+
