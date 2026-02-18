@@ -12,42 +12,52 @@
             --primary-green: #006233;
             --primary-red: #D22B2B;
             --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+        }
+
+        /* إعدادات صفحة الطباعة الافتراضية (A4 بدون هوامش) */
+        @page {
+            size: A4 portrait;
+            margin: 0; 
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Sakkal Majalla', 'Amiri', serif;
-            background-color: #525659;
+            background-color: #525659; /* لون الخلفية للمعاينة */
+            padding: 20px 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px 0;
         }
 
-        /* تنسيق صفحة A4 لضمان عدم القص */
+        #print-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
         .page-a4 {
             width: 210mm;
-            height: 296.5mm; /* أقل بقليل من 297 لتجنب الصفحات البيضاء */
+            height: 297mm;
             background: white;
             padding: 10mm;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(4, 54mm); /* تحديد طول الصف بدقة */
-            gap: 8mm 5mm; /* مسافة عمودية وأفقية محسوبة */
-            justify-items: center;
-            align-content: start;
+            grid-template-rows: repeat(3, 54mm); /* 3 صفوف بدلاً من 4 (6 بطاقات) */
+            gap: 5mm; /* نفس المسافة بين البطاقات التي اخترتها */
+            align-content: start; /* إبقاء البطاقات في أعلى الصفحة */
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
             page-break-after: always;
             overflow: hidden;
-            box-shadow: 0 0 15px rgba(0,0,0,0.3);
-            margin-bottom: 10mm;
         }
 
         .card-wrapper {
             width: 85.6mm;
             height: 54mm;
             position: relative;
-            border: 1px solid #eee;
+            border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
             background: #fff;
@@ -105,12 +115,12 @@
         }
 
         .info-row { display: flex; align-items: baseline; margin-bottom: 5px; font-size: 20px; }
-        .label { font-weight: 700; color: #555; min-width: 150px; font-family: 'Cairo', sans-serif; font-size: 15px; }
+        .label { font-weight: 700; color: #555; min-width: 135px; font-family: 'Cairo', sans-serif; font-size: 15px; }
         .value { font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; }
 
         .photo-section {
             flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; padding-top: 40px;
+            justify-content: flex-start; padding-top: 40px; gap: 0;
         }
 
         .serial-number {
@@ -123,8 +133,8 @@
         .photo-frame {
             width: 130px; height: 170px; background-color: #fafafa;
             border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            border-radius: 6px; display: flex; align-items: center; justify-content: center; 
-            margin-bottom: 15px; overflow: hidden;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;
+            overflow: hidden;
         }
         .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -134,8 +144,18 @@
         }
 
         .barcode-container {
-            width: 100%; display: flex; justify-content: center;
-            align-items: center; margin-top: auto; margin-bottom: 12px; z-index: 5;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: auto; 
+            margin-bottom: 12px; 
+            z-index: 5;
+        }
+        
+        .barcode-container svg {
+            height: 30px; 
+            width: auto;
         }
 
         .footer {
@@ -145,16 +165,19 @@
             font-size: 15px; font-weight: 600; position: relative; z-index: 10;
         }
 
+        /* تنسيقات خاصة بنافذة الطباعة */
         @media print {
             body { background: white; padding: 0; margin: 0; }
+            #print-container { gap: 0; width: 100%; }
             .page-a4 { 
                 box-shadow: none; 
                 margin: 0; 
-                width: 210mm; 
-                height: 297mm;
                 padding: 10mm;
+                border: none;
+                width: 210mm;
+                height: 297mm;
             }
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
@@ -166,7 +189,7 @@
             const dataStr = localStorage.getItem('printCardsData');
             
             if (!dataStr) {
-                document.body.innerHTML = '<h1 style="text-align:center; padding:50px;">لا توجد بيانات للطباعة</h1>';
+                document.getElementById('print-container').innerHTML = '<h1 style="color:white; text-align:center; margin-top:50px; font-family:Cairo;">لا توجد بيانات للطباعة</h1>';
                 return;
             }
 
@@ -176,9 +199,9 @@
             
             const container = document.getElementById('print-container');
             let htmlContent = '';
-
-            // توزيع 8 بطاقات في كل صفحة
-            const cardsPerPage = 8;
+            
+            // تم التغيير إلى 6 بطاقات في الصفحة بدلاً من 8
+            const cardsPerPage = 6;
             
             for (let i = 0; i < employees.length; i += cardsPerPage) {
                 const chunk = employees.slice(i, i + cardsPerPage);
@@ -187,8 +210,10 @@
                 
                 chunk.forEach(emp => {
                     const photoHtml = emp.photoUrl 
-                        ? `<img src="${emp.photoUrl}" alt="صورة">` 
+                        ? `<img src="${emp.photoUrl}" alt="صورة الموظف">` 
                         : `<span style="color:#ccc; font-size:14px">صورة شمسية</span>`;
+
+                    const displayJobId = emp.jobId && emp.jobId.trim() !== "" ? emp.jobId : "........................................";
 
                     htmlContent += `
                     <div class="card-wrapper">
@@ -213,7 +238,7 @@
                                     <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value">${emp.dob}</span></div>
                                     <div class="info-row"><span class="label">الرتبة:</span><span class="value">${emp.jobTitle}</span></div>
                                     <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.school}</span></div>
-                                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${emp.jobId || '................'}</span></div>
+                                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${displayJobId}</span></div>
                                 </div>
                                 <div class="photo-section">
                                     <div class="serial-number"><span>الرقم:</span><span dir="ltr">${currentYear} / .....</span></div>
@@ -221,6 +246,7 @@
                                     <div class="signature-title">مدير التربية</div>
                                 </div>
                             </div>
+                            
                             <div class="barcode-container">
                                 <svg class="barcode"
                                     jsbarcode-value="${emp.barcodeVal}"
@@ -232,12 +258,13 @@
                                     jsbarcode-background="transparent">
                                 </svg>
                             </div>
+
                             <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
                         </div>
                     </div>`;
                 });
 
-                // إضافة خلايا فارغة للمحافظة على التنسيق إذا كان العدد أقل من 8
+                // تعبئة الفراغات لضمان عدم انهيار الـ Grid إذا كان العدد أقل من 6
                 const remaining = cardsPerPage - chunk.length;
                 for (let j = 0; j < remaining; j++) {
                     htmlContent += '<div class="card-wrapper" style="visibility: hidden; border:none;"></div>';
@@ -248,16 +275,18 @@
 
             container.innerHTML = htmlContent;
 
-            // تشغيل مكتبة الباركود
+            // تفعيل الباركود
             if (typeof JsBarcode !== 'undefined') {
                 JsBarcode(".barcode").init();
             }
 
-            // مسح البيانات بعد التحميل لضمان الخصوصية
+            // مسح البيانات لتفريغ الذاكرة
             localStorage.removeItem('printCardsData');
 
-            // أمر الطباعة تلقائي
-            setTimeout(() => { window.print(); }, 1000);
+            // نافذة الطباعة تفتح تلقائياً
+            setTimeout(() => {
+                window.print();
+            }, 1000);
         });
     </script>
 </body>
