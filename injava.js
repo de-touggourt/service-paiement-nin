@@ -2123,9 +2123,7 @@ async function deleteEmployeePhoto(ccp) {
 // 4. Single Card HTML Generator (معدلة)
 function getCardHtmlTemplate(emp, serialYear) {
     const job = getJob(emp.gr);
-    const photoSrc = emp.photoUrl || "https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u"; 
     const jobId = emp.jobId || "................";
-    // قيمة الباركود تعتمد على الرقم التسلسلي + رقم الحساب
     const barcodeVal = `${serialYear}${emp.ccp}`; 
 
     return `
@@ -2133,6 +2131,7 @@ function getCardHtmlTemplate(emp, serialYear) {
         <div class="card">
             <div class="top-deco-bar"><div class="bar-green"></div><div class="bar-red"></div></div>
             <div class="watermark"></div>
+            
             <div class="header">
                 <div class="logo-box">
                     <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
@@ -2144,6 +2143,7 @@ function getCardHtmlTemplate(emp, serialYear) {
                     <div class="logo-text">مديرية التربية لولاية توقرت</div>
                 </div>
             </div>
+
             <div class="card-body">
                 <div class="info-section">
                     <div class="card-name-title">بطاقة التعريف المهنية</div>
@@ -2151,7 +2151,7 @@ function getCardHtmlTemplate(emp, serialYear) {
                     <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value">${fmtDate(emp.diz)}</span></div>
                     <div class="info-row"><span class="label">الرتبة:</span><span class="value">${job}</span></div>
                     <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.schoolName}</span></div>
-                    </div>
+                </div>
                 <div class="photo-section">
                     <div class="serial-number"><span>الرقم:</span><span dir="ltr">${serialYear} / .....</span></div>
                     <div class="photo-frame">
@@ -2162,16 +2162,19 @@ function getCardHtmlTemplate(emp, serialYear) {
             </div>
             
             <div class="barcode-container">
-                <div class="job-id-small">${jobId}</div> 
+                <div class="barcode-label">رقم التعريف الوظيفي</div>
+                
                 <svg class="barcode-element"
                     jsbarcode-value="${barcodeVal}"
                     jsbarcode-format="CODE128"
                     jsbarcode-displayValue="false"
-                    jsbarcode-height="25"
-                    jsbarcode-width="1.3"
+                    jsbarcode-height="24"
+                    jsbarcode-width="1.4"
                     jsbarcode-margin="0"
                     jsbarcode-background="transparent">
                 </svg>
+
+                <div class="barcode-number-large">${jobId}</div>
             </div>
 
             <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
@@ -2352,10 +2355,10 @@ function getPrintStyles() {
     </style>`;
 }
 
+
 // 5. Print All Cards Function
-// 5. Print All Cards Function (محسنة)
+
 function printAllCards(schoolName) {
-    // 1. التحقق من وجود بيانات
     const data = window.currentCardContext;
     if (!data || data.length === 0) {
         return Swal.fire("تنبيه", "لا توجد بيانات للطباعة", "warning");
@@ -2365,41 +2368,34 @@ function printAllCards(schoolName) {
     const originalContent = printContainer.innerHTML;
     const currentYear = new Date().getFullYear();
 
-    // 2. جلب الستايل (CSS) الخاص بالطباعة
-    // تأكد أن دالة getPrintStyles() موجودة في الملف كما شرحنا سابقاً
     let allPagesHTML = getPrintStyles();
     
-    // 3. تقسيم البيانات إلى صفحات (8 بطاقات في كل صفحة)
-    const cardsPerPage = 8;
+    // طباعة 6 بطاقات في الصفحة
+    const cardsPerPage = 6;
 
     for (let i = 0; i < data.length; i += cardsPerPage) {
         const chunk = data.slice(i, i + cardsPerPage);
         
         let pageContent = '<div class="page-a4">';
         
-        // إضافة بطاقات الموظفين
         chunk.forEach(emp => {
             pageContent += getCardHtmlTemplate(emp, currentYear);
         });
         
-        // 4. [مهم] ملء الفراغات للحفاظ على الشبكة (Grid Layout)
-        // إذا كانت الصفحة تحتوي على أقل من 8 بطاقات، نضيف بطاقات فارغة مخفية
+        // تعبئة الفراغات للحفاظ على التنسيق
         const remainingSlots = cardsPerPage - chunk.length;
         if (remainingSlots > 0) {
             for (let j = 0; j < remainingSlots; j++) {
-                // نضع div بنفس كلاس البطاقة ولكن نجعله مخفياً ليحجز مكاناً فقط
                 pageContent += '<div class="card-wrapper" style="visibility: hidden; border: 1px solid transparent;"></div>'; 
             }
         }
 
-        pageContent += '</div>'; // إغلاق الصفحة
+        pageContent += '</div>';
         allPagesHTML += pageContent;
     }
 
-    // 5. حقن الكود في حاوية الطباعة
     printContainer.innerHTML = allPagesHTML;
 
-    // 6. تهيئة الباركود (يجب أن يتم بعد الحقن في HTML)
     if (typeof JsBarcode !== 'undefined') {
         try {
             JsBarcode(".barcode-element").init();
@@ -2408,10 +2404,8 @@ function printAllCards(schoolName) {
         }
     }
 
-    // 7. تنفيذ أمر الطباعة
     window.print();
     
-    // 8. إعادة الموقع لحالته الأصلية بعد ثانية
     setTimeout(() => {
         printContainer.innerHTML = originalContent;
     }, 1000);
