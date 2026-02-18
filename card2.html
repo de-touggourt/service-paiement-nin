@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طباعة البطاقات المهنية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-green: #006233;
+            --primary-red: #D22B2B;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Sakkal Majalla', 'Amiri', serif;
+            background-color: #525659; /* لون داكن قليلاً لمعاينة الطباعة */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* حاوية الصفحات */
+        #print-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .page-a4 {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            padding: 10mm;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(4, auto);
+            gap: 5mm;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            page-break-after: always; /* فصل الصفحات عند الطباعة */
+        }
+
+        .card-wrapper {
+            width: 85.6mm;
+            height: 54mm;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .card {
+            width: 750px;
+            height: 474px;
+            background-color: #fff;
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: scale(0.431); 
+            transform-origin: top right;
+            display: flex;
+            flex-direction: column;
+            background-image: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px; height: 300px;
+            background-image: url('https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u');
+            background-size: contain; background-repeat: no-repeat;
+            opacity: 0.1; z-index: 0;
+        }
+
+        .top-deco-bar { width: 100%; height: 8px; display: flex; z-index: 10; }
+        .bar-green { flex: 2; background-color: var(--primary-green); }
+        .bar-red { flex: 1; background-color: var(--primary-red); }
+
+        .header {
+            position: relative; z-index: 2; padding: 10px 15px 0 15px;
+            display: flex; justify-content: space-between; align-items: center; height: 100px;
+        }
+
+        .main-title {
+            font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700;
+            color: var(--text-dark); margin-top: -30px;
+        }
+
+        .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
+        .header-logo { width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1)); }
+        .logo-text { font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; }
+
+        .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 5px 25px 0 25px; }
+
+        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: center; }
+        .card-name-title {
+            font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700;
+            color: var(--primary-green); border-bottom: 2px solid var(--primary-red);
+            margin-bottom: 10px; width: fit-content;
+        }
+
+        .info-row { display: flex; align-items: baseline; margin-bottom: 5px; font-size: 20px; }
+        .label { font-weight: 700; color: #555; min-width: 155px; font-family: 'Cairo', sans-serif; font-size: 15px; }
+        .value { font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; }
+
+        .photo-section {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; padding-top: 40px; gap: 0;
+        }
+
+        .serial-number {
+            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px;
+            color: var(--primary-red); background: rgba(210, 43, 43, 0.05);
+            padding: 2px 8px; border-radius: 8px; width: 180px;
+            display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px;
+        }
+
+        .photo-frame {
+            width: 130px; height: 170px; background-color: #fafafa;
+            border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; overflow: hidden;
+        }
+        
+        .photo-frame img {
+            width: 100%; height: 100%; object-fit: cover; object-position: top center;
+        }
+
+        .signature-title {
+            font-weight: 700; font-size: 18px; color: var(--text-dark);
+            border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
+        }
+
+        /* --- تنسيق الباركود --- */
+        .barcode-container {
+            width: 100%; display: flex; justify-content: center; align-items: center;
+            margin-top: auto; margin-bottom: 12px; z-index: 5;
+        }
+        .barcode-container svg { height: 30px; width: auto; }
+
+        .footer {
+            background-color: var(--primary-green); color: white;
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif;
+            font-size: 15px; font-weight: 600; position: relative; z-index: 10;
+        }
+
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            #print-container { gap: 0; }
+            .page-a4 { width: 100%; border: none; padding: 10mm; box-shadow: none; margin: 0; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="print-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. استرجاع البيانات المبعوثة من ملف injava.js
+            const dataStr = localStorage.getItem('printCardsData');
+            
+            if (!dataStr) {
+                document.getElementById('print-container').innerHTML = '<h1 style="color:white; text-align:center; margin-top:50px; font-family:Cairo;">لا توجد بيانات للطباعة. يرجى فتح هذه الصفحة من المنصة الرئيسية.</h1>';
+                return;
+            }
+
+            const payload = JSON.parse(dataStr);
+            const employees = payload.employees;
+            const currentYear = payload.year;
+            
+            const container = document.getElementById('print-container');
+            let htmlContent = '';
+
+            // 2. تقسيم الموظفين لـ 8 بطاقات في كل صفحة A4 (لأن تصميمك يحتوي على 4 صفوف وعمودين)
+            const cardsPerPage = 8;
+            
+            for (let i = 0; i < employees.length; i += cardsPerPage) {
+                const chunk = employees.slice(i, i + cardsPerPage);
+                
+                // بداية صفحة جديدة
+                htmlContent += '<div class="page-a4">';
+                
+                // توليد البطاقات للموظفين في هذه الصفحة
+                chunk.forEach(emp => {
+                    const photoHtml = emp.photoUrl 
+                        ? `<img src="${emp.photoUrl}" alt="صورة الموظف">` 
+                        : `<span style="color:#ccc; font-size:14px">صورة شمسية</span>`;
+
+                    // إذا كان رقم التعريف الوظيفي فارغاً نضع نقاط
+                    const displayJobId = emp.jobId && emp.jobId.trim() !== "" ? emp.jobId : "........................................";
+
+                    htmlContent += `
+                    <div class="card-wrapper">
+                        <div class="card">
+                            <div class="top-deco-bar"><div class="bar-green"></div><div class="bar-red"></div></div>
+                            <div class="watermark"></div>
+                            <div class="header">
+                                <div class="logo-box">
+                                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                                    <div class="logo-text">وزارة التربية الوطنية</div>
+                                </div>
+                                <div class="header-center"><div class="main-title">الجمهورية الجزائرية الديمقراطية الشعبية</div></div>
+                                <div class="logo-box">
+                                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                                    <div class="logo-text">مديرية التربية لولاية توقرت</div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-section">
+                                    <div class="card-name-title">بطاقة التعريف المهنية</div>
+                                    <div class="info-row"><span class="label">اللقب والاسم:</span><span class="value">${emp.fullName}</span></div>
+                                    <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value">${emp.dob}</span></div>
+                                    <div class="info-row"><span class="label">الرتبة:</span><span class="value">${emp.jobTitle}</span></div>
+                                    <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.school}</span></div>
+                                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${displayJobId}</span></div>
+                                </div>
+                                <div class="photo-section">
+                                    <div class="serial-number"><span>الرقم:</span><span dir="ltr">${currentYear} / .....</span></div>
+                                    <div class="photo-frame">${photoHtml}</div>
+                                    <div class="signature-title">مدير التربية</div>
+                                </div>
+                            </div>
+                            
+                            <div class="barcode-container">
+                                <svg class="barcode"
+                                    jsbarcode-value="${emp.barcodeVal}"
+                                    jsbarcode-format="CODE128"
+                                    jsbarcode-displayValue="false"
+                                    jsbarcode-height="28"
+                                    jsbarcode-width="1.5"
+                                    jsbarcode-margin="0"
+                                    jsbarcode-background="transparent">
+                                </svg>
+                            </div>
+
+                            <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
+                        </div>
+                    </div>`;
+                });
+
+                // ملء الفراغات إذا كانت الصفحة غير مكتملة (للحفاظ على شكل الجدول من الانهيار)
+                const remaining = cardsPerPage - chunk.length;
+                for (let j = 0; j < remaining; j++) {
+                    htmlContent += `<div class="card-wrapper" style="visibility: hidden; border:none;"></div>`;
+                }
+
+                htmlContent += '</div>'; // نهاية صفحة A4
+            }
+
+            // 3. حقن الكود في الصفحة
+            container.innerHTML = htmlContent;
+
+            // 4. تفعيل الباركود لكل البطاقات
+            if (typeof JsBarcode !== 'undefined') {
+                try {
+                    JsBarcode(".barcode").init();
+                } catch (e) {
+                    console.error("خطأ في توليد الباركود:", e);
+                }
+            }
+
+            // 5. مسح البيانات من الذاكرة (إجراء تنظيف)
+            localStorage.removeItem('printCardsData');
+
+            // 6. استدعاء أمر الطباعة تلقائياً
+            setTimeout(() => {
+                window.print();
+            }, 800);
+        });
+    </script>
+</body>
+</html>
