@@ -2071,33 +2071,61 @@ async function uploadEmployeePhoto(ccp, input) {
     const file = input.files[0];
     if (!file) return;
 
-    // Show loading
-    const loadingToast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false});
-    loadingToast.fire({ icon: 'info', title: 'جاري رفع الصورة...' });
+    // 1. Validation for Images
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+        const Toast = Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 3000 });
+        return Toast.fire({ icon: 'error', title: 'يجب اختيار صورة (JPG, PNG, WEBP)' });
+    }
+
+    // 2. Non-blocking Toast for "Uploading..."
+    const UploadToast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false });
+    UploadToast.fire({ icon: 'info', title: 'جاري رفع الصورة...', didOpen: () => Swal.showLoading() });
 
     try {
+        // 3. Firebase Upload
         const storageRef = firebase.storage().ref();
-        const fileRef = storageRef.child(`photos/${ccp}_${Date.now()}`); // Unique name
+        const fileRef = storageRef.child(`photos/${ccp}_${Date.now()}`); 
         await fileRef.put(file);
         const url = await fileRef.getDownloadURL();
 
-        // Save URL to Firestore
+        // 4. Update Firestore
         await db.collection("employeescompay").doc(ccp).update({ photoUrl: url });
 
-        // Update local data
+        // 5. Update Local Data Context (Critical so Preview works immediately)
         const emp = window.currentCardContext.find(e => e.ccp == ccp);
         if(emp) emp.photoUrl = url;
 
-        Swal.close(); // Close table to refresh or re-render
-        // Re-render table to show checkmark
-        generateCardsTable(window.currentCardContext, emp.schoolName);
-        
+        // 6. Update UI Element Directly (NO RELOAD)
+        // Find the status cell for this row and change the X to a Check
+        const fileInput = document.getElementById(`file_${ccp}`);
+        if(fileInput) {
+            const container = fileInput.parentNode;
+            const statusSpan = container.querySelector('span');
+            if(statusSpan) {
+                statusSpan.innerHTML = `<i class="fas fa-check-circle"></i>`;
+                statusSpan.style.color = "#28a745";
+            }
+            // Add delete button dynamically if it doesn't exist
+            if(!container.querySelector('.btn-delete-photo')) {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'action-btn btn-delete-photo';
+                delBtn.style.background = '#dc3545';
+                delBtn.title = 'حذف صورة';
+                delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                delBtn.onclick = function() { deleteEmployeePhoto(ccp); };
+                container.appendChild(delBtn);
+            }
+        }
+
+        // 7. Success Message
+        UploadToast.fire({ icon: 'success', title: 'تم حفظ الصورة بنجاح', timer: 2000 });
+
     } catch (error) {
         console.error("Upload Error:", error);
-        Swal.fire("خطأ", "فشل رفع الصورة", "error");
+        UploadToast.fire({ icon: 'error', title: 'فشل الرفع: ' + error.message });
     }
 }
-
 // 3. Delete Photo
 async function deleteEmployeePhoto(ccp) {
     if(!confirm("هل أنت متأكد من حذف الصورة؟")) return;
@@ -2123,23 +2151,24 @@ async function deleteEmployeePhoto(ccp) {
 // 4. Single Card HTML Generator (معدلة)
 function getCardHtmlTemplate(emp, serialYear) {
     const job = getJob(emp.gr);
-    const jobId = emp.jobId || "................";
-    const barcodeVal = `${serialYear}${emp.ccp}`; 
+    const jobId = emp.jobId || "................"; // Display dots if empty
+    // Barcode value: Year + CCP (or just CCP depending on your scanner needs)
+    const barcodeVal = `${emp.ccp}`; 
 
     return `
-    <div class="card-wrapper">
+    <div class="card-wrapper" id="card-wrapper-${emp.ccp}">
         <div class="card">
             <div class="top-deco-bar"><div class="bar-green"></div><div class="bar-red"></div></div>
             <div class="watermark"></div>
             
             <div class="header">
                 <div class="logo-box">
-                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo" alt="logo">
                     <div class="logo-text">وزارة التربية الوطنية</div>
                 </div>
                 <div class="header-center"><div class="main-title">الجمهورية الجزائرية الديمقراطية الشعبية</div></div>
                 <div class="logo-box">
-                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo" alt="logo">
                     <div class="logo-text">مديرية التربية لولاية توقرت</div>
                 </div>
             </div>
@@ -2155,7 +2184,10 @@ function getCardHtmlTemplate(emp, serialYear) {
                 <div class="photo-section">
                     <div class="serial-number"><span>الرقم:</span><span dir="ltr">${serialYear} / .....</span></div>
                     <div class="photo-frame">
-                        ${emp.photoUrl ? `<img src="${emp.photoUrl}" style="width:100%; height:100%; object-fit:cover;">` : '<span style="color:#ccc; font-size:14px">صورة شمسية</span>'}
+                        ${emp.photoUrl 
+                            ? `<img src="${emp.photoUrl}" alt="Employee Photo">` 
+                            : `<img src="https://via.placeholder.com/150?text=PHOTO" style="opacity:0.3" alt="No Photo">`
+                        }
                     </div>
                     <div class="signature-title">مدير التربية</div>
                 </div>
@@ -2168,13 +2200,13 @@ function getCardHtmlTemplate(emp, serialYear) {
                     jsbarcode-value="${barcodeVal}"
                     jsbarcode-format="CODE128"
                     jsbarcode-displayValue="false"
-                    jsbarcode-height="24"
-                    jsbarcode-width="1.4"
-                    jsbarcode-margin="0"
+                    jsbarcode-height="40"
+                    jsbarcode-width="1.8"
+                    jsbarcode-margin="5"
                     jsbarcode-background="transparent">
                 </svg>
 
-                <div class="barcode-number-large">${jobId}</div>
+                <div class="barcode-text-bottom">${jobId}</div>
             </div>
 
             <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
@@ -2182,175 +2214,171 @@ function getCardHtmlTemplate(emp, serialYear) {
     </div>`;
 }
 
+
 function getPrintStyles() {
     return `
     <style>
         :root {
             --primary-green: #006233;
             --primary-red: #D22B2B;
-            --text-dark: #2c3e50; /* اللون الموحد للعناوين */
-            --text-light: #7f8c8d;
+            --text-dark: #2c3e50;
         }
         @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap');
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* إعدادات الصفحة - تم تقليل الحواف والفراغات لمنع القص */
+        /* A4 Page Setup */
         .page-a4 {
-            width: 210mm;
-            height: 296mm; /* تحديد ارتفاع ثابت */
-            background: white;
-            padding: 5mm 10mm; /* تقليل الهامش العلوي والسفلي إلى 5مم */
-            display: grid;
+            width: 210mm; height: 296mm; background: white;
+            padding: 10mm; display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(4, 1fr); /* توزيع متساوي للأسطر */
-            column-gap: 5mm;
-            row-gap: 2mm; /* تقليل الفراغ بين البطاقات عمودياً */
-            page-break-after: always;
-            margin: 0 auto;
+            grid-template-rows: repeat(4, 1fr);
+            column-gap: 5mm; row-gap: 5mm;
+            page-break-after: always; margin: 0 auto;
         }
 
         .card-wrapper {
-            width: 85.6mm;
-            height: 54mm;
-            position: relative;
-            border: 1px solid #eee; /* تخفيف لون الإطار */
-            border-radius: 4px;
-            overflow: hidden;
-            background: white;
-            align-self: center; /* توسيط البطاقة داخل الخلية */
-            justify-self: center;
+            width: 85.6mm; height: 54mm; position: relative;
+            border: 1px solid #ddd; border-radius: 8px;
+            overflow: hidden; background: white;
+            align-self: center; justify-self: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
+        /* Scaled Card Container */
         .card {
-            width: 750px;
-            height: 474px;
-            background-color: #fff;
-            position: absolute;
+            width: 750px; height: 474px;
+            background-color: #fff; position: absolute;
             top: 0; right: 0;
-            transform: scale(0.431); 
-            transform-origin: top right;
+            transform: scale(0.431); transform-origin: top right;
             display: flex; flex-direction: column;
-            background-image: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
+            background-image: linear-gradient(135deg, #ffffff 0%, #f9fbfd 100%);
         }
 
-        /* العلامة المائية */
         .watermark {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px; height: 300px;
+            width: 350px; height: 350px;
             background-image: url('https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u');
             background-size: contain; background-repeat: no-repeat;
-            opacity: 0.1; z-index: 0;
+            opacity: 0.08; z-index: 0;
         }
 
-        .top-deco-bar { width: 100%; height: 8px; display: flex; z-index: 10; }
+        .top-deco-bar { width: 100%; height: 12px; display: flex; z-index: 10; }
         .bar-green { flex: 2; background-color: var(--primary-green); }
         .bar-red { flex: 1; background-color: var(--primary-red); }
 
-        /* الهيدر */
         .header {
-            position: relative; z-index: 2; padding: 5px 15px 0 15px;
-            display: flex; justify-content: space-between; align-items: center; height: 90px;
+            position: relative; z-index: 2; padding: 10px 25px 0 25px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         
         .main-title { 
-            font-family: 'Cairo', sans-serif; font-size: 18px; font-weight: 700; 
-            color: var(--text-dark); margin-top: -20px; 
+            font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 800; 
+            color: var(--text-dark); margin-top: -10px; text-shadow: 0 1px 1px rgba(0,0,0,0.1);
         }
         
-        .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
-        
-        .header-logo { 
-            width: 60px; height: 60px; object-fit: contain; 
-            mix-blend-mode: multiply; /* يجعل الخلفية البيضاء للشعار شفافة */
-        }
-        
-        /* توحيد اللون هنا */
-        .logo-text { 
-            font-size: 13px; font-weight: 900; margin-top: 2px; white-space: nowrap; 
-            color: var(--text-dark); /* تغيير اللون ليطابق الجمهورية */
-        }
+        .logo-box { display: flex; flex-direction: column; align-items: center; }
+        .header-logo { width: 70px; height: 70px; object-fit: contain; mix-blend-mode: multiply; }
+        .logo-text { font-size: 14px; font-weight: 800; margin-top: 5px; color: var(--text-dark); }
 
-        /* جسم البطاقة */
         .card-body { 
             position: relative; z-index: 2; display: flex; flex-grow: 1; 
-            padding: 12px 25px 0 25px; /* الحفاظ على الانزلاق */
-            align-items: flex-start; 
+            padding: 15px 30px 5px 30px; align-items: flex-start;
         }
         
-        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 5px; }
+        .info-section { flex: 1.8; display: flex; flex-direction: column; padding-top: 10px; }
         
         .card-name-title {
-            font-family: 'Cairo', sans-serif; font-size: 24px;
-            font-weight: 700; color: var(--primary-green); 
-            border-bottom: 2px solid var(--primary-red);
-            margin-bottom: 8px; width: fit-content;
+            font-family: 'Cairo', sans-serif; font-size: 26px;
+            font-weight: 800; color: var(--primary-green); 
+            border-bottom: 3px solid var(--primary-red);
+            margin-bottom: 15px; width: fit-content; padding-bottom: 2px;
         }
 
-        .info-row { display: flex; align-items: baseline; margin-bottom: 2px; }
+        .info-row { display: flex; align-items: baseline; margin-bottom: 8px; }
         .label { 
-            font-weight: 700; color: #555; min-width: 110px;
-            font-family: 'Cairo', sans-serif; font-size: 14px;
+            font-weight: 700; color: #666; min-width: 120px;
+            font-family: 'Cairo', sans-serif; font-size: 16px;
         }
         .value { 
-            font-weight: 700; color: #000; margin-right: 5px; 
-            font-size: 18px; line-height: 1.2;
+            font-weight: 800; color: #000; font-size: 20px;
+            font-family: 'Cairo', sans-serif;
         }
 
         .photo-section {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; padding-top: 20px; gap: 0;
+            flex: 1; display: flex; flex-direction: column; align-items: center; padding-top: 5px;
         }
         
         .serial-number {
             font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 14px;
-            color: var(--primary-red); background: rgba(210, 43, 43, 0.05);
-            padding: 2px 8px; border-radius: 8px; width: 160px;
-            display: flex; justify-content: space-between; margin-top: -20px; margin-bottom: 15px;
+            color: var(--primary-red); background: rgba(210, 43, 43, 0.08);
+            padding: 4px 12px; border-radius: 12px; margin-bottom: 10px;
         }
         
+        /* Fixed Photo Frame */
         .photo-frame {
-            width: 120px; height: 160px; background-color: #fafafa;
-            border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
+            width: 130px; height: 170px; background-color: #fff;
+            border: 3px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            border-radius: 8px; overflow: hidden; margin-bottom: 10px;
+        }
+        .photo-frame img {
+            width: 100%; height: 100%; object-fit: cover; /* Ensures image fills box without distortion */
+            object-position: top center;
         }
         
         .signature-title {
-            font-weight: 700; font-size: 16px; color: var(--text-dark);
-            border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
+            font-weight: 700; font-size: 15px; color: var(--text-dark);
+            border-top: 1px solid #ccc; width: 90%; text-align: center; padding-top: 5px;
         }
 
-        /* حاوية الباركود المعدلة */
+        /* IMPROVED BARCODE CONTAINER */
         .barcode-container {
-            width: 100%; display: flex; 
-            flex-direction: column; /* ترتيب عمودي */
-            justify-content: center; align-items: center;
-            margin-top: auto; margin-bottom: 5px; z-index: 5; 
-            height: 50px; /* زيادة الارتفاع قليلاً لاستيعاب الرقم */
+            width: 100%; display: flex; flex-direction: column;
+            justify-content: flex-end; align-items: center;
+            margin-top: auto; padding-bottom: 10px; z-index: 5;
+            height: 90px; /* Fixed height to prevent jumping */
         }
         
-        /* تنسيق رقم التعريف الوظيفي الصغير */
-        .job-id-small {
-            font-family: 'Cairo', sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            color: #333;
-            letter-spacing: 1px;
-            margin-bottom: -2px; /* تقليل المسافة بين الرقم والباركود */
+        .barcode-label {
+            font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 700;
+            color: #555; margin-bottom: 2px;
+        }
+
+        .barcode-element {
+            max-height: 40px; /* Limit SVG height */
+        }
+
+        .barcode-text-bottom {
+            font-family: 'Consolas', monospace; font-size: 16px; font-weight: 800;
+            color: #000; letter-spacing: 2px; margin-top: -2px;
         }
 
         .footer {
             background-color: var(--primary-green); color: white;
             display: flex; justify-content: center; align-items: center;
-            width: 100%; padding: 4px 0; font-family: 'Cairo', sans-serif;
-            font-size: 13px; font-weight: 600; position: relative; z-index: 10;
+            width: 100%; height: 35px; /* Fixed Height */
+            font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 600;
+            position: relative; z-index: 10; margin-top: 5px;
         }
+
+        /* PREVIEW MODAL STYLES */
+        #card-preview-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+            z-index: 99999; display: flex; justify-content: center; align-items: center;
+        }
+        .preview-content {
+            background: white; padding: 20px; border-radius: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            .page-a4 { width: 100%; height: 296mm; border: none; padding: 5mm 10mm; margin: 0; page-break-after: always; box-shadow: none; }
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            #interfaceCard, .swal2-container, #card-preview-overlay { display: none !important; }
+            .page-a4 { box-shadow: none; margin: 0; page-break-after: always; }
+            #interfaceCard, .swal2-container, #card-preview-overlay, .btn-main { display: none !important; }
         }
     </style>`;
 }
@@ -2420,50 +2448,63 @@ function previewCard(ccp) {
     const currentYear = new Date().getFullYear();
     const cardHTML = getCardHtmlTemplate(emp, currentYear);
 
-    // Create a temporary container for the overlay
-    const overlayId = 'card-preview-overlay';
-    
-    // Remove existing overlay if present
-    const existing = document.getElementById(overlayId);
+    // Remove existing overlay if any
+    const existing = document.getElementById('card-preview-overlay');
     if(existing) existing.remove();
 
+    // Create Overlay
     const overlay = document.createElement('div');
-    overlay.id = overlayId;
+    overlay.id = 'card-preview-overlay';
     
-    // CSS for the overlay to appear ABOVE the table
-    overlay.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0,0,0,0.8); z-index: 99999;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-    `;
-
-    overlay.innerHTML = `
-        <style>
-            .preview-box { background: white; padding: 20px; border-radius: 8px; text-align: center; }
-            /* Force scale 1 for wrapper in preview to center it */
-            .card-wrapper { margin: 0 auto; display: block; } 
-        </style>
-        <div class="preview-box">
-            <h3 style="font-family:'Cairo'; margin-bottom:15px; color:#333;">معاينة البطاقة</h3>
+    // Create Content Box
+    const content = document.createElement('div');
+    content.className = 'preview-content';
+    content.innerHTML = `
+        <div style="margin-bottom:15px; text-align:center;">
+            <h3 style="font-family:'Cairo'; color:#333; margin:0;">معاينة البطاقة</h3>
+            <p style="color:#777; font-size:12px;">تأكد من صحة البيانات والصورة قبل الطباعة</p>
+        </div>
+        
+        <div style="transform: scale(1); margin: 10px auto;">
             ${cardHTML}
-            <div style="margin-top: 20px; display:flex; gap:10px; justify-content:center;">
-                <button id="btnClosePreview" style="padding: 8px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-family:'Cairo';">إغلاق</button>
-                <button onclick="printSinglePreview('${ccp}')" style="padding: 8px 20px; background: #006233; color: white; border: none; border-radius: 4px; cursor: pointer; font-family:'Cairo';">طباعة</button>
-            </div>
+        </div>
+
+        <div style="margin-top: 20px; display:flex; gap:15px; width:100%; justify-content:center;">
+            <button id="btnClosePreview" style="padding: 10px 30px; background: #6c757d; color: white; border: none; border-radius: 50px; cursor: pointer; font-family:'Cairo'; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <i class="fas fa-times"></i> إغلاق
+            </button>
+            <button onclick="printSinglePreview('${ccp}')" style="padding: 10px 30px; background: #006233; color: white; border: none; border-radius: 50px; cursor: pointer; font-family:'Cairo'; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <i class="fas fa-print"></i> طباعة
+            </button>
         </div>
     `;
 
+    overlay.appendChild(content);
     document.body.appendChild(overlay);
 
-    // Initialize Barcode
-    if(typeof JsBarcode !== 'undefined') JsBarcode(".barcode-element").init();
+    
+    if(typeof JsBarcode !== 'undefined') {
+        try {
+          
+            const svg = overlay.querySelector('.barcode-element');
+            if(svg) JsBarcode(svg).init();
+        } catch(e) { console.log(e); }
+    }
 
-    // Close Event
     document.getElementById('btnClosePreview').onclick = function() {
         overlay.remove();
     };
-}
 
+    
+    content.onclick = function(e) {
+        e.stopPropagation();
+    };
+    
+    // Explicitly do nothing on overlay click (per your request)
+    overlay.onclick = function(e) {
+        
+    };
+}
 
 function printSinglePreview(ccp) {
     const emp = window.currentCardContext.find(e => e.ccp == ccp);
@@ -2484,4 +2525,3 @@ function printSinglePreview(ccp) {
     window.print();
     setTimeout(() => printContainer.innerHTML = originalContent, 1000);
 }
-
