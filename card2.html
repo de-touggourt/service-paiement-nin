@@ -25,8 +25,8 @@
 
         body {
             font-family: 'Sakkal Majalla', 'Amiri', serif;
-            background-color: #525659; /* لون الخلفية للمعاينة */
-            padding: 20px 0;
+            background-color: #e0e0e0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -36,11 +36,13 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            width: 100%;
+            align-items: center;
         }
 
         .page-a4 {
             width: 210mm;
-            height: 297mm;
+            min-height: 297mm;
             background: white;
             padding: 10mm;
             display: grid;
@@ -48,7 +50,7 @@
             grid-template-rows: repeat(3, 54mm); /* 3 صفوف بدلاً من 4 (6 بطاقات) */
             gap: 5mm; /* نفس المسافة بين البطاقات التي اخترتها */
             align-content: start; /* إبقاء البطاقات في أعلى الصفحة */
-            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
             page-break-after: always;
             overflow: hidden;
         }
@@ -60,7 +62,6 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
-            background: #fff;
         }
 
         .card {
@@ -143,18 +144,22 @@
             border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
         }
 
+        /* --- تنسيق الباركود --- */
         .barcode-container {
             width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
             margin-top: auto; 
+            
+            /* المسافة التي ترفعه عن الفوتر */
             margin-bottom: 12px; 
+            
             z-index: 5;
         }
         
         .barcode-container svg {
-            height: 30px; 
+            height: 30px; /* ارتفاع أعمدة الباركود */
             width: auto;
         }
 
