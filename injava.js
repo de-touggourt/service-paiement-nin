@@ -2020,16 +2020,22 @@ function generateCardsTable(data, schoolName) {
     `;
 
     // Save context for other functions
-    window.currentCardContext = data;
+  window.currentCardContext = data;
 
     Swal.fire({
         title: '',
         html: htmlContent,
-        width: '900px', // Wider for the extra columns
+        width: '950px', // Increased width for better visibility
         showConfirmButton: false,
-        showCloseButton: true,
+        showCloseButton: false, // We use our own close button in HTML
         background: '#fff',
-        padding: '15px'
+        padding: '15px',
+       
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        allowEnterKey: false,
+        stopKeydownPropagation: false // Allows typing in inputs
+       
     });
 }
 
@@ -2169,121 +2175,279 @@ function getCardHtmlTemplate(emp, serialYear) {
     </div>`;
 }
 
+function getPrintStyles() {
+    return `
+    <style>
+        :root {
+            --primary-green: #006233;
+            --primary-red: #D22B2B;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* A4 Page Setup - EXACTLY 8 Cards */
+        .page-a4 {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            padding: 10mm;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 Columns */
+            grid-template-rows: repeat(4, auto); /* 4 Rows */
+            gap: 5mm; /* Gap from file */
+            page-break-after: always;
+            margin: 0 auto;
+        }
+
+        /* Card Wrapper Size */
+        .card-wrapper {
+            width: 85.6mm;
+            height: 54mm;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            background: white;
+        }
+
+        /* The Scaled Card Content */
+        .card {
+            width: 750px;
+            height: 474px;
+            background-color: #fff;
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: scale(0.431); /* The critical scale factor */
+            transform-origin: top right;
+            display: flex;
+            flex-direction: column;
+            background-image: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
+        }
+
+        /* Watermark */
+        .watermark {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 300px;
+            background-image: url('https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u');
+            background-size: contain; background-repeat: no-repeat;
+            opacity: 0.1; z-index: 0;
+        }
+
+        /* Bars */
+        .top-deco-bar { width: 100%; height: 8px; display: flex; z-index: 10; }
+        .bar-green { flex: 2; background-color: var(--primary-green); }
+        .bar-red { flex: 1; background-color: var(--primary-red); }
+
+        /* Header */
+        .header {
+            position: relative; z-index: 2; padding: 10px 15px 0 15px;
+            display: flex; justify-content: space-between; align-items: center; height: 100px;
+        }
+        .main-title { font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-dark); margin-top: -30px; }
+        
+        .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
+        .header-logo { width: 70px; height: 70px; object-fit: contain; }
+        .logo-text { font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; }
+
+        /* Body */
+        .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 5px 25px 0 25px; }
+        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: center; }
+        
+        .card-name-title {
+            font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700;
+            color: var(--primary-green); border-bottom: 2px solid var(--primary-red);
+            margin-bottom: 10px; width: fit-content;
+        }
+
+        .info-row { display: flex; align-items: baseline; margin-bottom: 5px; font-size: 20px; }
+        .label { font-weight: 700; color: #555; min-width: 135px; font-family: 'Cairo', sans-serif; font-size: 15px; }
+        .value { font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; }
+
+        /* Photo Section */
+        .photo-section {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; padding-top: 40px; gap: 0;
+        }
+        .serial-number {
+            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px;
+            color: var(--primary-red); background: rgba(210, 43, 43, 0.05);
+            padding: 2px 8px; border-radius: 8px; width: 180px;
+            display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px;
+        }
+        .photo-frame {
+            width: 130px; height: 170px; background-color: #fafafa;
+            border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;
+        }
+        .signature-title {
+            font-weight: 700; font-size: 18px; color: var(--text-dark);
+            border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
+        }
+
+        /* Barcode */
+        .barcode-container {
+            width: 100%; display: flex; justify-content: center; align-items: center;
+            margin-top: auto; margin-bottom: 12px; z-index: 5;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--primary-green); color: white;
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif;
+            font-size: 15px; font-weight: 600; position: relative; z-index: 10;
+        }
+
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .page-a4 { width: 100%; border: none; padding: 10mm; margin: 0; page-break-after: always; box-shadow: none; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            /* Hide the main interface when printing */
+            #interfaceCard, .swal2-container, #card-preview-overlay { display: none !important; }
+        }
+    </style>`;
+}
+
+
 // 5. Print All Cards Function
+// 5. Print All Cards Function (محسنة)
 function printAllCards(schoolName) {
+    // 1. التحقق من وجود بيانات
     const data = window.currentCardContext;
-    if(!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+        return Swal.fire("تنبيه", "لا توجد بيانات للطباعة", "warning");
+    }
 
     const printContainer = document.getElementById("printContainer");
     const originalContent = printContainer.innerHTML;
     const currentYear = new Date().getFullYear();
 
-    // CSS from your file
-    const styles = `
-    <style>
-        :root { --primary-green: #006233; --primary-red: #D22B2B; --text-dark: #2c3e50; }
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap');
-        
-        .page-a4 {
-            width: 210mm; min-height: 297mm; background: white; padding: 10mm;
-            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, auto);
-            gap: 5mm; page-break-after: always; margin: 0 auto;
-        }
-        .card-wrapper { width: 85.6mm; height: 54mm; position: relative; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
-        .card {
-            width: 750px; height: 474px; background-color: #fff; position: absolute; top: 0; right: 0;
-            transform: scale(0.431); transform-origin: top right; display: flex; flex-direction: column;
-            background-image: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
-        }
-        /* ... (Paste the rest of the CSS from your HTML file here for exact look) ... */
-        .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 300px; background-image: url('https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u'); background-size: contain; background-repeat: no-repeat; opacity: 0.1; z-index: 0; }
-        .top-deco-bar { width: 100%; height: 8px; display: flex; z-index: 10; }
-        .bar-green { flex: 2; background-color: var(--primary-green); }
-        .bar-red { flex: 1; background-color: var(--primary-red); }
-        .header { position: relative; z-index: 2; padding: 10px 15px 0 15px; display: flex; justify-content: space-between; align-items: center; height: 100px; }
-        .main-title { font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-dark); margin-top: -30px; }
-        .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
-        .header-logo { width: 70px; height: 70px; object-fit: contain; }
-        .logo-text { font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; }
-        .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 5px 25px 0 25px; }
-        .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: center; }
-        .card-name-title { font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700; color: var(--primary-green); border-bottom: 2px solid var(--primary-red); margin-bottom: 10px; width: fit-content; }
-        .info-row { display: flex; align-items: baseline; margin-bottom: 5px; font-size: 20px; }
-        .label { font-weight: 700; color: #555; min-width: 135px; font-family: 'Cairo', sans-serif; font-size: 15px; }
-        .value { font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; }
-        .photo-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; gap: 0; }
-        .serial-number { font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px; color: var(--primary-red); background: rgba(210, 43, 43, 0.05); padding: 2px 8px; border-radius: 8px; width: 180px; display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px; }
-        .photo-frame { width: 130px; height: 170px; background-color: #fafafa; border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
-        .signature-title { font-weight: 700; font-size: 18px; color: var(--text-dark); border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px; }
-        .barcode-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-top: auto; margin-bottom: 12px; z-index: 5; }
-        .footer { background-color: var(--primary-green); color: white; display: flex; justify-content: center; align-items: center; width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 600; position: relative; z-index: 10; }
-        @media print {
-            body { background: white; padding: 0; margin: 0;}
-            .page-a4 { width: 100%; border: none; padding: 10mm; margin: 0; page-break-after: always; }
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-    </style>`;
-
-    let allPagesHTML = styles;
+    // 2. جلب الستايل (CSS) الخاص بالطباعة
+    // تأكد أن دالة getPrintStyles() موجودة في الملف كما شرحنا سابقاً
+    let allPagesHTML = getPrintStyles();
     
-    // Chunk logic: 8 cards per page
-    for (let i = 0; i < data.length; i += 8) {
-        const chunk = data.slice(i, i + 8);
+    // 3. تقسيم البيانات إلى صفحات (8 بطاقات في كل صفحة)
+    const cardsPerPage = 8;
+
+    for (let i = 0; i < data.length; i += cardsPerPage) {
+        const chunk = data.slice(i, i + cardsPerPage);
+        
         let pageContent = '<div class="page-a4">';
+        
+        // إضافة بطاقات الموظفين
         chunk.forEach(emp => {
             pageContent += getCardHtmlTemplate(emp, currentYear);
         });
-        pageContent += '</div>';
+        
+        // 4. [مهم] ملء الفراغات للحفاظ على الشبكة (Grid Layout)
+        // إذا كانت الصفحة تحتوي على أقل من 8 بطاقات، نضيف بطاقات فارغة مخفية
+        const remainingSlots = cardsPerPage - chunk.length;
+        if (remainingSlots > 0) {
+            for (let j = 0; j < remainingSlots; j++) {
+                // نضع div بنفس كلاس البطاقة ولكن نجعله مخفياً ليحجز مكاناً فقط
+                pageContent += '<div class="card-wrapper" style="visibility: hidden; border: 1px solid transparent;"></div>'; 
+            }
+        }
+
+        pageContent += '</div>'; // إغلاق الصفحة
         allPagesHTML += pageContent;
     }
 
+    // 5. حقن الكود في حاوية الطباعة
     printContainer.innerHTML = allPagesHTML;
 
-    // Initialize Barcodes
-    if(typeof JsBarcode !== 'undefined') {
-        JsBarcode(".barcode-element").init();
+    // 6. تهيئة الباركود (يجب أن يتم بعد الحقن في HTML)
+    if (typeof JsBarcode !== 'undefined') {
+        try {
+            JsBarcode(".barcode-element").init();
+        } catch (e) {
+            console.warn("خطأ في توليد الباركود:", e);
+        }
     }
 
+    // 7. تنفيذ أمر الطباعة
     window.print();
     
+    // 8. إعادة الموقع لحالته الأصلية بعد ثانية
     setTimeout(() => {
         printContainer.innerHTML = originalContent;
     }, 1000);
 }
 
 // 6. Preview Single Card
+
 function previewCard(ccp) {
     const emp = window.currentCardContext.find(e => e.ccp == ccp);
     if(!emp) return;
 
     const currentYear = new Date().getFullYear();
-    const style = `<style>
-        /* Minimal styles for preview */
-        .card-wrapper { transform: scale(1); margin: 20px auto; } 
-    </style>`;
-
     const cardHTML = getCardHtmlTemplate(emp, currentYear);
 
-    Swal.fire({
-        html: style + cardHTML,
-        width: '600px',
-        showConfirmButton: true,
-        confirmButtonText: 'طباعة هذه البطاقة',
-        showCancelButton: true,
-        cancelButtonText: 'إغلاق',
-        didOpen: () => {
-             if(typeof JsBarcode !== 'undefined') JsBarcode(".barcode-element").init();
-        }
-    }).then((res) => {
-        if(res.isConfirmed) {
-            // Print single card
-            const printContainer = document.getElementById("printContainer");
-            const originalContent = printContainer.innerHTML;
-            printContainer.innerHTML = style + '<div class="page-a4" style="display:flex; justify-content:center; align-items:center;">' + cardHTML + '</div>';
-            JsBarcode(".barcode-element").init();
-            window.print();
-            setTimeout(() => printContainer.innerHTML = originalContent, 1000);
-        }
-    });
+    // Create a temporary container for the overlay
+    const overlayId = 'card-preview-overlay';
+    
+    // Remove existing overlay if present
+    const existing = document.getElementById(overlayId);
+    if(existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = overlayId;
+    
+    // CSS for the overlay to appear ABOVE the table
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.8); z-index: 99999;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+    `;
+
+    overlay.innerHTML = `
+        <style>
+            .preview-box { background: white; padding: 20px; border-radius: 8px; text-align: center; }
+            /* Force scale 1 for wrapper in preview to center it */
+            .card-wrapper { margin: 0 auto; display: block; } 
+        </style>
+        <div class="preview-box">
+            <h3 style="font-family:'Cairo'; margin-bottom:15px; color:#333;">معاينة البطاقة</h3>
+            ${cardHTML}
+            <div style="margin-top: 20px; display:flex; gap:10px; justify-content:center;">
+                <button id="btnClosePreview" style="padding: 8px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-family:'Cairo';">إغلاق</button>
+                <button onclick="printSinglePreview('${ccp}')" style="padding: 8px 20px; background: #006233; color: white; border: none; border-radius: 4px; cursor: pointer; font-family:'Cairo';">طباعة</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Initialize Barcode
+    if(typeof JsBarcode !== 'undefined') JsBarcode(".barcode-element").init();
+
+    // Close Event
+    document.getElementById('btnClosePreview').onclick = function() {
+        overlay.remove();
+    };
 }
 
+
+function printSinglePreview(ccp) {
+    const emp = window.currentCardContext.find(e => e.ccp == ccp);
+    if(!emp) return;
+    
+    // Use the print logic but just for one
+    const printContainer = document.getElementById("printContainer");
+    const originalContent = printContainer.innerHTML;
+    const currentYear = new Date().getFullYear();
+    
+    // Get the styles from the main print function (defined below)
+    const styles = getPrintStyles(); 
+
+    printContainer.innerHTML = styles + '<div class="page-a4" style="display:flex; justify-content:center; align-items:center; height:100vh;">' + getCardHtmlTemplate(emp, currentYear) + '</div>';
+    
+    if(typeof JsBarcode !== 'undefined') JsBarcode(".barcode-element").init();
+    
+    window.print();
+    setTimeout(() => printContainer.innerHTML = originalContent, 1000);
+}
