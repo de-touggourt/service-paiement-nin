@@ -2257,7 +2257,7 @@ function getPrintStyles() {
     display: flex; 
     flex-grow: 1; 
     
-    padding: 12px 25px 0 25px; 
+    padding: 18px 25px 0 25px; 
  
     align-items: flex-start; 
 }
@@ -2467,4 +2467,5 @@ function printSinglePreview(ccp) {
     window.print();
     setTimeout(() => printContainer.innerHTML = originalContent, 1000);
 }
+
 
