@@ -760,7 +760,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        /* ======================================================= */
+/* ======================================================= */
 /* ====== تحسينات التجاوب مع شاشات الهواتف (أقل من 768px) ====== */
 /* ======================================================= */
 @media (max-width: 768px) {
@@ -790,15 +790,28 @@ document.addEventListener("DOMContentLoaded", () => {
         margin: 5px 0 !important;
     }
 
-    /* عرض القوائم المنسدلة في عمود واحد */
+    /* عرض القوائم المنسدلة في عمود واحد وتوسيطها */
     .selectors {
         grid-template-columns: 1fr !important;
-        padding: 15px;
+        padding: 20px 30px !important; /* الهوامش الجانبية لضغط الحقول */
         gap: 15px;
     }
     
     .selectors .form-group:nth-child(4) {
         grid-column: span 1 !important; /* إلغاء الامتداد الخاص بحقل المؤسسة */
+    }
+
+    /* التحكم في عرض الحقول (القوائم المنسدلة) كي لا تكون طويلة جداً */
+    .form-group {
+        max-width: 350px; /* أقصى عرض للحقل */
+        width: 100%;
+        margin: 0 auto; /* توسيط الحقول */
+    }
+    
+    /* ضبط حجم خط الحقول في الهاتف ليكون متناسقاً */
+    .form-group select, .form-group input {
+        padding: 8px 12px;
+        font-size: 13px;
     }
 
     /* تحسين قسم رفع الملفات ليصبح عمودياً */
@@ -837,22 +850,6 @@ document.addEventListener("DOMContentLoaded", () => {
     .modal-content {
         width: 95%;
         padding: 15px;
-    }
-    /* تقليل عرض الحقول (القوائم المنسدلة) وتوسيطها */
-    .selectors {
-        padding: 20px 30px !important; /* زيادة الهوامش الجانبية لضغط الحقول للداخل */
-    }
-
-    .form-group {
-        max-width: 350px; /* تحديد عرض أقصى كي لا تتمدد الحقول بشكل مبالغ فيه */
-        width: 100%;
-        margin: 0 auto; /* توسيط الحقول في منتصف الشاشة */
-    }
-    
-    /* ضبط حجم خط الحقول في الهاتف ليكون متناسقاً */
-    .form-group select, .form-group input {
-        padding: 8px 12px;
-        font-size: 13px;
     }
 }
 
@@ -1511,6 +1508,7 @@ function goBackToMain() {
     </script>
 </body>
 </html>
+
 
 
 
