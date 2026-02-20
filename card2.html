@@ -838,6 +838,22 @@ document.addEventListener("DOMContentLoaded", () => {
         width: 95%;
         padding: 15px;
     }
+    /* تقليل عرض الحقول (القوائم المنسدلة) وتوسيطها */
+    .selectors {
+        padding: 20px 30px !important; /* زيادة الهوامش الجانبية لضغط الحقول للداخل */
+    }
+
+    .form-group {
+        max-width: 350px; /* تحديد عرض أقصى كي لا تتمدد الحقول بشكل مبالغ فيه */
+        width: 100%;
+        margin: 0 auto; /* توسيط الحقول في منتصف الشاشة */
+    }
+    
+    /* ضبط حجم خط الحقول في الهاتف ليكون متناسقاً */
+    .form-group select, .form-group input {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
 }
 
     </style>
@@ -1495,5 +1511,6 @@ function goBackToMain() {
     </script>
 </body>
 </html>
+
 
 
