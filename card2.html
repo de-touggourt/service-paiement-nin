@@ -759,6 +759,87 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+
+        /* ======================================================= */
+/* ====== تحسينات التجاوب مع شاشات الهواتف (أقل من 768px) ====== */
+/* ======================================================= */
+@media (max-width: 768px) {
+    /* تقليل الهوامش العامة للشاشة */
+    body {
+        padding: 15px 10px;
+    }
+    
+    #control-panel {
+        padding: 15px;
+    }
+
+    /* تصغير العناوين وتوسيطها */
+    .panel-header h2 {
+        font-size: 22px;
+        text-align: center;
+    }
+
+    /* جعل الأزرار تأخذ العرض الكامل وتظهر عمودياً */
+    .panel-header div {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .panel-header div button {
+        width: 100% !important;
+        margin: 5px 0 !important;
+    }
+
+    /* عرض القوائم المنسدلة في عمود واحد */
+    .selectors {
+        grid-template-columns: 1fr !important;
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .selectors .form-group:nth-child(4) {
+        grid-column: span 1 !important; /* إلغاء الامتداد الخاص بحقل المؤسسة */
+    }
+
+    /* تحسين قسم رفع الملفات ليصبح عمودياً */
+    .form-group[style*="margin-bottom: 20px;"] > div {
+        flex-direction: column;
+        align-items: stretch !important;
+        width: 100%;
+    }
+
+    .form-group[style*="margin-bottom: 20px;"] input[type="file"] {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    /* تحسين الجدول ليقبل التمرير السلس ومنع تداخل النصوص */
+    th, td {
+        padding: 10px;
+        font-size: 13px;
+        white-space: nowrap; 
+    }
+
+    /* جعل معاينة البطاقات تظهر في عمود واحد وتوسيطها */
+    .page-a4, 
+    #card-container.theme-2 .page-a4 {
+        grid-template-columns: 1fr !important; 
+        width: 100%;
+        padding: 10px 0;
+        overflow-x: auto;
+    }
+
+    .card-wrapper {
+        margin: 0 auto;
+    }
+
+    /* تصغير نافذة القص لتناسب الشاشة */
+    .modal-content {
+        width: 95%;
+        padding: 15px;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -1414,4 +1495,5 @@ function goBackToMain() {
     </script>
 </body>
 </html>
+
 
