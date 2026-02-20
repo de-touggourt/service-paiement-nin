@@ -3,22 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>طباعة البطاقات المهنية</title>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <title>بطاقة مهنية - نظام إدارة وتوليد</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+    // جلب تصريح الدخول من الجلسة
+    const accessGranted = sessionStorage.getItem("secure_cards_access");
+
+    // التحقق: إذا لم يكن هناك تصريح، يتم إرجاعه للصفحة الرئيسية فوراً
+    if (accessGranted !== "granted_from_main_page") {
+        // قم بتغيير index.html إلى اسم صفحتك الرئيسية
+        window.location.replace("index.html"); 
+    } else {
+        // يمكنك إزالة التصريح هنا إذا أردت أن الصفحة لا تعمل إذا قام المستخدم بتحديثها (F5)
+        // sessionStorage.removeItem("secure_cards_access");
+        
+        console.log("تم التحقق بنجاح: الدخول مصرح به.");
+    }
+});
+</script>
+
+
+
+
     <style>
         :root {
             --primary-green: #006233;
             --primary-red: #D22B2B;
             --text-dark: #2c3e50;
             --text-light: #7f8c8d;
-        }
-
-        /* إعدادات صفحة الطباعة الافتراضية (A4 بدون هوامش) */
-        @page {
-            size: A4 portrait;
-            margin: 0; 
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,32 +49,57 @@
             background-color: #e0e0e0;
             padding: 20px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
+            flex-direction: column; align-items: center; gap: 20px;
         }
 
-        #print-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 100%;
-            align-items: center;
+        /* --- تنسيقات لوحة التحكم --- */
+        #control-panel {
+            width: 210mm; background: #fff; padding: 20px; border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: 'Cairo', sans-serif;
         }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--primary-green); padding-bottom: 10px; }
+        .selectors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: var(--text-dark); }
+        .form-group select, .form-group input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+        
+        .table-container { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
+        
+        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: bold; transition: 0.3s; }
+        .btn-primary { background: var(--primary-green); color: white; }
+        .btn-danger { background: var(--primary-red); color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        
+        #cropper-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;
+        }
+        .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px; text-align: center; }
+        .img-container { max-height: 60vh; margin: 20px 0; }
+        .img-container img { max-width: 100%; }
 
+        /* --- تنسيقات البطاقة الأصلية --- */
+       /* --- تنسيق صفحة A4 (عرض 6 بطاقات وتوسيطها ورفعها قليلاً) --- */
         .page-a4 {
-            width: 210mm;
-            min-height: 297mm;
-            background: white;
-            padding: 10mm;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(3, 54mm); /* 3 صفوف بدلاً من 4 (6 بطاقات) */
-            gap: 5mm; /* نفس المسافة بين البطاقات التي اخترتها */
-            align-content: start; /* إبقاء البطاقات في أعلى الصفحة */
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            page-break-after: always;
-            overflow: hidden;
-        }
+    width: 210mm;
+    min-height: auto; /* تغيير من height ثابت */
+    max-height: 297mm; 
+    background: white;
+    display: grid;
+    grid-template-columns: repeat(2, max-content); 
+    grid-template-rows: auto; /* اجعل الصفوف تتكيف مع المحتوى */
+    gap: 10mm;
+    justify-content: center;
+    align-content: start; /* لضمان عدم تمدد البطاقات عمودياً */
+    padding-top: 10mm; /* لإعطاء توازن بدل البادينج السفلي الضخم */
+    padding-bottom: 20mm; 
+    box-sizing: border-box;
+    overflow: hidden; /* يمنع تسرب المحتوى الذي قد ينشئ صفحة جديدة */
+}
 
         .card-wrapper {
             width: 85.6mm;
@@ -92,135 +138,964 @@
         .bar-green { flex: 2; background-color: var(--primary-green); }
         .bar-red { flex: 1; background-color: var(--primary-red); }
 
-        .header {
-            position: relative; z-index: 2; padding: 10px 15px 0 15px;
-            display: flex; justify-content: space-between; align-items: center; height: 100px;
-        }
-
-        .main-title {
-            font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700;
-            color: var(--text-dark); margin-top: -30px;
-        }
-
+        .header { position: relative; z-index: 2; padding: 10px 15px 0 15px; display: flex; justify-content: space-between; align-items: center; height: 100px; }
+        .main-title { font-family: 'Cairo', sans-serif; font-size: 20px; font-weight: 700; color: #000; margin-top: -30px; }
         .logo-box { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
         .header-logo { width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1)); }
-        .logo-text { font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; }
+        .logo-text { font-family: 'Cairo', sans-serif;font-size: 15px; font-weight: 900; margin-top: 4px; white-space: nowrap; }
 
         .card-body { position: relative; z-index: 2; display: flex; flex-grow: 1; padding: 5px 25px 0 25px; }
-
         .info-section { flex: 1.8; display: flex; flex-direction: column; justify-content: center; }
-        .card-name-title {
-            font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700;
-            color: var(--primary-green); border-bottom: 2px solid var(--primary-red);
-            margin-bottom: 10px; width: fit-content;
-        }
-
+        .card-name-title { font-family: 'Cairo', sans-serif; font-size: 28px; font-weight: 700; color: var(--primary-green); border-bottom: 2px solid var(--primary-red); margin-bottom: 10px; width: fit-content; }
         .info-row { display: flex; align-items: baseline; margin-bottom: 5px; font-size: 20px; }
-        .label { font-weight: 700; color: #555; min-width: 135px; font-family: 'Cairo', sans-serif; font-size: 15px; }
-        .value { font-weight: 700; color: #000; margin-right: 5px; font-size: 22px; }
+        .label { font-family: 'Cairo', sans-serif;font-weight: 700; color: #000; min-width: 135px; font-family: 'Cairo', sans-serif; font-size: 15px; }
+        .value {font-family: 'Cairo', sans-serif; font-weight: 700; color: #000; margin-right: 5px; font-size: 14px; }
 
-        .photo-section {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; padding-top: 40px; gap: 0;
-        }
+        .photo-section {font-family: 'Cairo', sans-serif; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; gap: 0; }
+        .serial-number { font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px; color: var(--primary-red); background: rgba(210, 43, 43, 0.05); padding: 2px 8px; border-radius: 8px; width: 180px; display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px; }
+        .photo-frame { width: 130px; height: 170px; background-color: #fafafa; border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; overflow: hidden; }
+        .signature-title { font-family: 'Cairo', sans-serif;font-weight: 700; font-size: 14px; color: #000; border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px; }
 
-        .serial-number {
-            font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 16px;
-            color: var(--primary-red); background: rgba(210, 43, 43, 0.05);
-            padding: 2px 8px; border-radius: 8px; width: 180px;
-            display: flex; justify-content: space-between; margin-top: -30px; margin-bottom: 20px;
-        }
+        .barcode-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-top: auto; margin-bottom: 12px; z-index: 5; }
+        .barcode-container svg { height: 30px; width: auto; }
 
-        .photo-frame {
-            width: 130px; height: 170px; background-color: #fafafa;
-            border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;
-            overflow: hidden;
-        }
-        .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .footer { background-color: var(--primary-green); color: white; display: flex; justify-content: center; align-items: center; width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 600; position: relative; z-index: 10; }
 
-        .signature-title {
-            font-weight: 700; font-size: 18px; color: var(--text-dark);
-            border-top: 1px solid #ddd; width: 80%; text-align: center; padding-top: 5px;
-        }
+  @media print {
+    /* تمت إضافة هذا الجزء فقط لضبط الهوامش على none */
+    @page { 
+        margin: 0; 
+    }
 
-        /* --- تنسيق الباركود --- */
-        .barcode-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: auto; 
-            
-            /* المسافة التي ترفعه عن الفوتر */
-            margin-bottom: 12px; 
-            
-            z-index: 5;
-        }
+    body { background: white; padding: 0; margin: 0; }
+    .no-print { display: none !important; }
+
+    .page-a4 { 
+        width: 210mm; 
+        /* تغيير الارتفاع من ثابت إلى تلقائي لمنع الفراغات */
+        min-height: 297mm; 
+        height: auto; 
+        border: none; 
+        padding: 10mm; 
+        box-shadow: none;
         
-        .barcode-container svg {
-            height: 30px; /* ارتفاع أعمدة الباركود */
-            width: auto;
-        }
+        /* يضيف فاصلاً بعد كل صفحة "ما عدا الأخيرة" */
+        page-break-after: auto; 
+    }
 
-        .footer {
-            background-color: var(--primary-green); color: white;
-            display: flex; justify-content: center; align-items: center;
-            width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif;
-            font-size: 15px; font-weight: 600; position: relative; z-index: 10;
-        }
+    /* هذا السطر هو السر لمنع الصفحة الفارغة الأخيرة */
+    .page-a4:not(:last-child) {
+        page-break-after: always;
+    }
 
-        /* تنسيقات خاصة بنافذة الطباعة */
-        @media print {
-            body { background: white; padding: 0; margin: 0; }
-            #print-container { gap: 0; width: 100%; }
-            .page-a4 { 
-                box-shadow: none; 
-                margin: 0; 
-                padding: 10mm;
-                border: none;
-                width: 210mm;
-                height: 297mm;
-            }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
+    /* إخفاء أي صفحة فارغة تماماً قد تنتج عن خطأ في البيانات */
+    .page-a4:empty {
+        display: none !important;
+    }
+
+    .header-logo {
+        filter: none !important;
+    }
+    
+    img {
+        image-rendering: auto !important; 
+    }
+    
+    .barcode-container svg {
+        shape-rendering: crispEdges;
+    }
+    
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* --- تنسيقات النموذج الثاني (Theme 2) المحدثة بخط Sakkal Majalla --- */
+#card-container.theme-2 .page-a4 {
+    grid-template-columns: repeat(2, max-content); 
+    grid-template-rows: repeat(3, auto);           
+    gap: 10mm;                                     
+    justify-content: center;
+    align-content: start;
+    padding-top: 10mm;
+}
+
+#card-container.theme-2 .card {
+    background-image: none;
+    background-color: #ffffff;
+    font-family: 'Sakkal Majalla', serif !important; /* تطبيق الخط الأساسي */
+}
+
+/* ضمان أن كل العناصر الفرعية تأخذ نفس الخط */
+#card-container.theme-2 .card * {
+    font-family: 'Sakkal Majalla', serif !important;
+}
+
+.corner-ribbon-container { position: absolute; top: 0; right: 0; width: 110px; height: 110px; overflow: hidden; z-index: 20; }
+.corner-ribbon-content { position: absolute; top: 0; right: 0; transform: translate(30%, -30%) rotate(45deg); transform-origin: center; width: 200px; display: flex; flex-direction: column; justify-content: center; margin-top: 35px; margin-right: -20px; }
+.stripe { width: 100%; height: 20px; }
+.stripe.green { background-color: var(--primary-green); margin-bottom: 8px; }
+.stripe.red { background-color: var(--primary-red); }
+
+#card-container.theme-2 .header { text-align: center; padding: 5px 10px; border-bottom: 2px solid #333; height: 130px; display: flex; flex-direction: row; justify-content: center; align-items: center; }
+
+#card-container.theme-2 .main-title { 
+    font-size: 30px; 
+    font-weight: 700; 
+    width: 100%; 
+    /* رفع العنوان: تقليل القيمة أو جعلها بالسالب يرفعه للأعلى */
+    margin-top: -10px; 
+    /* تحريك لليمين: زيادة الهامش من جهة اليسار يدفع النص لليمين */
+    margin-left: 30px; 
+    color: #000; 
+}
+
+/* --- تعديل المحاذاة في النموذج الثاني --- */
+
+#card-container.theme-2 .side-group { 
+    position: absolute; 
+    top: 10px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    text-align: center; 
+    width: 200px; /* زيادة العرض لضمان بقاء الجملة في سطر واحد */
+}
+
+/* الجهة اليمنى: تم ضبطها على 97px لتعويض مساحة الشعار المفقود */
+#card-container.theme-2 .side-group.right { 
+    right: 15px; 
+    top: 90px; 
+} 
+
+/* الجهة اليسرى: تبدأ من 10px والشعار يدفعه النص ليكون عند مستوى 97px تقريباً */
+#card-container.theme-2 .side-group.left { 
+    left: 15px; 
+    top: 3px; 
+}
+
+#card-container.theme-2 .header-logo { width: 85px; height: 85px; filter: none; border-radius: 50%; object-fit: cover;}
+#card-container.theme-2 .side-text { font-size: 25px; font-weight: 700; margin-top: 2px; white-space: nowrap;}
+
+#card-container.theme-2 .card-body { padding: 0; display: flex; flex-direction: row; }
+#card-container.theme-2 .right-section { flex: 2; padding: 10px 20px 5px 20px; border-left: 1px solid #333; display: flex; flex-direction: column; gap: 2px; justify-content: flex-start; }
+#card-container.theme-2 .card-type-title { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; text-decoration: underline; text-underline-offset: 5px; color:#000; border: none;}
+#card-container.theme-2 .info-row { font-size: 24px; font-weight: 700; display: flex; align-items: center; margin-bottom: 3px; color: #000; }
+#card-container.theme-2 .info-label { min-width: 90px; }
+
+#card-container.theme-2 .left-section { flex: 1; padding: 10px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 5px; }
+
+#card-container.theme-2 .number-row { 
+    width: 100%; 
+    display: flex; 
+    /* تغيير من space-between إلى flex-start لتقريب النصوص */
+    justify-content: flex-start; 
+    /* التحكم في المسافة بين "الرقم:" و "2026/" بدقة */
+    gap: 60px; 
+    font-weight: 700; 
+    font-size: 22px; 
+    color: #000;
+    /* إزاحة بسيطة من اليمين إذا أردت إبعاد الكتلة عن الحافة قليلاً */
+    padding-right: 45px; 
+}
+
+#card-container.theme-2 .photo-area { width: 140px; height: 180px; border: 1px dashed #ccc; background-color: #fafafa; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#card-container.theme-2 .signature { text-align: center; font-weight: 700; font-size: 22px; border: none; width: auto; color: #000; padding: 0;}
+
+#card-container.theme-2 .footer { background-color: var(--primary-green); color: #ffffff; text-align: center; padding: 6px 0; height: 40px; font-size: 20px; font-weight: 700; width: 100%; border-top: 1px solid white; display: flex; align-items: center; justify-content: center; position: absolute; bottom: 0; left: 0;}
+
+/* تغيير الإطار الخارجي للنموذج الثاني ليصبح أسود وحاد الزوايا */
+#card-container.theme-2 .card-wrapper {
+    border: 1.5px solid #000000; /* لون أسود ملكي مع زيادة السمك قليلاً للوضوح */
+    border-radius: 0;            /* جعل الزوايا حادة تماماً (90 درجة) */
+}
+
+/* التأكد من أن البطاقة الداخلية تتبع نفس الحواف الحادة */
+#card-container.theme-2 .card {
+    border-radius: 0;
+}
+
+
+/* --- تنسيقات الجهة الخلفية للبطاقة --- */
+#card-container.theme-3 .card {
+    background-color: #ffffff;
+    background-image: none;
+    font-family: 'Cairo', sans-serif !important;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* لمنع خروج الأشكال الدائرية الخضراء */
+}
+
+/* الأشكال الخضراء الدائرية على الجوانب */
+#card-container.theme-3 .card::before,
+#card-container.theme-3 .card::after {
+    content: '';
+    position: absolute;
+    width: 350px;
+    height: 600px;
+    background-color: #007c3e; /* درجة الأخضر للعلم */
+    border-radius: 50%;
+    z-index: 1;
+}
+
+#card-container.theme-3 .card::before {
+    left: -250px;
+    top: -60px;
+}
+
+#card-container.theme-3 .card::after {
+    right: -250px;
+    top: -60px;
+    background-color: var(--primary-red);
+}
+
+/* محتوى الجهة الخلفية */
+.back-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+}
+
+/* مكان صورة المعلم والعلم (يجب استبدال الروابط لاحقاً) */
+.back-graphics {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    margin-top: -30px;
+}
+
+.flag-img {
+    position: absolute;
+    top: -20px;
+    right: 20px;
+    width: 100px;
+}
+
+.teacher-img {
+    width: 200px;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.ministry-title-back {
+    font-size: 55px;
+    font-weight: 900;
+    color: #000;
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+}
+
+/* نصوص القوانين والختم */
+.rules-container {
+    position: relative;
+    width: 85%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stamp-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    opacity: 0.15; /* الشفافية للختم */
+    z-index: -1;
+}
+
+.rules-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.rules-list li {
+    font-size: 21px;
+    font-weight: 800;
+    color: #000;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    position: relative;
+    padding-right: 25px;
+    margin-right: 30px;
+}
+
+.rules-list li::before {
+    content: '■'; /* النقطة المربعة السوداء */
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 20px;
+}
+
+
+/* --- تنسيقات الجهة الخلفية (التصميم الرسمي والحديث) - Theme 4 --- */
+#card-container.theme-4 .card {
+    background: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%);
+    font-family: 'Cairo', sans-serif !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    border: 1px solid #ccc; /* إطار خفيف متناسق */
+}
+
+#card-container.theme-4 .back-header {
+    background-color: var(--primary-green);
+    color: white;
+    text-align: center;
+    padding: 15px 10px;
+    position: relative;
+    border-bottom: 5px solid var(--primary-red);
+}
+
+#card-container.theme-4 .back-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 2px;
+}
+
+#card-container.theme-4 .back-header h2 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+#card-container.theme-4 .back-body {
+    padding: 20px 30px;
+    flex-grow: 1;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#card-container.theme-4 .watermark-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    background-image: url('https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u');
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.06; /* شفافة جداً كي لا تزعج النص */
+    z-index: -1;
+}
+
+#card-container.theme-4 .instructions-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--primary-green);
+    margin-bottom: 15px;
+    border-right: 4px solid var(--primary-red);
+    padding-right: 12px;
+}
+
+#card-container.theme-4 .rules-list-modern {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#card-container.theme-4 .rules-list-modern li {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 18px;
+    line-height: 1.4;
+    position: relative;
+    padding-right: 35px;
+}
+
+/* أيقونة الصح (علامة الاختيار) بجانب كل تعليمة */
+#card-container.theme-4 .rules-list-modern li::before {
+    content: '✔';
+    position: absolute;
+    right: 0;
+    top: 0;
+    color: var(--primary-green);
+    font-size: 24px;
+}
+
+#card-container.theme-4 .back-footer {
+    background-color: #2c3e50; /* لون كحلي/رمادي داكن رسمي */
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid #1a252f;
+}
+
+#card-container.theme-4 .return-text {
+    font-size: 16px;
+    font-weight: 600;
+    max-width: 80%;
+    line-height: 1.5;
+}
+
+#card-container.theme-4 .qr-box {
+    width: 65px;
+    height: 65px;
+    background-color: white;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: -6px;
+}
+
+
     </style>
 </head>
 <body>
-    <div id="print-container"></div>
+
+    <div id="control-panel" class="no-print">
+        <div class="panel-header">
+            <h2>إدارة البطاقات المهنية</h2>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn btn-danger" onclick="clearData()">مسح البيانات</button>
+                <button class="btn btn-primary" onclick="printTemplate(1)">🖨️ طباعة النموذج الأول</button>
+                <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج الأول</button>
+                <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة النموذج الثاني</button>
+                <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج الثاني</button>
+                
+            </div>
+        </div>
+
+        <div class="selectors">
+            <div class="form-group">
+                <label>الطور التعليمي</label>
+                <select id="sel-stage" onchange="updateInstitutions()">
+                    <option value="ابتدائي">ابتدائي</option>
+                    <option value="متوسط">متوسط</option>
+                    <option value="ثانوي">ثانوي</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>الدائرة</label>
+                <select id="sel-daaira" onchange="updateMunicipalities()">
+                    </select>
+            </div>
+            <div class="form-group">
+                <label>البلدية</label>
+                <select id="sel-municipality" onchange="updateInstitutions()">
+                    </select>
+            </div>
+            <div class="form-group">
+                <label>المؤسسة</label>
+                <select id="sel-institution" onchange="updateCardsWorkplace()">
+                    <option value="">اختر المؤسسة...</option>
+                </select>
+            </div>
+        </div>
+
+     <div class="form-group" style="margin-bottom: 20px;">
+            <label>رفع قائمة الموظفين (Excel - الملف المحمل من الرقمنة)</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="file" id="file-upload" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv, .xlsx, .xls, .csv, .xlsm, .xlsb">
+                
+                <button type="button" class="btn btn-primary" onclick="loadEmployeeData()">تحميل وعرض القائمة</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="employee-table">
+                <thead>
+                    <tr>
+                        <th>الاسم واللقب</th>
+                        <th>تاريخ الازدياد</th>
+                        <th>الرتبة</th>
+                        <th>مكان العمل</th>
+                        <th>الرمز الوظيفي</th>
+                        <th>الصورة</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="page-a4" id="card-container"></div>
+
+    <div id="cropper-modal">
+        <div class="modal-content">
+            <h3>قص وضبط الصورة</h3>
+            <div class="img-container">
+                <img id="cropper-image" src="">
+            </div>
+            <button class="btn btn-danger" onclick="closeCropper()">إلغاء</button>
+            <button class="btn btn-primary" onclick="saveCrop()">حفظ الصورة</button>
+        </div>
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const dataStr = localStorage.getItem('printCardsData');
+        // --- 1. خرائط البيانات (Data Maps) ---
+        const baladiyaMap = { 
+            "توقرت": ["توقرت", "النزلة", "تبسبست", "الزاوية العابدية"], 
+            "تماسين": ["تماسين", "بلدة عمر"], 
+            "المقارين": ["المقارين", "سيدي سليمان"], 
+            "الحجيرة": ["الحجيرة", "العالية"], 
+            "الطيبات": ["الطيبات", "المنقر", "ابن ناصر"] 
+        };
+
+        const primarySchoolsByBaladiya = {
+            "ابن ناصر": [{ name: "إبتدائية عبد الحميد بن باديس - إبن ناصر" }, { name: "إبتدائية العربي التبسي - إبن ناصر" }, { name: "إبتدائية البشير الابراهيمي - إبن ناصر" }, { name: "إبتدائية هواري بومدين - إبن ناصر" }, { name: "إبتدائية المجاهد الصادق خلفاوي - إبن ناصر" }, { name: "إبتدائية المجاهد سراي مسعود ( المر) - إبن ناصر" }, { name: "إبتدائية المجاهد اليمان الطيب - إبن ناصر" }, { name: "إبتدائية المجاهد العقون خليفة - إبن ناصر" }, { name: "إبتدائية المجاهد قحمص محمد بن العيد - إبن ناصر" }, { name: "إبتدائية 13 مارس 1962 - إبن ناصر" }, { name: "إبتدائية اللأمير عبد القادر - إبن ناصر" }, { name: "إبتدائية العقبي الطيب - إبن ناصر" }],
+            "الحجيرة": [{ name: "إبتدائية ابن باديس - الحجيرة" }, { name: "إبتدائية ديدوش مراد - الحجيرة" }, { name: "إبتدائية نعام سليمان - الحجيرة" }, { name: "إبتدائية محمد العيد آل خليفة - الحجيرة" }, { name: "إبتدائية العيد بن الشيخ - الحجيرة" }, { name: "إبتدائية البشير الابراهيمي - الحجيرة" }, { name: "إبتدائية مصطفى بن بولعيد - الحجيرة" }, { name: "إبتدائية الشهيد الكاس - الحجيرة" }, { name: "إبتدائية صلاح الدين الأيوبي - الحجيرة" }, { name: "إبتدائية ابن خلدون - الحجيرة" }, { name: "إبتدائية علي عمار - الحجيرة" }, { name: "إبتدائية دومة أحمد - الحجيرة" }, { name: "إبتدائية عمار ياسف - الحجيرة" }, { name: "إبتدائية المجاهد كحول احمد - الحجيرة" }, { name: "إبتدائية كريبع مسعود - الحجيرة - - الحجيرة" }, { name: "إبتدائية المجاهد بالأعور العلمي ( لقراف الجديدة 2) - الحجيرة" }, { name: "إبتدائية مجمع مدرسي حي المير - الحجيرة" }, { name: "إبتدائية خنفر محمد لحسن - الحجيرة" }, { name: "إبتدائية حي بوضياف محمد لقراف - الحجيرة" }, { name: "إبتدائية محدادي العيد - الحجيرة" }],
+            "الزاوية العابدية": [{ name: "إبتدائية البحري بن المنور القديمة - الزاوية العابدية" }, { name: "إبتدائية مصطفى بن بولعيد - الزاوية العابدية" }, { name: "إبتدائية بوليفة محمد عمران - الزاوية العابدية" }, { name: "إبتدائية صولي عبد الرحمان ( 5 جويلية) - الزاوية العابدية" }, { name: "إبتدائية بشير كدة - الزاوية العابدية" }, { name: "إبتدائية عبد الرحمان بن نونة - الزاوية العابدية" }, { name: "إبتدائية عقبة بن نافع - الزاوية العابدية" }, { name: "إبتدائية المجاهد محمد الاخضر بن لمنور - الزاوية العابدية" }, { name: "إبتدائية غول محمد الصالح (حي السلام) - الزاوية العابدية" }, { name: "إبتدائية محمد مقداد - الزاوية العابدية" }, { name: "إبتدائية احمد بن لمنور - الزاوية العابدية" }],
+            "الطيبات": [{ name: "إبتدائية الاستاذ عمر بن عزة - الطيبات" }, { name: "إبتدائية المجاهد عماري معمر - الطيبات" }, { name: "إبتدائية الشهيد قحمص محمد - الطيبات" }, { name: "إبتدائية العلامة حمداوي محمد بن سليمان(القواشيش) - الطيبات" }, { name: "إبتدائية ميلود تريش(بكار القديمة) - الطيبات" }, { name: "إبتدائية المجاهد زقوني بشير - الطيبات" }, { name: "إبتدائية المجاهد مراد معمر( برحمون) - الطيبات" }, { name: "إبتدائية الشهيد محمد الشين - الطيبات" }, { name: "إبتدائية قعبي علي (بئر العسل) - الطيبات" }, { name: "إبتدائية الشهيد بالطاهر الطيب - الطيبات" }, { name: "إبتدائية المجاهد منصوري مبروك - الطيبات" }, { name: "إبتدائية الشهيد بن قلية عمر - الطيبات" }, { name: "إبتدائية المجاهد رواص أحمد - الطيبات" }, { name: "إبتدائية المجاهد دحدي مسعود - الطيبات" }, { name: "إبتدائية المجاهد خليفة خليفة - الطيبات" }, { name: "إبتدائية المجاهد براهمي براهيم - الطيبات" }, { name: "إبتدائية المجاهد بلخير السعيد - الطيبات" }, { name: "إبتدائية المجاهد لـيـتيم محمد (عثمان بن عفان) - الطيبات" }, { name: "إبتدائية المجاهد بالعجال معمر - الطيبات" }, { name: "إبتدائية المجاهد عماري التجاني الدليعي - الطيبات" }],
+            "العالية": [{ name: "إبتدائية الشهيد قوادري لخضر - العالية" }, { name: "إبتدائية قادري أحمد - العالية" }, { name: "إبتدائية الامام الغزالي بالعالية - العالية" }, { name: "إبتدائية الشهيد عبيدلي أحمد - العالية" }, { name: "إبتدائية سيدي عبد المالك - العالية" }, { name: "إبتدائية بن احمد احمد - العالية" }, { name: "إبتدائية طفحي مسعود ( العالية الجديدة ) - العالية" }, { name: "إبتدائية غبائشي بشير - العالية" }, { name: "إبتدائية المجاهد بساسي الطاهر - العالية" }, { name: "إبتدائية حمايمي ميلود - العالية" }, { name: "إبتدائية المجاهد حبي عمار - العالية" }, { name: "إبتدائية المجاهد ربروب محمد - العالية" }],
+            "المقارين": [{ name: "إبتدائية أسامة بن زيد - المقارين" }, { name: "إبتدائية بن موسى الطيب - المقارين" }, { name: "إبتدائية العقيد سي الحواس - المقارين" }, { name: "إبتدائية ابو عبيدة بن الجراح - المقارين" }, { name: "إبتدائية بشير خذران - المقارين" }, { name: "إبتدائية محمد شافو - المقارين" }, { name: "إبتدائية بركبية حسين - المقارين" }, { name: "إبتدائية الشهيد الشريف محمد بن عبد الله - المقارين" }, { name: "إبتدائية بابا سعيد حشاني ( المجمع المدرسي الجديد ) - المقارين" }, { name: "إبتدائية المجاهد بن الزاوي السعيد - المقارين" }, { name: "إبتدائية المجاهد جاوي محمد - المقارين" }],
+            "المنقر": [{ name: "إبتدائية محمد بوعسرية - المنقر" }, { name: "إبتدائية الشهيد مسماري الاخضر اللويبد - المنقر" }, { name: "إبتدائية الشهيد قبي بلقاسم - المنقر" }, { name: "إبتدائية العلامة بن الصديق علي - المنقر" }, { name: "إبتدائية الشهيد خورارة بشير - المنقر" }, { name: "إبتدائية شوية علي - المنقر" }, { name: "إبتدائية الشهيدبكاري السايح الشابي - المنقر" }, { name: "إبتدائية الشهيد محمد خيراني - المنقر" }, { name: "إبتدائية المجاهد احمد بن الصغير قويدري (البحري) - المنقر" }, { name: "إبتدائية الشلالقة( خورارة محمد) - المنقر" }, { name: "إبتدائية نواري محمد الزروق - المنقر" }, { name: "إبتدائية الشهيد دقعة محمد - المنقر" }, { name: "إبتدائية الشهيد محمد نواري( حي النخيل) - المنقر" }, { name: "إبتدائية محمد مايو - المنقر" }, { name: "إبتدائية غندير العايش - المنقر" }, { name: "إبتدائية الشهيد بله محمد الصغير - المنقر" }],
+            "النزلة": [{ name: "إبتدائية بن دلالي علي - النزلة" }, { name: "إبتدائية قادري أحمد سيدي ماضي - النزلة" }, { name: "إبتدائية بن عمر النوي - النزلة" }, { name: "إبتدائية بن طرية لمنور - النزلة" }, { name: "إبتدائية بوليفة محمد عمران - النزلة" }, { name: "إبتدائية تماسيني عبد الرحمن - النزلة" }, { name: "إبتدائية كدة بشير - النزلة" }, { name: "إبتدائية حركات العايش - النزلة" }, { name: "إبتدائية المجاهد طرية مخلوف - النزلة" }, { name: "إبتدائية المجاهد قمو محمد - النزلة" }, { name: "إبتدائية تمرني موسى - النزلة" }, { name: "إبتدائية المجاهد سلامي محمد - النزلة" }, { name: "إبتدائية نقودي محمد - النزلة" }, { name: "إبتدائية المجاهد العيفاوي التجاني - النزلة" }, { name: "إبتدائية المجاهد عقال عبد الحميد - النزلة" }, { name: "إبتدائية المجاهد عشاب محمد العيد - النزلة" }, { name: "إبتدائية المجاهد فرحي بحري - النزلة" }, { name: "إبتدائية الشيخ بوعمامة - النزلة" }, { name: "إبتدائية رحماني محمد بن محمد - النزلة" }, { name: "إبتدائية المجاهد كراش الأخضر - النزلة" }, { name: "إبتدائية المجاهد بن حميدة علي - النزلة" }, { name: "إبتدائية بن هدية جاب الله ( المستقبل2) - النزلة" }, { name: "إبتدائية المجاهد مشري غزال - النزلة" }, { name: "إبتدائية بن عاشور السبتي - النزلة" }, { name: "إبتدائية علوي حمزة - النزلة" }, { name: "إبتدائية المجاهد قمو محمود - النزلة" }],
+            "بلدة عمر": [{ name: "إبتدائية محمد البشير الإبراهيمي - بلدة اعمر" }, { name: "إبتدائية دحماني عبد الرحمان قوق - بلدة اعمر" }, { name: "إبتدائية بديار محمد - بلدة اعمر" }, { name: "إبتدائية المجاهد قادري موسى - بلدة اعمر" }, { name: "إبتدائية المجاهد الاخضري احمد - بلدة اعمر" }, { name: "إبتدائية المجاهد تمرني عمار(حي النهضة) - بلدة اعمر" }, { name: "إبتدائية المجاهد زروقي علي - بلدة اعمر" }, { name: "إبتدائية المجاهد حاجي عمر - بلدة اعمر" }, { name: "إبتدائية الشهيد مصطفى بن بولعيد قوق - بلدة اعمر" }, { name: "إبتدائية المجاهد شاشة محمد الصغير - بلدة اعمر" }],
+            "تبسبست": [{ name: "إبتدائية محمد عشبي - تبسبست" }, { name: "إبتدائية زنو عبد الحفيظ - تبسبست" }, { name: "إبتدائية جواد عمر (تبسبست الجنوبية ) - تبسبست" }, { name: "إبتدائية بن علي الاخضر (بني يسود القديمة) - تبسبست" }, { name: "إبتدائية جيلاني كينة - تبسبست" }, { name: "إبتدائية التجاني نصيري - تبسبست" }, { name: "إبتدائية بن دومة محمد الطاهر - تبسبست" }, { name: "إبتدائية جلابية عبد القادر - تبسبست" }, { name: "إبتدائية المجاهد أحمد شاوش - تبسبست" }, { name: "إبتدائية حي الصومام - تبسبست" }, { name: "إبتدائية المجاهد بوغرارة محمد الصالح - تبسبست" }, { name: "إبتدائية الفتح الجديدة (جرو بحري) - تبسبست" }, { name: "إبتدائية المجاهد العياط سعد - تبسبست" }, { name: "إبتدائية أول نوفمبر 1954 - تبسبست" }, { name: "إبتدائية المجاهد رمون جلول حي فرجمون - تبسبست" }],
+            "توقرت": [{ name: "إبتدائية بن خلدون - تقرت" }, { name: "إبتدائية الخنساء - تقرت" }, { name: "إبتدائية الشيخ الطاهر العبيدي - تقرت" }, { name: "إبتدائية عظامو محمد البحري - تقرت" }, { name: "إبتدائية الطالب بابا - تقرت" }, { name: "إبتدائية الإمام الشافعي - تقرت" }, { name: "إبتدائية الامام مالك - تقرت" }, { name: "إبتدائية عبيدلي أحمد - تقرت" }, { name: "إبتدائية عيادي علي - تقرت" }, { name: "إبتدائية ناصر بشير - تقرت" }, { name: "إبتدائية المجاهد موهوبي سليمان - تقرت" }, { name: "إبتدائية المجاهد احمد بورنان - تقرت" }, { name: "إبتدائية بن الصديق عبد الهادي (الرمال 1) - تقرت" }, { name: "إبتدائية الشهيد زابي عبد العالي - تقرت" }, { name: "إبتدائية الأمير عبد القادر الجديدة - تقرت" }, { name: "إبتدائية ميعادي محمد فخر الدين - تقرت" }, { name: "إبتدائية تاتاي محمد الصادق (الرمال 02) - تقرت" }, { name: "إبتدائية المجاهد كافي عبد الرحيم - تقرت" }, { name: "إبتدائية المجاهد عظامو محمد - تقرت" }, { name: "إبتدائية بولعراس ابراهيم - تقرت" }, { name: "إبتدائية حي النضال مجمع مدرسي حي 1190 مسكن - تقرت" }, { name: "إبتدائية عمان يوسف - تقرت" }, { name: "إبتدائية دباخ أحمد المستقبل الجنوبي 7 - تقرت" }, { name: "إبتدائية بالعيد مشري المستقبل الشمالي - تقرت" }, { name: "إبتدائية دباغ عمر المستقبل الجنوبي 09 - تقرت" }, { name: "إبتدائية تاتاي عبد القادر - تقرت" }, { name: "إبتدائية الشهيد بالطاهر علي المستقبل الشمالي - تقرت" }, { name: "إبتدائية المجاهد قادري علال حي 700 مسكن - تقرت" }],
+            "سيدي سليمان": [{ name: "إبتدائية بوسعادة بن دلالي - سيدي سليمان" }, { name: "إبتدائية العربي التبسي - سيدي سليمان" }, { name: "إبتدائية الطيب بوريالة - سيدي سليمان" }, { name: "إبتدائية بركبية محمد بكار - سيدي سليمان" }, { name: "إبتدائية الشهيد بن قطان السايح - سيدي سليمان" }, { name: "إبتدائية باسو السعيد - سيدي سليمان" }],
+            "تماسين": [{ name: "إبتدائية مولود فرعون - نماسين" }, { name: "إبتدائية الطالب السعدي بوخندق - نماسين" }, { name: "إبتدائية الشيخ الصغير التجاني - نماسين" }, { name: "إبتدائية الشيخ الصادق التجاني - نماسين" }, { name: "إبتدائية البشيرتاتي - نماسين" }, { name: "إبتدائية المجاهد بكوش محمد العيد - نماسين" }, { name: "إبتدائية المجاهد رزقان احمد - نماسين" }, { name: "إبتدائية المجاهد لبسيس إبراهيم - نماسين" }, { name: "إبتدائية بوبكري بشير - نماسين" }, { name: "إبتدائية بن قانة براهيم (البحور 2) - نماسين" }, { name: "إبتدائية المجاهد تجاني عبد الحق (حي الكودية ) - نماسين" }]
+        };
+
+        const institutionsByDaaira = {
+            "توقرت": {
+                "متوسط": [{ name: "متوسطة سعد بن أبي وقاص – توقرت" }, { name: "متوسطة الإمام علي – توقرت" }, { name: "متوسطة محمد الأمين العمودي – توقرت" }, { name: "متوسطة الشيخ المقراني – تبسبست" }, { name: "متوسطة بن هدية المدني – النزلة" }, { name: "متوسطة عبد الحميد بن باديس – توقرت" }, { name: "متوسطة حمزة بن عبد المطلب – الزاوية العابدية" }, { name: "متوسطة نصرات حشاني – تبسبست" }, { name: "متوسطة عيسات ايدير – البهجة تبسبست" }, { name: "متوسطة تجيني محمد – عين الصحراء النزلة" }, { name: "متوسطة ابن رشد – حي العرقوب توقرت" }, { name: "متوسطة رضا حوحو – الزاوية العابدية" }, { name: "متوسطة ميعادي فخر الدين – النزلة" }, { name: "متوسطة عطالي محمد الصغير – سيدي مهدي النزلة" }, { name: "متوسطة محمد عمران بوليفة – حي الرمال توقرت" }, { name: "متوسطة عبد المؤمن بن علي – النزلة" }, { name: "متوسطة بن الزاوي علي – تبسبست" }, { name: "متوسطة البشير الإبراهيمي – توقرت" }, { name: "متوسطة حي 5 جويلية – الزاوية العابدية" }, { name: "متوسطة بن حيزية عبد الله – عين الصحراء النزلة" }, { name: "متوسطة بن قلية محمد – الزاوية العابدية" }, { name: "متوسطة تمرني محمد – توقرت" }, { name: "متوسطة شاوش محمد – تبسبست" }, { name: "متوسطة المجاهد التجاني الصادق – النزلة" }, { name: "متوسطة خروبي محمد لخضر – النزلة" }, { name: "متوسطة المجاهد سبقاق العيد – توقرت" }, { name: "متوسطة دقعة الطاهر – تبسبست" }, { name: "متوسطة بدودة معمر بن علي – النزلة" }, { name: "متوسطة داشر الحاج – حي المستقبل توقرت" }, { name: "متوسطة المجاهد رواص محمد – حي المستقبل توقرت" }, { name: "متوسطة المجاهد بوليفة محمد العيد – حي المستقبل توقرت" }, { name: "متوسطة المجاهد عماري السايح – حي المستقبل توقرت" }],
+                "ثانوي": [{ name: "ثانوية الأمير عبد القادر – توقرت" }, { name: "ثانوية عبد الرحمان الكواكبي – تبسبست" }, { name: "ثانوية الحسن بن الهيثم – النزلة" }, { name: "ثانوية البشير الإبراهيمي – تبسبست" }, { name: "ثانوية هواري بومدين – الزاوية العابدية" }, { name: "ثانوية أبو بكر بلقايد – النزلة" }, { name: "ثانوية لزهاري تونسي – الزاوية العابدية" }, { name: "ثانوية بوخاري عبد المالك – النزلة" }, { name: "ثانوية عبودة علي – حي المستقبل توقرت" }, { name: "ثانوية مسغوني محمد الصالح – حي المستقبل" }]
+            },
+            "الحجيرة": {
+                "متوسط": [{ name: "متوسطة ابن سينا – الحجيرة" }, { name: "متوسطة لخضاري لخضر – العالية" }, { name: "متوسطة زوابري مسعود – لقراف الحجيرة" }, { name: "متوسطة السايح بن عيسى محمد السايح – العالية" }, { name: "متوسطة بن شويحة حمزة – الحجيرة" }, { name: "متوسطة شلغوم بشير – الشقة العالية" }, { name: "متوسطة المجاهد شعيب الأخضر – الحجيرة" }],
+                "ثانوي": [{ name: "ثانوية طارق بن زياد – الحجيرة" }, { name: "ثانوية بساسي محمد الصغير – العالية" }, { name: "ثانوية لحسيني محمد – الحجيرة" }, { name: "ثانوية بالضياف محمد – لقراف الحجيرة" }]
+            },
+            "الطيبات": {
+                "متوسط": [{ name: "متوسطة أحمد زبانة – الطيبات" }, { name: "متوسطة موسى بن نصير – المنقر" }, { name: "متوسطة طارق بن زياد – بن ناصر" }, { name: "متوسطة نتاري محمد الدليلعي – الطيبات" }, { name: "متوسطة العقون محمد الكبير – الطيبات" }, { name: "متوسطة معمري محمد – بن ناصر" }, { name: "متوسطة العيد زقرير – المنقر" }, { name: "متوسطة بلعجال أحمد – الخبنة الطيبات" }, { name: "متوسطة المجاهد الخذير أحمد – المنقر" }, { name: "متوسطة المجاهد رابحي العيد – المنقر" }, { name: "متوسطة المجاهد بكاري عبد القادر – الدليليعي الطيبات" }],
+                "ثانوي": [{ name: "ثانوية ابن رشيق القيرواني – الطيبات" }, { name: "ثانوية المنقر – دقعة علي المنقر" }, { name: "ثانوية عبيد أحمد – بن ناصر" }, { name: "ثانوية زقوني الصغير – الدليليعي الطيبات" }]
+            },
+            "المقارين": {
+                "متوسط": [{ name: "متوسطة الفرابي – المقارين" }, { name: "متوسطة طفحي مسعود – سيدي سليمان" }, { name: "متوسطة بلحارث محمد السايح – سيدي سليمان" }, { name: "متوسطة سوفي الهاشمي – الطيبات" }, { name: "متوسطة الشهيد عبد الرحمان قوتال – القصور المقارين" }, { name: "متوسطة الشهيد أحميدة بوحفص – المقارين" }, { name: "متوسطة بركبية عبد الرزاق – المقارين" }, { name: "متوسطة الشهيد تماسيني عبد الرحمان – لهريهيرة المقارين" }],
+                "ثانوي": [{ name: "ثانوية خالد بن الوليد – المقارين" }, { name: "ثانوية بن عمر النوي – سيدي سليمان" }, { name: "ثانوية عميش سعدون – المقارين" }]
+            },
+            "تماسين": {
+                "متوسط": [{ name: "متوسطة عمر بن الخطاب – تماسين" }, { name: "متوسطة مولاتي محمد السايح – بلدة عمر" }, { name: "متوسطة أبو بكر الرازي – البحور تماسين" }, { name: "متوسطة قوني محمد الطيب – سيدي عامر تماسين" }, { name: "متوسطة معركة قرداش – بلدة عمر" }, { name: "متوسطة محمد الصديق بن يحي – حي الكدية تماسين" }, { name: "متوسطة بركة عبد الرزاق – قوق بلدة عمر" }, { name: "متوسطة بدودة السايح – تملاحت تماسين" }, { name: "متوسطة علي بن باديس – قوق بلدة عمر" }],
+                "ثانوي": [{ name: "ثانوية مفدي زكريا – تماسين" }, { name: "ثانوية العيد بن الصحراوي – بلدة عمر" }, { name: "ثانوية قويدري محمد العيد – تماسين" }, { name: "ثانوية تجيني محمد لخضر – بلدة عمر" }, { name: "ثانوية مالك بن نبي – قوق" }]
+            }
+        };
+
+        // --- 2. إعداد القوائم المنسدلة (Dropdown Logic) ---
+        function initDropdowns() {
+            const daairaSelect = document.getElementById('sel-daaira');
+            daairaSelect.innerHTML = '';
+            for (let daaira in baladiyaMap) {
+                daairaSelect.innerHTML += `<option value="${daaira}">${daaira}</option>`;
+            }
+            updateMunicipalities();
+        }
+
+        function updateMunicipalities() {
+            const daaira = document.getElementById('sel-daaira').value;
+            const baladiyaSelect = document.getElementById('sel-municipality');
+            baladiyaSelect.innerHTML = '';
             
-            if (!dataStr) {
-                document.getElementById('print-container').innerHTML = '<h1 style="color:white; text-align:center; margin-top:50px; font-family:Cairo;">لا توجد بيانات للطباعة</h1>';
+            if (baladiyaMap[daaira]) {
+                baladiyaMap[daaira].forEach(b => {
+                    baladiyaSelect.innerHTML += `<option value="${b}">${b}</option>`;
+                });
+            }
+            updateInstitutions();
+        }
+
+        function updateInstitutions() {
+            const stage = document.getElementById('sel-stage').value;
+            const daaira = document.getElementById('sel-daaira').value;
+            const baladiya = document.getElementById('sel-municipality').value;
+            const instSelect = document.getElementById('sel-institution');
+            
+            instSelect.innerHTML = '<option value="">اختر المؤسسة...</option>';
+
+            if (stage === 'ابتدائي') {
+                if (primarySchoolsByBaladiya[baladiya]) {
+                    primarySchoolsByBaladiya[baladiya].forEach(school => {
+                        instSelect.innerHTML += `<option value="${school.name}">${school.name}</option>`;
+                    });
+                }
+            } else {
+                if (institutionsByDaaira[daaira] && institutionsByDaaira[daaira][stage]) {
+                    institutionsByDaaira[daaira][stage].forEach(school => {
+                        instSelect.innerHTML += `<option value="${school.name}">${school.name}</option>`;
+                    });
+                }
+            }
+            updateCardsWorkplace();
+        }
+
+        function updateCardsWorkplace() {
+            // تحديث مكان العمل في مصفوفة الموظفين عند تغيير المؤسسة
+            const selectedInstitution = document.getElementById('sel-institution').value;
+            if(selectedInstitution && employees.length > 0) {
+                employees.forEach(emp => emp.workplace = selectedInstitution);
+                saveToStorage();
+                renderTable();
+            }
+        }
+
+        // --- 3. المتغيرات والتخزين المحلي ---
+        let employees = [];
+        let currentEditingId = null;
+        let cropper = null;
+
+        window.onload = async () => {
+            initDropdowns(); // تهيئة القوائم عند التحميل
+            const savedData = await localforage.getItem('employeeData');
+            if (savedData) {
+                employees = savedData;
+                renderTable();
+                renderCards();
+            }
+        };
+
+        function saveToStorage() {
+            localforage.setItem('employeeData', employees);
+            renderCards();
+        }
+
+        function clearData() {
+            if(confirm('هل أنت متأكد من مسح جميع البيانات والصور؟')) {
+                localforage.clear();
+                employees = [];
+                renderTable();
+                renderCards();
+                document.getElementById('file-upload').value = "";
+            }
+        }
+
+     // --- 4. رفع الملف وقراءة البيانات عبر الزر ---
+        function loadEmployeeData() {
+            const fileInput = document.getElementById('file-upload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert("يرجى اختيار ملف الإكسل أولاً قبل الضغط على تحميل!");
                 return;
             }
 
-            const payload = JSON.parse(dataStr);
-            const employees = payload.employees;
-            const currentYear = payload.year;
-            
-            const container = document.getElementById('print-container');
-            let htmlContent = '';
-            
-            // تم التغيير إلى 6 بطاقات في الصفحة بدلاً من 8
-            const cardsPerPage = 6;
-            
-            for (let i = 0; i < employees.length; i += cardsPerPage) {
-                const chunk = employees.slice(i, i + cardsPerPage);
-                
-                htmlContent += '<div class="page-a4">';
-                
-                chunk.forEach(emp => {
-                    const photoHtml = emp.photoUrl 
-                        ? `<img src="${emp.photoUrl}" alt="صورة الموظف">` 
-                        : `<span style="color:#ccc; font-size:14px">صورة شمسية</span>`;
+            const selectedInstitution = document.getElementById('sel-institution').value;
+            if(!selectedInstitution) {
+                alert("تنبيه: لم تقم باختيار المؤسسة. سيتم ترك مكان العمل فارغاً في البطاقات حالياً.");
+            }
 
-                    const displayJobId = emp.jobId && emp.jobId.trim() !== "" ? emp.jobId : "........................................";
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    
+                    // 1. قراءة الملف أولاً كـ Array للبحث عن السطر الذي يحتوي على العناوين
+                    const rawArray = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+                    
+                    let headerRowIndex = -1;
+                    for (let i = 0; i < Math.min(10, rawArray.length); i++) {
+                        const row = rawArray[i].map(c => String(c).trim());
+                        // إذا وجدنا كلمة الاسم أو اللقب، فهذا هو سطر العناوين
+                        if (row.includes("الاسم") || row.includes("اللقب")) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
 
-                    htmlContent += `
+                    if (headerRowIndex === -1) {
+                        alert("خطأ: لم نتمكن من العثور على عناوين الأعمدة (الاسم، اللقب). يرجى التأكد من تطابق الملف مع النموذج.");
+                        return;
+                    }
+
+                    // 2. قراءة البيانات من السطر الصحيح الذي وجدناه
+                    const rawData = XLSX.utils.sheet_to_json(firstSheet, { range: headerRowIndex, defval: "" });
+                    
+                    const parsedEmployees = rawData.map((row, index) => {
+                        // 3. تنظيف أسماء الأعمدة من المسافات الزائدة المخفية (مثل "الاسم " تصبح "الاسم")
+                        const cleanRow = {};
+                        for (let key in row) {
+                            cleanRow[key.trim()] = row[key];
+                        }
+
+                        let rawJobId = cleanRow["الرمز الوظيفي"] || cleanRow["الرقم الوظيفي"] || "";
+                        let jobIdStr = rawJobId;
+                        
+                        if (typeof rawJobId === 'number') {
+                            jobIdStr = rawJobId.toLocaleString('fullwide', {useGrouping:false});
+                        } else if (typeof rawJobId === 'string' && rawJobId.toUpperCase().includes('E')) {
+                            jobIdStr = Number(rawJobId).toLocaleString('fullwide', {useGrouping:false});
+                        }
+
+                        const firstName = cleanRow["الاسم"] || "";
+                        const lastName = cleanRow["اللقب"] || "";
+                        const fullName = (firstName + " " + lastName).trim();
+
+                      let rawDob = cleanRow["تاريخ الازدياد"] || cleanRow["تاريخ الميلاد"] || "";
+                        let dobStr = "";
+
+                        if (rawDob) {
+                            if (typeof rawDob === 'number') {
+                                // 1. إذا كان التاريخ مخزناً كرقم تسلسلي في الإكسل
+                                let date = new Date(Math.round((rawDob - 25569) * 86400 * 1000));
+                                let day = String(date.getDate()).padStart(2, '0');
+                                let month = String(date.getMonth() + 1).padStart(2, '0');
+                                let year = date.getFullYear();
+                                dobStr = `${year}-${month}-${day}`;
+                            } else if (rawDob instanceof Date) {
+                                // 2. إذا تعرف عليه الإكسل ككائن تاريخ مباشر
+                                let day = String(rawDob.getDate()).padStart(2, '0');
+                                let month = String(rawDob.getMonth() + 1).padStart(2, '0');
+                                let year = rawDob.getFullYear();
+                                dobStr = `${year}-${month}-${day}`;
+                            } else {
+                                let tempStr = String(rawDob).trim();
+                                let parsedDate = new Date(tempStr);
+                                
+                                // 3. إذا كان نصاً طويلاً بالإنجليزية (مثل الذي ظهر لك: Sun Jun 26 1988...)
+                                if (!isNaN(parsedDate.getTime()) && tempStr.match(/[a-zA-Z]/) && tempStr.length > 12) {
+                                    let day = String(parsedDate.getDate()).padStart(2, '0');
+                                    let month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                                    let year = parsedDate.getFullYear();
+                                    dobStr = `${year}-${month}-${day}`;
+                                } else {
+                                    // 4. إذا كان نصاً قصيراً عادياً (مثل 1988-06-26 أو 26/06/1988)
+                                    let parts = tempStr.split(/[-/]/);
+                                    if (parts.length === 3) {
+                                        if (parts[0].length === 4) { 
+                                            dobStr = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+                                        } else if (parts[2].length === 4) { 
+                                            dobStr = `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+                                        } else {
+                                            dobStr = tempStr;
+                                        }
+                                    } else {
+                                        dobStr = tempStr; // إرجاع النص كما هو إذا لم يتطابق مع أي شيء
+                                    }
+                                }
+                            }
+                        }
+                        return {
+                            id: 'emp_' + Date.now() + '_' + index,
+                            name: fullName,
+                            dob: dobStr,
+                            rank: cleanRow["الرتبة"] || '',
+                            workplace: selectedInstitution,
+                            jobId: jobIdStr,
+                            photo: null
+                        };
+                    }).filter(emp => emp.name !== ''); // تصفية الأسطر الفارغة تماماً
+
+                    if (parsedEmployees.length === 0) {
+                        alert("تم قراءة الملف ولكن يبدو أنه لا يحتوي على أسماء موظفين، أو أن البيانات غير مكتوبة تحت عمود 'الاسم'.");
+                        return;
+                    }
+
+                    employees = parsedEmployees;
+                    saveToStorage();
+                    renderTable();
+                    alert("تم تحميل " + employees.length + " موظف بنجاح!");
+                    
+                } catch (error) {
+                    console.error("Error reading file:", error);
+                    alert("حدث خطأ أثناء تحليل ملف الإكسل. تأكد من أن الملف سليم وغير تالف.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+
+
+        // --- 5. رسم الجدول ---
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            employees.forEach((emp) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${emp.name}</td>
+                    <td><span dir="ltr">${emp.dob}</span></td>
+                    <td>${emp.rank}</td>
+                    <td>${emp.workplace || '<span style="color:red">يرجى اختيار المؤسسة</span>'}</td>
+                    <td><span dir="ltr">${emp.jobId}</span></td>
+                    <td>
+                        ${emp.photo 
+                            ? `<img src="${emp.photo}" width="40" height="52" style="object-fit:cover; border-radius:4px; vertical-align:middle;">
+                               <button class="btn btn-danger btn-sm" onclick="deletePhoto('${emp.id}')">حذف</button>` 
+                            : `<input type="file" accept="image/*" onchange="openCropper(event, '${emp.id}')" style="width: 180px;">`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- 6. قص وإدارة الصور ---
+        function openCropper(event, empId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentEditingId = empId;
+            const url = URL.createObjectURL(file);
+            const imageElement = document.getElementById('cropper-image');
+            imageElement.src = url;
+            
+            document.getElementById('cropper-modal').style.display = 'flex';
+
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(imageElement, {
+                aspectRatio: 130 / 170, // تناسب الإطار في البطاقة
+                viewMode: 1,
+                autoCropArea: 1
+            });
+            event.target.value = "";
+        }
+
+        function closeCropper() {
+            document.getElementById('cropper-modal').style.display = 'none';
+            if (cropper) { cropper.destroy(); cropper = null; }
+            currentEditingId = null;
+        }
+
+      function saveCrop() {
+            if (!cropper) return;
+            
+            // مضاعفة أبعاد الصورة 4 مرات للحصول على دقة فائقة (Ultra HD) في الطباعة
+            const canvas = cropper.getCroppedCanvas({ width: 520, height: 680 }); 
+            // تصدير الصورة بصيغة PNG غير مضغوطة للحفاظ على أعلى جودة
+            const base64Image = canvas.toDataURL('image/png'); 
+
+            const empIndex = employees.findIndex(e => e.id === currentEditingId);
+            if (empIndex > -1) {
+                employees[empIndex].photo = base64Image;
+                saveToStorage();
+                renderTable();
+            }
+            closeCropper();
+        }
+
+        function deletePhoto(empId) {
+            const empIndex = employees.findIndex(e => e.id === empId);
+            if (empIndex > -1) {
+                employees[empIndex].photo = null;
+                saveToStorage();
+                renderTable();
+            }
+        }
+
+      
+// --- 7. توليد البطاقات للطباعة ---
+let currentTemplate = 1; // لحفظ النموذج المختار
+
+// دالة جديدة لتشغيل الطباعة حسب النموذج المختار
+function printTemplate(templateId) {
+    currentTemplate = templateId;
+    renderCards(); // إعادة التوليد بالتصميم المطلوب
+    setTimeout(() => {
+        window.print();
+    }, 500); // مهلة صغيرة ليتمكن المتصفح من رسم الباركود أو الصور قبل الطباعة
+}
+
+function renderCards() {
+    const container = document.getElementById('card-container');
+    
+    // إضافة الكلاس المناسب حسب النموذج المختار
+    if (currentTemplate === 2) {
+        container.className = 'theme-2';
+    } else if (currentTemplate === 3) {
+        container.className = 'theme-3';
+    } else if (currentTemplate === 4) {
+        container.className = 'theme-4'; // إضافة التصميم الرابع
+    } else {
+        container.className = '';
+    }
+    
+    container.innerHTML = '';
+
+    const chunkSize = 6;
+    
+    // الدوران على قائمة الموظفين لطباعة نفس العدد
+    for (let i = 0; i < employees.length; i += chunkSize) {
+        const chunk = employees.slice(i, i + chunkSize);
+        
+        let pageHTML = `<div class="page-a4">`;
+        
+        chunk.forEach(emp => {
+            if (currentTemplate === 3) {
+                // --- كود الجهة الخلفية الموحدة (النموذج الثالث بالرسومات) ---
+                pageHTML += `
+                <div class="card-wrapper">
+                    <div class="card">
+                        <div class="back-content">
+                            <div class="back-graphics">
+                                <img src="https://i.ibb.co/placeholder-flag.png" alt="العلم" class="flag-img" style="opacity: 0;"> 
+                                <img src="https://i.ibb.co/placeholder-teacher.png" alt="ظل المعلم" class="teacher-img" style="opacity: 0; height: 150px;"> 
+                            </div>
+                            
+                            <div class="ministry-title-back">وزارة التربية الوطنية</div>
+                            
+                            <div class="rules-container">
+                                <img src="https://i.ibb.co/placeholder-stamp.png" alt="ختم" class="stamp-watermark" style="opacity: 0;">
+                                
+                                <ul class="rules-list">
+                                    <li>كل استعمال غير قانوني أو لأغراض غير مهنية للبطاقة المهنية يعرض صاحبها لعقوبات تأديبية</li>
+                                    <li>في حالة التقاعد أو الإستقالة أو الخروج من الولاية يجب على الموظف تسليم البطاقة للإدارة</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            } else if (currentTemplate === 4) {
+                // --- كود الجهة الخلفية (التصميم الرابع الرسمي والحديث) ---
+                pageHTML += `
+                <div class="card-wrapper">
+                    <div class="card">
+                        <div class="back-header">
+                            <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                            <h2>وزارة التربية الوطنية</h2>
+                        </div>
+                        
+                        <div class="back-body">
+                            <div class="watermark-logo"></div>
+                            <div class="instructions-title">تنبيه هام</div>
+                            <ul class="rules-list-modern">
+                                <li>كل استعمال غير قانوني أو لأغراض غير مهنية للبطاقة، يعرض صاحبها لعقوبات تأديبية.</li>
+                                <li>في حالة التقاعد، الإستقالة، أو النقل خارج الولاية، يُلزم الموظف بتسليم البطاقة للإدارة.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="back-footer">
+                            <div class="return-text">
+                                في حالة العثور على هذه البطاقة، يرجى تسليمها إلى مديرية التربية لولاية توقرت أو أقرب مؤسسة تربوية.
+                            </div>
+                            <div class="qr-box">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Directorate_of_Education_Touggourt : 0664446349" style="width: 100%; height: 100%; object-fit: contain;" alt="QR Code">
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                // --- الكود الخاص بوجه البطاقة (النموذج الأول والثاني) ---
+                const photoHTML = emp.photo 
+                    ? `<img src="${emp.photo}" style="width:100%; height:100%; object-fit:cover;">`
+                    : `<span style="color:#ccc; font-size:14px">صورة شمسية</span>`;
+
+                const barcodeValue = emp.jobId ? emp.jobId : "0000000000";
+
+                if (currentTemplate === 1) {
+                    pageHTML += `
                     <div class="card-wrapper">
                         <div class="card">
                             <div class="top-deco-bar"><div class="bar-green"></div><div class="bar-red"></div></div>
@@ -239,22 +1114,22 @@
                             <div class="card-body">
                                 <div class="info-section">
                                     <div class="card-name-title">بطاقة التعريف المهنية</div>
-                                    <div class="info-row"><span class="label">اللقب والاسم:</span><span class="value">${emp.fullName}</span></div>
-                                    <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value">${emp.dob}</span></div>
-                                    <div class="info-row"><span class="label">الرتبة:</span><span class="value">${emp.jobTitle}</span></div>
-                                    <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.school}</span></div>
-                                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${displayJobId}</span></div>
+                                    <div class="info-row"><span class="label">الاسم واللقب:</span><span class="value">${emp.name || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value" dir="ltr">${emp.dob || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">الرتبة:</span><span class="value">${emp.rank || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.workplace || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${emp.jobId || '...................'}</span></div>
                                 </div>
                                 <div class="photo-section">
-                                    <div class="serial-number"><span>الرقم:</span><span dir="ltr">${currentYear} / .....</span></div>
-                                    <div class="photo-frame">${photoHtml}</div>
+                                    <div class="serial-number"><span>الرقم:</span><span dir="ltr">2026 / .....</span></div>
+                                    <div class="photo-frame">${photoHTML}</div>
                                     <div class="signature-title">مدير التربية</div>
                                 </div>
                             </div>
                             
                             <div class="barcode-container">
                                 <svg class="barcode"
-                                    jsbarcode-value="${emp.barcodeVal}"
+                                    jsbarcode-value="${barcodeValue}"
                                     jsbarcode-format="CODE128"
                                     jsbarcode-displayValue="false"
                                     jsbarcode-height="28"
@@ -267,32 +1142,63 @@
                             <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
                         </div>
                     </div>`;
-                });
-
-                // تعبئة الفراغات لضمان عدم انهيار الـ Grid إذا كان العدد أقل من 6
-                const remaining = cardsPerPage - chunk.length;
-                for (let j = 0; j < remaining; j++) {
-                    htmlContent += '<div class="card-wrapper" style="visibility: hidden; border:none;"></div>';
+                } else if (currentTemplate === 2) {
+                     pageHTML += `
+                    <div class="card-wrapper">
+                        <div class="card">
+                            <div class="corner-ribbon-container">
+                                <div class="corner-ribbon-content">
+                                    <div class="stripe green"></div>
+                                    <div class="stripe red"></div>
+                                </div>
+                            </div>
+                            <div class="header">
+                                <div class="main-title">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+                                <div class="side-group right">
+                                   
+                                    <div class="side-text">وزارة التربية الوطنية</div>
+                                </div>
+                                <div class="side-group left">
+                                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" alt="شعار" class="header-logo">
+                                    <div class="side-text">مديرية التربية لولاية توقرت</div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="right-section">
+                                    <div class="card-type-title">بطاقة التعريف المهنية</div>
+                                    <div class="info-row"><span class="info-label">اللقب والاسم:</span>   <span>${emp.name}</span></div>
+                                    <div class="info-row"><span class="info-label">تاريخ الميلاد:</span>      <span dir="ltr">${emp.dob}</span></div>
+                                    <div class="info-row"><span class="info-label">الرتبة:</span>      <span>${emp.rank}</span></div>
+                                    <div class="info-row"><span class="info-label">مكان العمل:</span>      <span>${emp.workplace || ''}</span></div>
+                                    <div class="info-row"><span class="info-label">رقم التعريف الوظيفي:</span>   <span>${emp.jobId || ''}</span></div>
+                                </div>
+                                <div class="left-section">
+                                    <div class="number-row">
+                                        <span>الرقم:</span>
+                                        <span dir="ltr">2026/</span>
+                                    </div>
+                                    <div class="photo-area">${photoHTML}</div>
+                                    <div class="signature">مدير التربية</div>
+                                </div>
+                            </div>
+                            <div class="footer">
+                                على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات
+                            </div>
+                        </div>
+                    </div>`;
                 }
-
-                htmlContent += '</div>';
             }
-
-            container.innerHTML = htmlContent;
-
-            // تفعيل الباركود
-            if (typeof JsBarcode !== 'undefined') {
-                JsBarcode(".barcode").init();
-            }
-
-            // مسح البيانات لتفريغ الذاكرة
-            localStorage.removeItem('printCardsData');
-
-            // نافذة الطباعة تفتح تلقائياً
-            setTimeout(() => {
-                window.print();
-            }, 1000);
         });
+        
+        pageHTML += `</div>`; 
+        container.innerHTML += pageHTML;
+    }
+
+    // تفعيل الباركود فقط للنموذج الأول (وجه البطاقة)
+    if (employees.length > 0 && currentTemplate === 1) {
+        JsBarcode(".barcode").init();
+    }
+}
     </script>
 </body>
 </html>
