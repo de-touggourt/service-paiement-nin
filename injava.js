@@ -2,7 +2,6 @@
 // 🔒 SYSTEM GUARD V3.0: نظام الأرقام (1=نشط، 2=إدارة، 0=غلق)
 // ============================================================
 
-
 const LOCAL_VERSION = "1.0.5"; 
 let CURRENT_SYSTEM_MODE = 1; // متغير عام لحفظ الحالة
 let isSecretLoginActive = false; // متغير لمنع المقاطعة أثناء الدخول السري
@@ -1324,8 +1323,7 @@ function openAdminModal() {
   });
 }
 
-
-// 2. عرض لوحة الاستخراج (مقفلة ومنسقة) + زر البطاقات الجديد
+// 2. عرض لوحة الاستخراج (مقفلة ومنسقة)
 function showRestrictedAdminPanel(empData) {
   const schoolName = empData.schoolName || "غير محدد";
   const daaira = empData.daaira || "";
@@ -1333,75 +1331,83 @@ function showRestrictedAdminPanel(empData) {
   const level = empData.level || "";
   const directorName = `${empData.fmn} ${empData.frn}`;
 
+  // تنسيق CSS للحقول المقفلة
   const lockedStyle = `
-    background: #f1f3f4; border: 1px solid #ced4da; color: #495057; 
-    font-weight: 600; cursor: not-allowed; text-align: center; font-size: 14px;
-    height: 40px; margin-bottom: 12px;
+    background: #f1f3f4; 
+    border: 1px solid #ced4da; 
+    color: #495057; 
+    font-weight: 600; 
+    cursor: not-allowed;
+    text-align: center;
+    font-size: 14px;
+    height: 40px;
+    margin-bottom: 12px;
   `;
 
   const popupHtml = `
     <div style="font-family: 'Cairo', sans-serif; direction: rtl; text-align: right;">
+      
       <div style="background: linear-gradient(45deg, #2575fc, #6a11cb); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <div style="font-size: 12px; opacity: 0.9;">مرحباً بالسيد(ة) المدير(ة) أو المسؤول(ة):</div>
         <div style="font-size: 18px; font-weight: bold; margin-top: 5px;">${directorName}</div>
       </div>
-      
+
       <div style="display: flex; gap: 10px;">
-        <div style="flex: 1;"><label style="font-size: 12px; font-weight:bold; color:#555;">الطور:</label><input type="text" value="${level}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly></div>
-        <div style="flex: 1;"><label style="font-size: 12px; font-weight:bold; color:#555;">الدائرة:</label><input type="text" value="${daaira}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly></div>
-      </div>
-      <label style="font-size: 12px; font-weight:bold; color:#555;">البلدية:</label>
-      <input type="text" value="${baladiya}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
-      <label style="font-size: 12px; font-weight:bold; color:#2575fc;">المؤسسة (مثبتة):</label>
-      <div style="position: relative;">
-        <input type="text" value="${schoolName}" class="swal2-input" style="${lockedStyle}; width: 100%; background: #e8f0fe; border-color: #2575fc; color: #1a73e8;" disabled readonly>
-        <i class="fas fa-lock" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #2575fc;"></i>
+        <div style="flex: 1;">
+            <label style="font-size: 12px; font-weight:bold; color:#555;">الطور:</label>
+            <input type="text" value="${level}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
+        </div>
+        <div style="flex: 1;">
+            <label style="font-size: 12px; font-weight:bold; color:#555;">الدائرة:</label>
+            <input type="text" value="${daaira}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
+        </div>
       </div>
 
-      <div style="margin-top: 20px; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">
-        <button id="btnOpenCards" class="swal2-confirm swal2-styled" 
-                style="background-color: #006233; margin: 0 5px; font-family: 'Cairo'; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <i class="fas fa-id-card"></i> البطاقات المهنية
-        </button>
+      <label style="font-size: 12px; font-weight:bold; color:#555;">البلدية:</label>
+      <input type="text" value="${baladiya}" class="swal2-input" style="${lockedStyle}; width: 100%;" disabled readonly>
+
+      <label style="font-size: 12px; font-weight:bold; color:#2575fc;">المؤسسة (مثبتة):</label>
+      <div style="position: relative;">
+        <input type="text" value="${schoolName}" class="swal2-input" 
+               style="${lockedStyle}; width: 100%; background: #e8f0fe; border-color: #2575fc; color: #1a73e8;" 
+               disabled readonly>
+        <i class="fas fa-lock" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #2575fc;"></i>
+      </div>
+      
+      <div style="text-align: center; margin-top: 10px; font-size: 11px; color: #dc3545;">
+        <i class="fas fa-info-circle"></i> لا يمكن تغيير المؤسسة لضمان سرية البيانات.
       </div>
     </div>
   `;
 
   Swal.fire({
+    title: '', // العنوان مدمج في التصميم
     html: popupHtml,
     showCancelButton: true,
     showDenyButton: true,
     confirmButtonText: '<i class="fas fa-print"></i> طباعة الاستمارات',
     denyButtonText: '<i class="fas fa-list"></i> عرض القائمة',
     cancelButtonText: 'خروج',
-    confirmButtonColor: '#333',
-    denyButtonColor: '#28a745',
+    confirmButtonColor: '#333',     // لون زر الاستمارات (داكن/رسمي)
+    denyButtonColor: '#28a745',     // لون زر القائمة (أخضر)
     cancelButtonColor: '#d33',
     width: '500px',
     padding: '20px',
-    didOpen: () => {
-        // ✅ إصلاح الزر: عند الضغط، نغلق النافذة يدوياً ونستدعي الدالة مباشرة
-        // دون المرور عبر preConfirm الذي يسبب الخطأ
-        const btn = document.getElementById('btnOpenCards');
-        if(btn) {
-            btn.addEventListener('click', () => {
-                Swal.close(); // إغلاق النافذة الحالية
-                setTimeout(() => {
-                    fetchAndHandleData(schoolName, 'cards'); // استدعاء البطاقات
-                }, 300); // تأخير بسيط لضمان الإغلاق
-            });
-        }
+    preConfirm: () => {
+        return { action: 'forms', school: schoolName };
     },
-    preConfirm: () => { return { action: 'forms', school: schoolName }; },
-    preDeny: () => { return { action: 'list', school: schoolName }; }
+    preDeny: () => {
+        return { action: 'list', school: schoolName };
+    }
   }).then((result) => {
-    // التحقق من أن النافذة أغلقت بسبب الزر الخاص بنا (تم تجاهلها)
-    if (result.isDismissed && result.dismiss === Swal.DismissReason.close) return; // تم الإغلاق يدوياً للكود
-    
-    if (result.isConfirmed) fetchAndHandleData(result.value.school, 'forms');
-    else if (result.isDenied) fetchAndHandleData(result.value.school, 'list');
+    if (result.isConfirmed) {
+      fetchAndHandleData(result.value.school, 'forms');
+    } else if (result.isDenied) {
+      fetchAndHandleData(result.value.school, 'list');
+    }
   });
 }
+
 // 2. تحديث القوائم المنسدلة (Logic للفلاتر)
 function updateAdminBaladiya() {
     const daaira = document.getElementById("adminDaaira").value;
@@ -1479,9 +1485,6 @@ async function fetchAndHandleData(schoolName, mode) {
 
         if (mode === 'forms') {
             generateBulkForms(filteredData, schoolName);
-        } else if (mode === 'cards') {
-          
-            generateCardsTable(filteredData, schoolName);
         } else {
             generateEmployeesTable(filteredData, schoolName);
         }
@@ -1936,245 +1939,4 @@ window.triggerSecretAdminLogin = async function() {
     }, 100);
 };
 
-// ============================================================
-// 💳 نظام البطاقات المهنية (الإصدار المصحح والنهائي)
-// ============================================================
-
-function generateCardsTable(data, schoolName) {
-    let rows = '';
-    data.forEach((emp, index) => {
-        const jobId = emp.jobId || ""; 
-        const hasPhoto = !!emp.photoUrl;
-        
-        // تحديث أيقونة الحالة برمجياً لضمان عدم إعادة توجيه الصفحة
-        const photoStatusIcon = `<span id="status_icon_${emp.ccp}" style="color:${hasPhoto ? '#28a745':'#dc3545'}; font-size:18px;">
-            <i class="fas fa-${hasPhoto ? 'check-circle' : 'times-circle'}"></i>
-        </span>`;
-
-        rows += `
-            <tr style="border-bottom: 1px solid #eee;">
-                <td>${index + 1}</td>
-                <td class="col-compressed" style="font-weight:600;">${emp.fmn} ${emp.frn}</td>
-                <td class="col-compressed" style="font-size:11px;">${getJob(emp.gr)}</td>
-                <td class="col-jobid-wide">
-                    <input type="text" id="input_id_${emp.ccp}" class="job-id-input" value="${jobId}" 
-                           placeholder="16 رقم"
-                           onchange="confirmAndSaveJobId('${emp.ccp}', this.value)"
-                           style="width:180px; text-align:center; border:1px solid #ddd; padding:5px; border-radius:4px; font-family: 'Courier New', monospace; font-weight: bold;">
-                </td>
-                <td style="text-align:center; white-space: nowrap;">
-                    ${photoStatusIcon}
-                    <input type="file" id="file_${emp.ccp}" style="display:none" accept="image/*" onchange="uploadEmployeePhoto('${emp.ccp}', this)">
-                    <button onclick="document.getElementById('file_${emp.ccp}').click()" class="action-btn" style="background:#17a2b8;" title="رفع"><i class="fas fa-upload"></i></button>
-                    ${hasPhoto ? `<button id="del_btn_${emp.ccp}" onclick="deleteEmployeePhoto('${emp.ccp}')" class="action-btn" style="background:#dc3545;"><i class="fas fa-trash"></i></button>` : ''}
-                </td>
-                <td>
-                     <button onclick="confirmThenPreview('${emp.ccp}')" class="action-btn" style="background:#006233;">
-                        <i class="fas fa-eye"></i> معاينة
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-
-    const htmlContent = `
-        <style>
-            .modern-table { width: 100%; border-collapse: collapse; text-align: right; direction: rtl; font-family: 'Cairo', sans-serif; }
-            .modern-table thead th { background: #006233; color: white; padding: 12px 5px; font-size: 13px; position: sticky; top: 0; z-index: 100; }
-            .modern-table tbody td { padding: 10px 5px; font-size: 12px; vertical-align: middle; border-bottom: 1px solid #eee; }
-            /* تقليل عرض أعمدة الاسم والرتبة لفسح المجال لرقم التعريف */
-            .col-compressed { max-width: 100px; white-space: normal; line-height: 1.2; overflow: hidden; } 
-            .col-jobid-wide { width: 200px; } 
-            .action-btn { padding: 6px 10px; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 0 2px; }
-        </style>
-
-        <div style="text-align:center; margin-bottom:15px;">
-            <h3 style="color:#006233; font-family: 'Cairo'; margin-bottom:10px;">إدارة البطاقات المهنية - ${schoolName}</h3>
-            <button onclick="printAllCards('${schoolName}')" class="action-btn" style="background-color: #343a40; padding: 10px 25px; font-weight: bold;">
-                <i class="fas fa-print"></i> طباعة الكل (A4)
-            </button>
-        </div>
-
-        <div style="overflow-x:auto; overflow-y:auto; max-height:65vh; border: 1px solid #ddd; border-radius: 8px;">
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <th width="30px">#</th>
-                        <th class="col-compressed">الموظف</th>
-                        <th class="col-compressed">الرتبة</th>
-                        <th class="col-jobid-wide">رقم التعريف الوظيفي</th>
-                        <th width="140px">الصورة</th>
-                        <th width="100px">الخيار</th>
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-        </div>
-    `;
-
-    window.currentCardContext = data;
-
-    Swal.fire({
-        html: htmlContent,
-        width: '1080px',
-        showConfirmButton: false,
-        showCloseButton: true,
-        allowOutsideClick: false // ✅ لا يغلق عند النقر خارجاً
-    });
-}
-
-// 1. حفظ الرقم مع تأكيد (يستدعى عند التغيير)
-async function confirmAndSaveJobId(ccp, value) {
-    if(!value) return;
-    const result = await Swal.fire({
-        title: 'تأكيد الحفظ',
-        text: `هل تريد اعتماد الرقم (${value})؟`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'نعم، حفظ',
-        cancelButtonText: 'إلغاء',
-        confirmButtonColor: '#006233'
-    });
-
-    if (result.isConfirmed) {
-        try {
-            await db.collection("employeescompay").doc(ccp).set({ jobId: value }, { merge: true });
-            const emp = window.currentCardContext.find(e => e.ccp == ccp);
-            if(emp) emp.jobId = value;
-            Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 2000}).fire({ icon: 'success', title: 'تم الحفظ' });
-        } catch (e) { Swal.fire("خطأ", "فشل الحفظ", "error"); }
-    }
-}
-
-// 2. المعاينة مع التأكيد قبل الفتح لضمان حفظ الرقم (طلبك الخاص)
-async function confirmThenPreview(ccp) {
-    const inputVal = document.getElementById(`input_id_${ccp}`).value;
-    
-    // تنبيه للتأكيد على حفظ الرقم الحالي قبل عرض البطاقة
-    const confirmPreview = await Swal.fire({
-        title: 'معاينة البطاقة',
-        text: `هل تريد حفظ الرقم (${inputVal || 'فارغ'}) ومعاينة البطاقة؟`,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: 'حفظ ومعاينة',
-        cancelButtonText: 'إلغاء',
-        confirmButtonColor: '#006233'
-    });
-
-    if (confirmPreview.isConfirmed) {
-        // حفظ الرقم أولاً
-        await db.collection("employeescompay").doc(ccp).set({ jobId: inputVal }, { merge: true });
-        const emp = window.currentCardContext.find(e => e.ccp == ccp);
-        if(emp) emp.jobId = inputVal;
-        
-        // ثم فتح المعاينة
-        previewCard(ccp);
-    }
-}
-
-// 3. رفع الصورة (بدون Redirect)
-async function uploadEmployeePhoto(ccp, input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false });
-    toast.fire({ icon: 'info', title: 'جاري الرفع...' });
-
-    try {
-        const storageRef = firebase.storage().ref();
-        const fileRef = storageRef.child(`photos/${ccp}_card.jpg`);
-        await fileRef.put(file);
-        const url = await fileRef.getDownloadURL();
-
-        await db.collection("employeescompay").doc(ccp).set({ photoUrl: url }, { merge: true });
-        
-        // تحديث الواجهة موضعياً
-        const emp = window.currentCardContext.find(e => e.ccp == ccp);
-        if(emp) emp.photoUrl = url;
-        const iconSpan = document.getElementById(`status_icon_${ccp}`);
-        if(iconSpan) {
-            iconSpan.innerHTML = '<i class="fas fa-check-circle"></i>';
-            iconSpan.style.color = '#28a745';
-        }
-        toast.fire({ icon: 'success', title: 'تم الرفع بنجاح', timer: 2000 });
-    } catch (error) { toast.fire({ icon: 'error', title: 'فشل الرفع' }); }
-}
-
-// 4. فتح نافذة المعاينة (Professional ID Only)
-function previewCard(ccp) {
-    const emp = window.currentCardContext.find(e => e.ccp == ccp);
-    if(!emp) return;
-
-    const currentYear = new Date().getFullYear();
-    const cardHTML = getCardHtmlTemplate(emp, currentYear);
-
-    Swal.fire({
-        title: 'معاينة الهوية المهنية',
-        html: `<div id="p-area" style="padding:10px; background:#f4f4f4; display:flex; justify-content:center;">${cardHTML}</div>`,
-        width: 'auto', 
-        allowOutsideClick: false, // ✅ لا يغلق عند النقر خارجاً
-        showCloseButton: true,
-        showConfirmButton: true,
-        confirmButtonText: 'طباعة البطاقة',
-        confirmButtonColor: '#006233',
-        didOpen: () => { if(typeof JsBarcode !== 'undefined') JsBarcode(".barcode-element").init(); }
-    }).then((res) => { if(res.isConfirmed) printSinglePreview(ccp); });
-}
-
-// 5. الطباعة الفردية
-function printSinglePreview(ccp) {
-    const emp = window.currentCardContext.find(e => e.ccp == ccp);
-    if(!emp) return;
-    const printContainer = document.getElementById("printContainer");
-    const originalContent = printContainer.innerHTML;
-    const styles = getPrintStyles ? getPrintStyles() : ""; 
-
-    printContainer.innerHTML = styles + 
-        '<div style="display:flex; justify-content:center; align-items:center; height:100vh;">' + 
-        getCardHtmlTemplate(emp, new Date().getFullYear()) + 
-        '</div>';
-    
-    if(typeof JsBarcode !== 'undefined') JsBarcode(".barcode-element").init();
-    window.print();
-    setTimeout(() => { printContainer.innerHTML = originalContent; }, 1000);
-}
-
-// 5. Print All Cards Function (معدلة لفتح صفحة خارجية)
-function printAllCards(schoolName) {
-    const data = window.currentCardContext;
-    if (!data || data.length === 0) {
-        return Swal.fire("تنبيه", "لا توجد بيانات للطباعة", "warning");
-    }
-
-    const currentYear = new Date().getFullYear();
-
-    // 1. تجهيز البيانات وتنسيقها قبل إرسالها للصفحة الجديدة
-    const formattedData = data.map(emp => {
-        return {
-            ccp: emp.ccp,
-            fullName: `${emp.fmn} ${emp.frn}`,
-            dob: fmtDate(emp.diz), // نستخدم دالة التنسيق الموجودة في ملفك
-            jobTitle: getJob(emp.gr), // نستخدم دالة جلب الرتبة
-            school: emp.schoolName,
-            photoUrl: emp.photoUrl || null,
-            barcodeVal: emp.ccp,
-            jobId: emp.jobId || "................"
-        };
-    });
-
-    // 2. تجميع البيانات في كائن واحد
-    const printPayload = {
-        schoolName: schoolName,
-        year: currentYear,
-        employees: formattedData
-    };
-
-    // 3. حفظ البيانات في ذاكرة المتصفح المحلية
-    localStorage.setItem('printCardsData', JSON.stringify(printPayload));
-
-    // 4. فتح صفحة الطباعة في نافذة جديدة
-    // 🛑 تنبيه: ضع رابط صفحة card.html الموجودة على غيت هاب هنا 🛑
-    // مثال: window.open('https://yourusername.github.io/yourrepo/card.html', '_blank');
-    window.open('card2.html', '_blank'); 
-}
 
