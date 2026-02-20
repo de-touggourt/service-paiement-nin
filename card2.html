@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بطاقة مهنية - نظام إدارة وتوليد</title>
+    <title>نظام إدارة البطاقات المهنية</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     
@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 </script>
+
+
 
 
 
@@ -572,6 +574,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج الأول</button>
                 <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة النموذج الثاني</button>
                 <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج الثاني</button>
+                <button onclick="goBackToMain()" 
+        style="background: #6c757d; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: 'Cairo', sans-serif; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 15px;">
+    <i class="fas fa-arrow-right"></i> رجوع للواجهة الرئيسية
+</button>
                 
             </div>
         </div>
@@ -1198,6 +1204,14 @@ function renderCards() {
     if (employees.length > 0 && currentTemplate === 1) {
         JsBarcode(".barcode").init();
     }
+}
+
+function goBackToMain() {
+    // مسح تصريح الدخول من الجلسة (لكي لا يفتح الرابط مجدداً إذا ضغط على زر "للأمام" في المتصفح)
+    sessionStorage.removeItem("secure_cards_access");
+    
+    // التوجيه للصفحة الرئيسية (تأكد أن اسم الصفحة الرئيسية الخاص بك هو index.html)
+    window.location.href = "index.html"; 
 }
     </script>
 </body>
