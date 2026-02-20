@@ -206,7 +206,12 @@ const SECURE_INTERFACE_HTML = `
                 style="background: #fff; color: #2575fc; border: 2px solid #2575fc; margin-top: 10px; font-weight:bold;">
           <i class="fas fa-file-alt"></i> استخراج القوائم والاستمارات
         </button>
-      </div>
+
+        <button class="btn-main" onclick="goToProfessionalCardsMain()" 
+                style="background: #17a2b8; color: #fff; border: 2px solid #17a2b8; margin-top: 10px; font-weight:bold;">
+          <i class="fas fa-id-badge"></i> استخراج البطاقات المهنية
+        </button>
+        </div>
     </div>
 
     <div id="formSection" style="display: none;">
@@ -1939,4 +1944,14 @@ window.triggerSecretAdminLogin = async function() {
     }, 100);
 };
 
+// ============================================================
+// دالة الانتقال لصفحة البطاقات المهنية من الواجهة الرئيسية
+// ============================================================
+window.goToProfessionalCardsMain = function() {
+    // إنشاء تصريح مرور في الجلسة الحالية
+    sessionStorage.setItem("secure_cards_access", "granted_from_main_page");
+    
+    // الانتقال إلى الصفحة في نفس التبويب (قم بتغيير cards.html إلى اسم صفحتك الفعلي)
+    window.location.href = "card2.html"; 
+};
 
