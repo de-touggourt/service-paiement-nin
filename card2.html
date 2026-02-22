@@ -22,6 +22,7 @@
 
     <style>
 
+
 @font-face {
     font-family: 'Sakkal Majalla';
     src: local('Sakkal Majalla'), url('fonts/majalla.ttf') format('truetype');
@@ -35,7 +36,7 @@
     font-weight: bold;
     font-style: normal;
 }
-        
+    
        :root {
             /* ألوان الطباعة الأصلية (لم تتغير) */
             --primary-green: #006233;
@@ -250,33 +251,42 @@
         .img-container { max-height: 60vh; margin: 20px 0; border-radius: 8px; overflow: hidden; background: #000; }
         .img-container img { max-width: 100%; }
 
-        /* --- تنسيقات البطاقة الأصلية --- */
-       /* --- تنسيق صفحة A4 (عرض 6 بطاقات وتوسيطها ورفعها قليلاً) --- */
-        .page-a4 {
+
+      /* --- تنسيق صفحة A4 (توسيط رياضي دقيق لـ 6 بطاقات) --- */
+.page-a4 {
     width: 210mm;
-    min-height: auto; /* تغيير من height ثابت */
-    max-height: 297mm; 
+    height: 297mm; /* ارتفاع ثابت لورقة A4 */
     background: white;
+    margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(2, max-content); 
-    grid-template-rows: auto; /* اجعل الصفوف تتكيف مع المحتوى */
-    gap: 10mm;
+    /* عمودين عرض كل منهما يساوي عرض البطاقة بالضبط */
+    grid-template-columns: repeat(2, 85.6mm); 
+    /* ثلاثة صفوف ارتفاع كل منها يساوي ارتفاع البطاقة بالضبط */
+    grid-template-rows: repeat(3, 54mm); 
+    
+    /* الفراغات بين البطاقات */
+    column-gap: 15mm; 
+    row-gap: 20mm;    
+    
+    /* هذه الخاصية هي السر: تقوم بتوسيط الشبكة بالكامل داخل الورقة (أفقياً وعمودياً) */
     justify-content: center;
-    align-content: start; /* لضمان عدم تمدد البطاقات عمودياً */
-    padding-top: 10mm; /* لإعطاء توازن بدل البادينج السفلي الضخم */
-    padding-bottom: 20mm; 
+    align-content: center; 
+    
     box-sizing: border-box;
-    overflow: hidden; /* يمنع تسرب المحتوى الذي قد ينشئ صفحة جديدة */
+    overflow: hidden; /* يمنع تسرب المحتوى */
 }
 
-        .card-wrapper {
-            width: 85.6mm;
-            height: 54mm;
-            position: relative;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            overflow: hidden;
-        }
+       .card-wrapper {
+    width: 85.6mm !important;
+    height: 54mm !important;
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    box-sizing: border-box;
+    /* منع الطابعة من قص البطاقة بين صفحتين */
+    page-break-inside: avoid !important; 
+}
 
         .card {
             width: 750px;
@@ -329,62 +339,52 @@
 
         .footer { background-color: var(--primary-green); color: white; display: flex; justify-content: center; align-items: center; width: 100%; padding: 6px 0; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 600; position: relative; z-index: 10; }
 
-  @media print {
-    /* تمت إضافة هذا الجزء فقط لضبط الهوامش على none */
+ @media print {
+    /* إجبار المتصفح على مقاس A4 طولي وإلغاء الهوامش تماماً */
     @page { 
-        margin: 0; 
+        size: A4 portrait;
+        margin: 0 !important; 
     }
 
-    body { background: white; padding: 0; margin: 0; }
+    body { 
+        background: white; 
+        padding: 0; 
+        margin: 0; 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+    }
+    
     .no-print { display: none !important; }
 
     .page-a4 { 
-        width: 210mm; 
-        /* تغيير الارتفاع من ثابت إلى تلقائي لمنع الفراغات */
-        min-height: 297mm; 
-        height: auto; 
+        /* يجب أن تكون الأبعاد مطابقة تماماً لورقة A4 */
+        width: 210mm !important; 
+        height: 297mm !important; 
+        min-height: 297mm !important;
+        max-height: 297mm !important;
+        margin: 0 !important;
+        padding: 0 !important; 
         border: none; 
-        padding: 10mm; 
         box-shadow: none;
-        
-        /* يضيف فاصلاً بعد كل صفحة "ما عدا الأخيرة" */
-        page-break-after: auto; 
+        page-break-after: always; /* فاصل إجباري بعد كل 6 بطاقات */
+        page-break-inside: avoid;
     }
 
-    /* هذا السطر هو السر لمنع الصفحة الفارغة الأخيرة */
-    .page-a4:not(:last-child) {
-        page-break-after: always;
+    /* منع الصفحة الفارغة الأخيرة */
+    .page-a4:last-of-type {
+        page-break-after: auto;
     }
 
-    /* إخفاء أي صفحة فارغة تماماً قد تنتج عن خطأ في البيانات */
+    /* إخفاء أي صفحة فارغة تنتج عن أخطاء برمجية */
     .page-a4:empty {
         display: none !important;
     }
 
-    .header-logo {
-        filter: none !important;
-    }
-    
-    img {
-        image-rendering: auto !important; 
-    }
-    
-    .barcode-container svg {
-        shape-rendering: crispEdges;
-    }
-    
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .header-logo { filter: none !important; }
+    img { image-rendering: -webkit-optimize-contrast; object-fit: cover; }
+    .barcode-container svg { shape-rendering: crispEdges; }
 }
 
-/* --- تنسيقات النموذج الثاني (Theme 2) المحدثة بخط Sakkal Majalla --- */
-#card-container.theme-2 .page-a4 {
-    grid-template-columns: repeat(2, max-content); 
-    grid-template-rows: repeat(3, auto);           
-    gap: 10mm;                                     
-    justify-content: center;
-    align-content: start;
-    padding-top: 10mm;
-}
 
 #card-container.theme-2 .card {
     background-image: none;
@@ -844,13 +844,15 @@
         white-space: nowrap; 
     }
 
-    /* جعل معاينة البطاقات تظهر في عمود واحد وتوسيطها */
-    .page-a4, 
-    #card-container.theme-2 .page-a4 {
+    /* جعل معاينة البطاقات تظهر في عمود واحد وتوسيطها على شاشات الهواتف */
+    .page-a4 {
         grid-template-columns: 1fr !important; 
-        width: 100%;
-        padding: 10px 0;
-        overflow-x: auto;
+        grid-template-rows: auto !important; /* السماح للارتفاع بالتمدد حسب عدد البطاقات */
+        width: 100% !important;
+        height: auto !important; /* إلغاء الارتفاع الإجباري لورقة A4 في شاشة الهاتف */
+        padding: 15px 0 !important;
+        gap: 15px !important; /* تصغير المسافة بين البطاقات في الهاتف */
+        overflow-x: hidden;
     }
 
     .card-wrapper {
@@ -1533,6 +1535,4 @@ function goBackToMain() {
     </script>
 </body>
 </html>
-
-
 
