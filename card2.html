@@ -39,19 +39,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <style>
 
-        @font-face {
+       @font-face {
     font-family: 'Sakkal Majalla';
-    src: local('Sakkal Majalla'),
-         local('Sakkal-Majalla');
-    /* ملاحظة: المتصفح سيحاول أولاً جلب الخط من جهازك لسرعة التحميل */
+    /* نضع الرابط المباشر للخط العادي من الإنترنت */
+    src: url('https://arbfonts.com/wp-content/fonts/arabic-misc/sakkal-majalla-1.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Sakkal Majalla';
-    src: local('Sakkal Majalla Bold'),
-         local('Sakkal-Majalla-Bold');
+    /* نضع الرابط المباشر للخط العريض من الإنترنت */
+    src: url('https://arbfonts.com/wp-content/fonts/arabic-misc/sakkal-majalla-bold-1.ttf') format('truetype');
     font-weight: bold;
     font-style: normal;
 }
@@ -1508,4 +1507,5 @@ function goBackToMain() {
     </script>
 </body>
 </html>
+
 
