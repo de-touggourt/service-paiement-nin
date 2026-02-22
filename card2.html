@@ -332,6 +332,19 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 
 /* --- إعدادات الطباعة الصارمة --- */
 @media print {
+
+/* إجبار المتصفح على أعلى جودة لتصيير النصوص والأشكال */
+    * {
+        text-rendering: geometricPrecision !important;
+        shape-rendering: geometricPrecision !important;
+    }
+
+    /* تحسين جودة الصور في الطباعة */
+    img { 
+        image-rendering: high-quality !important; 
+        -webkit-user-drag: none;
+    }
+
     @page { 
         size: A4 portrait;
         margin: 0 !important; 
@@ -528,6 +541,34 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     .modal-content { width: 95%; padding: 15px; }
 }
 
+
+/* --- نافذة إضافة وتعديل الموظفين --- */
+#employee-modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center;
+}
+.emp-modal-content {
+    background: #fff; padding: 30px; border-radius: 16px; width: 90%; max-width: 450px;
+    box-shadow: var(--shadow-lg); font-family: 'Cairo', sans-serif;
+}
+.emp-modal-content h3 { margin-bottom: 20px; color: var(--ui-secondary); text-align: center; font-weight: 800;}
+.emp-form-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px; }
+.emp-form-group label { font-size: 14px; font-weight: 700; color: var(--ui-text); text-align: right;}
+.emp-form-group input { 
+    padding: 10px 14px; border: 1px solid var(--ui-border); border-radius: 8px; 
+    font-family: inherit; font-size: 14px; transition: all 0.2s ease;
+}
+.emp-form-group input:focus { outline: none; border-color: var(--ui-primary); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15); }
+.modal-actions { display: flex; justify-content: space-between; gap: 15px; margin-top: 25px; }
+.modal-actions button { flex: 1; }
+
+/* أزرار الإجراءات في الجدول */
+.btn-warning { background: #f59e0b; color: white; }
+.btn-warning:hover { background: #d97706; }
+.action-buttons { display: flex; gap: 5px; justify-content: flex-start; }
+
+
+
     </style>
 </head>
 <body>
@@ -535,7 +576,9 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     <div id="control-panel" class="no-print">
         <div class="panel-header">
             <h2>إدارة البطاقات المهنية</h2>
+
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" style="background-color: #10b981;" onclick="openEmployeeModal()">➕ إضافة موظف</button>
                 <button class="btn btn-danger" onclick="clearData()">مسح البيانات</button>
                 <button class="btn btn-primary" onclick="printTemplate(1)">🖨️ طباعة النموذج الأول</button>
                 <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج الأول</button>
@@ -588,15 +631,15 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
         <div class="table-container">
             <table id="employee-table">
                 <thead>
-                    <tr>
-                        <th>الاسم واللقب</th>
-                        <th>تاريخ الازدياد</th>
-                        <th>الرتبة</th>
-                        <th>مكان العمل</th>
-                        <th>الرمز الوظيفي</th>
-                        <th>الصورة</th>
-                    </tr>
-                </thead>
+    <tr>
+        <th>الاسم واللقب</th>
+        <th>تاريخ الازدياد</th>
+        <th>الرتبة</th>
+        <th>مكان العمل</th>
+        <th>رقم التعريف الوظيفي</th>
+        <th>الصورة</th>
+        <th>الإجراءات</th> </tr>
+</thead>
                 <tbody id="table-body">
                 </tbody>
             </table>
@@ -616,6 +659,32 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
         </div>
     </div>
 
+<div id="employee-modal">
+    <div class="emp-modal-content">
+        <h3 id="emp-modal-title">إضافة موظف جديد</h3>
+        <input type="hidden" id="emp-id">
+        <div class="emp-form-group">
+            <label>الاسم واللقب</label>
+            <input type="text" id="emp-name" placeholder="أدخل الاسم واللقب">
+        </div>
+        <div class="emp-form-group">
+            <label>تاريخ الازدياد</label>
+            <input type="text" id="emp-dob" placeholder="مثال: 1990-01-01 أو 01/01/1990">
+        </div>
+        <div class="emp-form-group">
+            <label>الرتبة</label>
+            <input type="text" id="emp-rank" placeholder="أدخل الرتبة">
+        </div>
+        <div class="emp-form-group">
+            <label>الرمز الوظيفي</label>
+            <input type="text" id="emp-jobid" placeholder="أدخل الرمز الوظيفي">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-danger" onclick="closeEmployeeModal()">إلغاء</button>
+            <button class="btn btn-primary" onclick="saveEmployee()">حفظ البيانات</button>
+        </div>
+    </div>
+</div>
     <script>
         // --- 1. خرائط البيانات (Data Maps) ---
         const baladiyaMap = { 
@@ -891,29 +960,33 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 
 
         // --- 5. رسم الجدول ---
-        function renderTable() {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
+function renderTable() {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
 
-            employees.forEach((emp) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${emp.name}</td>
-                    <td><span dir="ltr">${emp.dob}</span></td>
-                    <td>${emp.rank}</td>
-                    <td>${emp.workplace || '<span style="color:red">يرجى اختيار المؤسسة</span>'}</td>
-                    <td><span dir="ltr">${emp.jobId}</span></td>
-                    <td>
-                        ${emp.photo 
-                            ? `<img src="${emp.photo}" width="40" height="52" style="object-fit:cover; border-radius:4px; vertical-align:middle;">
-                               <button class="btn btn-danger btn-sm" onclick="deletePhoto('${emp.id}')">حذف</button>` 
-                            : `<input type="file" accept="image/*" onchange="openCropper(event, '${emp.id}')" style="width: 180px;">`
-                        }
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+    employees.forEach((emp) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${emp.name}</td>
+            <td><span dir="ltr">${emp.dob}</span></td>
+            <td>${emp.rank}</td>
+            <td>${emp.workplace || '<span style="color:red">يرجى اختيار المؤسسة</span>'}</td>
+            <td><span dir="ltr">${emp.jobId}</span></td>
+            <td>
+                ${emp.photo 
+                    ? `<img src="${emp.photo}" width="40" height="52" style="object-fit:cover; border-radius:4px; vertical-align:middle;">
+                       <button class="btn btn-danger btn-sm" onclick="deletePhoto('${emp.id}')">حذف</button>` 
+                    : `<input type="file" accept="image/*" onchange="openCropper(event, '${emp.id}')" style="width: 180px;">`
+                }
+            </td>
+            <td class="action-buttons">
+                <button class="btn btn-warning btn-sm" onclick="openEmployeeModal('${emp.id}')">✏️ تعديل</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteEmployee('${emp.id}')">🗑️ حذف</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
         // --- 6. قص وإدارة الصور ---
         function openCropper(event, empId) {
@@ -942,22 +1015,28 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
             currentEditingId = null;
         }
 
-      function saveCrop() {
-            if (!cropper) return;
-            
-            // مضاعفة أبعاد الصورة 4 مرات للحصول على دقة فائقة (Ultra HD) في الطباعة
-            const canvas = cropper.getCroppedCanvas({ width: 520, height: 680 }); 
-            // تصدير الصورة بصيغة PNG غير مضغوطة للحفاظ على أعلى جودة
-            const base64Image = canvas.toDataURL('image/png'); 
+     function saveCrop() {
+    if (!cropper) return;
+    
+    // استخدام الإعداد الجديد ذو الجودة الفائقة (8 أضعاف) فقط
+    const canvas = cropper.getCroppedCanvas({ 
+        width: 1040, 
+        height: 1360,
+        fillColor: '#fff' // لضمان عدم وجود خلفية شفافة تسبب مشاكل في الطباعة
+    });
 
-            const empIndex = employees.findIndex(e => e.id === currentEditingId);
-            if (empIndex > -1) {
-                employees[empIndex].photo = base64Image;
-                saveToStorage();
-                renderTable();
-            }
-            closeCropper();
-        }
+    // تصدير الصورة بصيغة PNG غير مضغوطة للحفاظ على أعلى جودة
+    const base64Image = canvas.toDataURL('image/png'); 
+
+    const empIndex = employees.findIndex(e => e.id === currentEditingId);
+    if (empIndex > -1) {
+        employees[empIndex].photo = base64Image;
+        saveToStorage();
+        renderTable();
+    }
+    closeCropper();
+}
+
 
         function deletePhoto(empId) {
             const empIndex = employees.findIndex(e => e.id === empId);
@@ -1054,7 +1133,7 @@ function renderCards() {
                                 في حالة العثور على هذه البطاقة، يرجى تسليمها إلى مديرية التربية لولاية توقرت أو أقرب مؤسسة تربوية.
                             </div>
                             <div class="qr-box">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Directorate_of_Education_Touggourt : 0664446349" style="width: 100%; height: 100%; object-fit: contain;" alt="QR Code">
+                               <img src="https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&margin=0&data=Directorate_of_Education_Touggourt : 0664446349" style="width: 100%; height: 100%; object-fit: contain;" alt="QR Code">
                             </div>
                         </div>
                     </div>
@@ -1119,7 +1198,7 @@ function renderCards() {
                     // تجميع بيانات الموظف لتضمينها في الـ QR Code
                     // استخدمنا encodeURIComponent لضمان عدم حدوث أخطاء في الروابط بسبب المسافات أو الحروف العربية
                     const qrDataInfo = `الاسم الكامل: ${emp.name} | تاريخ الميلاد: ${emp.dob} | الرتبة: ${emp.rank} | مكان العمل: ${emp.workplace || 'غير متوفر'} | رقم التعريف الوظيفي: ${emp.jobId || 'غير متوفر'}`;
-                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrDataInfo)}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&margin=0&data=${encodeURIComponent(qrDataInfo)}`;
 
                      pageHTML += `
                     <div class="card-wrapper">
@@ -1149,7 +1228,9 @@ function renderCards() {
                                     <div class="info-row"><span class="info-label">الرتبة:</span><span>${emp.rank}</span></div>
                                     <div class="info-row"><span class="info-label">مكان العمل:</span><span>${emp.workplace || ''}</span></div>
                                     <div class="info-row"><span class="info-label">رقم التعريف الوظيفي:</span><span>${emp.jobId || ''}</span></div>
-                                    <div class="info-row"><span class="info-label">توقرت في :  ...... / ...... / ...........</div>
+                                    <div class="info-row">
+                                    <span class="info-label">توقرت في : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                                    </div>
                                     <div class="qr-container-theme2">
                                         <img src="${qrUrl}" alt="QR Code">
                                     </div>
@@ -1157,7 +1238,7 @@ function renderCards() {
                                 <div class="left-section">
                                     <div class="number-row">
                                         <span>الرقم:</span>
-                                        <span dir="ltr">2026/</span>
+                                        <span dir="ltr">2026&nbsp;/</span>
                                     </div>
                                     <div class="photo-area">${photoHTML}</div>
                                    <div class="signature" style="line-height: 1;">
@@ -1193,6 +1274,91 @@ function goBackToMain() {
     
     // التوجيه للصفحة الرئيسية (تأكد أن اسم الصفحة الرئيسية الخاص بك هو index.html)
     window.location.href = "index.html"; 
+}
+
+// --- 8. إضافة وتعديل وحذف الموظفين يدوياً ---
+
+function openEmployeeModal(empId = null) {
+    const modal = document.getElementById('employee-modal');
+    const title = document.getElementById('emp-modal-title');
+    
+    // تفريغ الحقول أو تعبئتها
+    if (empId) {
+        // حالة التعديل
+        const emp = employees.find(e => e.id === empId);
+        if (emp) {
+            title.innerText = "تعديل بيانات الموظف";
+            document.getElementById('emp-id').value = emp.id;
+            document.getElementById('emp-name').value = emp.name;
+            document.getElementById('emp-dob').value = emp.dob;
+            document.getElementById('emp-rank').value = emp.rank;
+            document.getElementById('emp-jobid').value = emp.jobId;
+        }
+    } else {
+        // حالة الإضافة الجديدة
+        title.innerText = "إضافة موظف جديد";
+        document.getElementById('emp-id').value = "";
+        document.getElementById('emp-name').value = "";
+        document.getElementById('emp-dob').value = "";
+        document.getElementById('emp-rank').value = "";
+        document.getElementById('emp-jobid').value = "";
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closeEmployeeModal() {
+    document.getElementById('employee-modal').style.display = 'none';
+}
+
+function saveEmployee() {
+    const id = document.getElementById('emp-id').value;
+    const name = document.getElementById('emp-name').value;
+    const dob = document.getElementById('emp-dob').value;
+    const rank = document.getElementById('emp-rank').value;
+    const jobId = document.getElementById('emp-jobid').value;
+    const workplace = document.getElementById('sel-institution').value || "";
+
+    if (!name.trim()) {
+        alert("يرجى إدخال الاسم واللقب على الأقل!");
+        return;
+    }
+
+    if (id) {
+        // تحديث موظف موجود
+        const index = employees.findIndex(e => e.id === id);
+        if (index > -1) {
+            employees[index].name = name;
+            employees[index].dob = dob;
+            employees[index].rank = rank;
+            employees[index].jobId = jobId;
+        }
+    } else {
+        // إضافة موظف جديد
+        const newEmp = {
+            id: 'emp_manual_' + Date.now(),
+            name: name,
+            dob: dob,
+            rank: rank,
+            workplace: workplace,
+            jobId: jobId,
+            photo: null
+        };
+        // إضافته في بداية المصفوفة ليظهر في أعلى الجدول
+        employees.unshift(newEmp); 
+    }
+
+    saveToStorage();
+    renderTable();
+    closeEmployeeModal();
+}
+
+function deleteEmployee(empId) {
+    if (confirm("هل أنت متأكد من حذف هذا الموظف؟ لا يمكن التراجع عن هذا الإجراء.")) {
+        employees = employees.filter(e => e.id !== empId);
+        saveToStorage();
+        renderTable();
+    }
 }
     </script>
 </body>
