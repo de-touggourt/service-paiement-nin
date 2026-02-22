@@ -12,26 +12,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 
 
-
-    <script>
-document.addEventListener("DOMContentLoaded", () => {
-    // جلب تصريح الدخول من الجلسة
-    const accessGranted = sessionStorage.getItem("secure_cards_access");
-
-    // التحقق: إذا لم يكن هناك تصريح، يتم إرجاعه للصفحة الرئيسية فوراً
-    if (accessGranted !== "granted_from_main_page") {
-        // قم بتغيير index.html إلى اسم صفحتك الرئيسية
-        window.location.replace("index.html"); 
-    } else {
-        // يمكنك إزالة التصريح هنا إذا أردت أن الصفحة لا تعمل إذا قام المستخدم بتحديثها (F5)
-        // sessionStorage.removeItem("secure_cards_access");
-        
-        console.log("تم التحقق بنجاح: الدخول مصرح به.");
-    }
-});
-</script>
 
 
 
@@ -39,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <style>
 
-       @font-face {
+@font-face {
     font-family: 'Sakkal Majalla';
     /* نضع الرابط المباشر للخط العادي من الإنترنت */
     src: url('https://arbfonts.com/wp-content/fonts/arabic-misc/sakkal-majalla-1.ttf') format('truetype');
@@ -419,17 +402,18 @@ document.addEventListener("DOMContentLoaded", () => {
 .corner-ribbon-container { position: absolute; top: 0; right: 0; width: 110px; height: 110px; overflow: hidden; z-index: 20; }
 .corner-ribbon-content { position: absolute; top: 0; right: 0; transform: translate(30%, -30%) rotate(45deg); transform-origin: center; width: 200px; display: flex; flex-direction: column; justify-content: center; margin-top: 35px; margin-right: -20px; }
 .stripe { width: 100%; height: 20px; }
-.stripe.green { background-color: var(--primary-green); margin-bottom: 8px; }
-.stripe.red { background-color: var(--primary-red); }
+/* تم عكس الألوان هنا */
+.stripe.green { background-color: var(--primary-red); margin-bottom: 8px; } 
+.stripe.red { background-color: var(--primary-green); }
 
 #card-container.theme-2 .header { text-align: center; padding: 5px 10px; border-bottom: 2px solid #333; height: 130px; display: flex; flex-direction: row; justify-content: center; align-items: center; }
 
 #card-container.theme-2 .main-title { 
-    font-size: 30px; 
+    font-size: 34px; 
     font-weight: 700; 
     width: 100%; 
     /* رفع العنوان: تقليل القيمة أو جعلها بالسالب يرفعه للأعلى */
-    margin-top: -10px; 
+    margin-top: -30px; 
     /* تحريك لليمين: زيادة الهامش من جهة اليسار يدفع النص لليمين */
     margin-left: 30px; 
     color: #000; 
@@ -460,13 +444,24 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 
 #card-container.theme-2 .header-logo { width: 85px; height: 85px; filter: none; border-radius: 50%; object-fit: cover;}
-#card-container.theme-2 .side-text { font-size: 25px; font-weight: 700; margin-top: 2px; white-space: nowrap;}
+#card-container.theme-2 .side-text { font-size: 25px; font-weight: 700; margin-top: 2px; white-space: nowrap;color: #000000;}
 
 #card-container.theme-2 .card-body { padding: 0; display: flex; flex-direction: row; }
-#card-container.theme-2 .right-section { flex: 2; padding: 10px 20px 5px 20px; border-left: 1px solid #333; display: flex; flex-direction: column; gap: 2px; justify-content: flex-start; }
+#card-container.theme-2 .right-section { flex: 2; padding: 10px 20px 5px 20px; border-left: 1px solid #333; display: flex; flex-direction: column; gap: 2px; justify-content: flex-start;position: relative; }
 #card-container.theme-2 .card-type-title { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; text-decoration: underline; text-underline-offset: 5px; color:#000; border: none;}
-#card-container.theme-2 .info-row { font-size: 24px; font-weight: 700; display: flex; align-items: center; margin-bottom: 3px; color: #000; }
-#card-container.theme-2 .info-label { min-width: 90px; }
+
+#card-container.theme-2 .info-row { 
+    font-size: 24px; 
+    font-weight: 700; 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 3px; 
+    color: #000; 
+    gap: 8px; /* هذا السطر يضمن مسافة موحدة وأنيقة بين العنوان والمعلومة */
+}
+#card-container.theme-2 .info-label { 
+    min-width: auto; /* ألغينا العرض الثابت الذي كان يسبب الفراغ الكبير */
+}
 
 #card-container.theme-2 .left-section { flex: 1; padding: 10px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 5px; }
 
@@ -499,6 +494,25 @@ document.addEventListener("DOMContentLoaded", () => {
 #card-container.theme-2 .card {
     border-radius: 0;
 }
+
+
+/* --- التنسيق الجديد لـ QR Code للنموذج الثاني --- */
+#card-container.theme-2 .qr-container-theme2 {
+    position: absolute;
+    left: 40px;   /* للتحكم في سحبه لليسار (باتجاه الخط الفاصل) */
+    bottom: 40px; /* للتحكم في رفعه للأعلى */
+    z-index: 10;
+}
+
+#card-container.theme-2 .qr-container-theme2 img {
+    width: 90px;  /* صغرنا الحجم قليلاً ليتناسب مع الفراغ */
+    height: 90px;
+    background-color: #ffffff;
+    padding: 3px;
+    border: 1px solid #000;
+    border-radius: 4px;
+}
+
 
 
 /* --- تنسيقات الجهة الخلفية للبطاقة --- */
@@ -1440,6 +1454,11 @@ function renderCards() {
                         </div>
                     </div>`;
                 } else if (currentTemplate === 2) {
+                    // تجميع بيانات الموظف لتضمينها في الـ QR Code
+                    // استخدمنا encodeURIComponent لضمان عدم حدوث أخطاء في الروابط بسبب المسافات أو الحروف العربية
+                    const qrDataInfo = `الاسم الكامل: ${emp.name} | تاريخ الميلاد: ${emp.dob} | الرتبة: ${emp.rank} | مكان العمل: ${emp.workplace || 'غير متوفر'} | رقم التعريف الوظيفي: ${emp.jobId || 'غير متوفر'}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrDataInfo)}`;
+
                      pageHTML += `
                     <div class="card-wrapper">
                         <div class="card">
@@ -1463,11 +1482,15 @@ function renderCards() {
                             <div class="card-body">
                                 <div class="right-section">
                                     <div class="card-type-title">بطاقة التعريف المهنية</div>
-                                    <div class="info-row"><span class="info-label">اللقب والاسم:</span>   <span>${emp.name}</span></div>
-                                    <div class="info-row"><span class="info-label">تاريخ الميلاد:</span>      <span dir="ltr">${emp.dob}</span></div>
-                                    <div class="info-row"><span class="info-label">الرتبة:</span>      <span>${emp.rank}</span></div>
-                                    <div class="info-row"><span class="info-label">مكان العمل:</span>      <span>${emp.workplace || ''}</span></div>
-                                    <div class="info-row"><span class="info-label">رقم التعريف الوظيفي:</span>   <span>${emp.jobId || ''}</span></div>
+                                    <div class="info-row"><span class="info-label">اللقب والاسم:</span><span>${emp.name}</span></div>
+                                    <div class="info-row"><span class="info-label">تاريخ الميلاد:</span><span dir="ltr">${emp.dob}</span></div>
+                                    <div class="info-row"><span class="info-label">الرتبة:</span><span>${emp.rank}</span></div>
+                                    <div class="info-row"><span class="info-label">مكان العمل:</span><span>${emp.workplace || ''}</span></div>
+                                    <div class="info-row"><span class="info-label">رقم التعريف الوظيفي:</span><span>${emp.jobId || ''}</span></div>
+                                    <div class="info-row"><span class="info-label">توقرت في :  ...... / ...... / ...........</div>
+                                    <div class="qr-container-theme2">
+                                        <img src="${qrUrl}" alt="QR Code">
+                                    </div>
                                 </div>
                                 <div class="left-section">
                                     <div class="number-row">
@@ -1475,7 +1498,11 @@ function renderCards() {
                                         <span dir="ltr">2026/</span>
                                     </div>
                                     <div class="photo-area">${photoHTML}</div>
-                                    <div class="signature">مدير التربية</div>
+                                   <div class="signature" style="line-height: 1;">
+                                           مدير التربية<br>
+                                           بوعزيز صالح
+                                             </div>
+
                                 </div>
                             </div>
                             <div class="footer">
@@ -1483,6 +1510,7 @@ function renderCards() {
                             </div>
                         </div>
                     </div>`;
+                
                 }
             }
         });
@@ -1507,5 +1535,4 @@ function goBackToMain() {
     </script>
 </body>
 </html>
-
 
