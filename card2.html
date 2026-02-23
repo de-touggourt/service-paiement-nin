@@ -609,7 +609,8 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 .action-buttons { display: flex; gap: 5px; justify-content: flex-start; }
 
 
-/* --- تنسيقات الحجم الكبير (4 بطاقات أفقية) منفصلة تماماً --- */
+/* --- تنسيقات الحجم الكبير (4 بطاقات أفقية) --- */
+/* --- تنسيقات الحجم الكبير (رفع البطاقات للأعلى) --- */
 .page-a4-large {
     width: 297mm;
     height: 210mm;
@@ -618,11 +619,14 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     display: grid;
     grid-template-columns: repeat(2, 100mm);
     grid-template-rows: repeat(2, 67mm);
+    
     column-gap: 15mm;
-    row-gap: 4mm;
+    row-gap: 4mm;      /* تقليل الفجوة بين الصفين لرفع البطاقات السفلية أكثر */
+    
     justify-content: center; 
-    align-content: start;
-    padding-top: 5mm;
+    align-content: start;    /* هذا الأمر يرفع كل المحتوى للأعلى */
+    padding-top: 5mm;       /* مسافة أمان صغيرة جداً من حافة الورقة العلوية */
+    
     box-sizing: border-box;
     overflow: hidden;
     page-break-after: always;
@@ -637,11 +641,12 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     .page-a4-large {
         width: 297mm !important;
         height: 210mm !important;
-        padding-top: 5mm !important;
+        padding-top: 5mm !important; /* التأكيد على الرفع للأعلى في الطباعة */
         align-content: start !important;
         display: grid !important;
     }
 }
+
 
 .card-wrapper-large {
     width: 100mm !important;
@@ -654,13 +659,13 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     page-break-inside: avoid !important; 
 }
 
-/* تمديد التصميم الداخلي ليملأ 100x67 ملم بدقة */
+/* تعديل المقياس (Scale) رياضياً ليتمدد التصميم الداخلي ويملأ 100x67 ملم بدقة */
 .card-wrapper-large .card {
     width: 750px !important;
     height: 474px !important;
     min-height: 474px !important;
     max-height: 474px !important;
-    transform: scale(0.5039, 0.5342) !important;
+    transform: scale(0.5039, 0.5342) !important; /* دقة حسابية أعلى */
     transform-origin: top right !important;
     position: absolute !important;
     top: 0 !important;
@@ -668,6 +673,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     display: flex !important;
     flex-direction: column !important;
 }
+
 
     </style>
 </head>
@@ -683,18 +689,18 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
                 <button class="btn btn-primary" onclick="printTemplate(1)">🖨️ طباعة النموذج الأول</button>
                 <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج الأول</button>
                 <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة النموذج الثاني</button>
-               
+                <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج الثاني</button>
 
                 <div style="display: inline-flex; align-items: center; gap: 8px; background: #fee2e2; padding: 6px 12px; border-radius: 8px; border: 1px solid #fca5a5; flex-wrap: wrap; justify-content: center;">
     <select id="pdf-template-select" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Cairo', sans-serif;">
         <option value="1">النموذج الأول (الوجه)</option>
         <option value="4">النموذج الأول (الخلفية)</option>
         <option value="2">النموذج الثاني (الوجه)</option>
-        
+        <option value="3">النموذج الثاني (الخلفية)</option>
     </select>
-    
+    <button class="btn btn-danger" onclick="downloadSelectedPDF()" style="margin: 0;">📥 حفظ PDF (عادي)</button>
     <button class="btn btn-primary" onclick="printLargeTemplate()" style="margin: 0; background-color: #059669;">🖨️ طباعة حجم كبير</button>
-   
+    <button class="btn btn-danger" onclick="downloadLargePDF()" style="margin: 0; background-color: #b91c1c;">📥 حفظ PDF (حجم كبير)</button>
 </div>
 
                 <button onclick="goBackToMain()" 
@@ -936,7 +942,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
         }
 
      // --- 4. رفع الملف وقراءة البيانات عبر الزر ---
- function loadEmployeeData() {
+        function loadEmployeeData() {
             const fileInput = document.getElementById('file-upload');
             const file = fileInput.files[0];
             
@@ -1071,6 +1077,8 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
             reader.readAsArrayBuffer(file);
         }
 
+
+
         // --- 5. رسم الجدول ---
 function renderTable() {
     const tbody = document.getElementById('table-body');
@@ -1162,22 +1170,10 @@ function renderTable() {
       
 // --- 7. توليد البطاقات للطباعة ---
 let currentTemplate = 1; // لحفظ النموذج المختار
-
+let isLargeFormat = false;
 // دالة جديدة لتشغيل الطباعة حسب النموذج المختار
 function printTemplate(templateId) {
     currentTemplate = templateId;
-    isLargeFormat = false; // التأكد من إيقاف وضع الحجم الكبير
-
-    // --- كود جديد: إجبار المتصفح على الوضع العمودي (Portrait) ---
-    let style = document.getElementById('dynamic-page-orientation');
-    if (!style) {
-        style = document.createElement('style');
-        style.id = 'dynamic-page-orientation';
-        document.head.appendChild(style);
-    }
-    style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
-    // -------------------------------------------------------------
-
     renderCards(); // إعادة التوليد بالتصميم المطلوب
     setTimeout(() => {
         window.print();
@@ -1200,14 +1196,16 @@ function renderCards() {
     
     container.innerHTML = '';
 
+    // --- استبدل السطور من const chunkSize حتى تعريف pageHTML بهذا الكود ---
     const chunkSize = isLargeFormat ? 4 : 6;
-const wrapperClass = isLargeFormat ? 'card-wrapper-large' : 'card-wrapper';
+    const wrapperClass = isLargeFormat ? 'card-wrapper-large' : 'card-wrapper';
     
     // الدوران على قائمة الموظفين لطباعة نفس العدد
     for (let i = 0; i < employees.length; i += chunkSize) {
         const chunk = employees.slice(i, i + chunkSize);
         
-       let pageHTML = `<div class="${isLargeFormat ? 'page-a4-large' : 'page-a4'}">`;
+        let pageHTML = `<div class="${isLargeFormat ? 'page-a4-large' : 'page-a4'}">`;
+
         
         chunk.forEach(emp => {
             if (currentTemplate === 3) {
@@ -1583,8 +1581,37 @@ async function downloadSelectedPDF() {
     });
 }
 
-// دالة الطباعة بالحجم الكبير (تطبع 4 في الصفحة Landscape)
 // دالة الطباعة بالحجم الكبير (من القائمة المنسدلة)
+function printLargeTemplate() {
+    window.scrollTo(0, 0); 
+    
+    const templateId = parseInt(document.getElementById('pdf-template-select').value);
+    currentTemplate = templateId;
+    isLargeFormat = true;
+    
+    // ستايل إجباري لإلغاء أي إزاحة يضيفها المتصفح
+    const style = document.createElement('style');
+    style.id = 'print-landscape-style';
+    style.innerHTML = `
+        @media print { 
+            @page { size: A4 landscape; margin: 0mm !important; } 
+            body { margin: 0 !important; padding: 0 !important; }
+            .page-a4-large { margin: 0 !important; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    renderCards();
+    
+    setTimeout(() => {
+        window.print();
+        document.getElementById('print-landscape-style').remove();
+        isLargeFormat = false;
+        renderCards();
+    }, 600);
+}
+
+// دالة حفظ PDF بالحجم الكبير (من القائمة المنسدلة)
 function printLargeTemplate() {
     window.scrollTo(0, 0); 
     
@@ -1689,4 +1716,3 @@ async function downloadLargePDF() {
     </script>
 </body>
 </html>
-
