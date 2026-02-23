@@ -455,11 +455,11 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 #card-container.theme-2 .header-logo { 
     width: 85px !important; 
     height: 85px !important; 
-    min-width: 85px !important; /* إجبار مكتبة الـ PDF على العرض */
-    min-height: 85px !important; /* إجبار مكتبة الـ PDF على الطول */
+    min-width: 85px !important; 
+    min-height: 85px !important; 
     border-radius: 50% !important; 
-    object-fit: fill !important; /* يمنع html2pdf من مط الصورة */
-    background-color: #ffffff;
+    object-fit: contain !important; /* استخدام contain يحافظ على الأبعاد الحقيقية للصورة بدون تشويه */
+    background-color: transparent; /* جعل الخلفية شفافة أفضل لتداخل الألوان */
 }
 
 #card-container.theme-2 .side-text { font-size: 25px; font-weight: 700; margin-top: 2px; white-space: nowrap;color: #000000;}
@@ -513,8 +513,8 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 #card-container.theme-2 .card-wrapper { border: 1.5px solid #000000; border-radius: 0; }
 #card-container.theme-2 .card { border-radius: 0; }
 
-#card-container.theme-2 .qr-container-theme2 { position: absolute; left: 40px; bottom: 40px; z-index: 10; }
-#card-container.theme-2 .qr-container-theme2 img { width: 90px; height: 90px; background-color: #ffffff; padding: 3px; border: 1px solid #000; border-radius: 4px; }
+#card-container.theme-2 .qr-container-theme2 { position: absolute; left: 30px; bottom: 30px; z-index: 10; }
+#card-container.theme-2 .qr-container-theme2 img { width: 100px; height: 100px; background-color: #ffffff; padding: 0px; border: 1px solid #000; border-radius: 4px; }
 
 /* --- تنسيقات الجهة الخلفية للبطاقة --- */
 #card-container.theme-3 .card { background-color: #ffffff; background-image: none; font-family: 'Cairo', sans-serif !important; justify-content: center; align-items: center; overflow: hidden; }
@@ -1285,7 +1285,7 @@ function renderCards() {
                                     </div>
                                     
                                     <div class="qr-container-theme2">
-                                        <div class="local-qr" data-qrinfo="${qrDataInfo}" style="width: 85px; height: 85px; background-color: #ffffff; padding: 3px; border: 1.5px solid #000; border-radius: 4px;"></div>
+                                        <div class="local-qr" data-qrinfo="${qrDataInfo}" style="width: 100px; height: 100px; z-index: 10;"></div>
                                     </div>
 
                                 </div>
@@ -1329,17 +1329,23 @@ function renderCards() {
                 const canvas = el.querySelector('canvas');
                 
                 // جلب البيانات الخاصة بالموظف
-                const rawText = el.getAttribute('data-qrinfo');
-                if(!rawText) return;
-                
-                // توليد الرمز باحترافية عالية
-                new QRious({
-                    element: canvas,
-                    value: rawText,    // المكتبة تقبل النص العربي مباشرة دون تشفير معقد
-                    size: 150,         // حجم داخلي كبير لضمان الدقة والنقاء عند الطباعة
-                    level: 'L'         // مستوى خفيف ليجعل المربعات واضحة وسهلة المسح بالهاتف
-                });
-                
+                // جلب البيانات الخاصة بالموظف
+const rawText = el.getAttribute('data-qrinfo');
+if(!rawText) return;
+
+// --- الإصلاح: تحويل النص لدعم اللغة العربية (UTF-8) ---
+const utf8Text = unescape(encodeURIComponent(rawText));
+
+// توليد الرمز باحترافية عالية
+new QRious({
+    element: canvas,
+    value: utf8Text,    // نستخدم النص المحول هنا
+    size: 150,
+    level: 'L',         // <-- أضفنا الفاصلة هنا
+    padding: 0          // لتقليل المسافة الداخلية للرمز
+});
+
+               
                 // إجبار الكانفاس على ملء الإطار المخصص له (85px)
                 canvas.style.width = '100%';
                 canvas.style.height = '100%';
