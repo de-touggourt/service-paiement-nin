@@ -15,7 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 
 
- <script>
+
+    <script>
 document.addEventListener("DOMContentLoaded", () => {
     // جلب تصريح الدخول من الجلسة
     const accessGranted = sessionStorage.getItem("secure_cards_access");
@@ -32,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 </script>
-    
 
 
 
@@ -379,21 +379,35 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     
     .no-print { display: none !important; }
 
-    .page-a4 { 
+   .page-a4 { 
         width: 210mm !important; 
         height: 297mm !important; 
         min-height: 297mm !important;
         max-height: 297mm !important;
         margin: 0 auto !important;
-        border: none; 
-        box-shadow: none;
-        page-break-after: always; 
-        page-break-inside: avoid;
+        border: none !important; 
+        box-shadow: none !important;
+        page-break-after: always !important; 
+        page-break-inside: avoid !important;
+        
+        /* --- أوامر إجبارية ومهمة للشبكة --- */
+        display: grid !important;
+        grid-template-columns: repeat(2, 85.6mm) !important; 
+        grid-template-rows: repeat(3, 54mm) !important; 
+        column-gap: 15mm !important; 
+        row-gap: 20mm !important;    
+        justify-content: center !important;
         
         /* --- أوامر إجبارية لرفع البطاقات للأعلى في الطباعة --- */
         align-content: start !important; 
-        padding-top: 15mm !important; /* الهامش العلوي 1 سم */
+        padding-top: 15mm !important;
         padding-bottom: 0 !important;
+    }
+
+
+.card-wrapper {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important; /* لدعم متصفحات أكثر */
     }
 
     .page-a4:last-of-type {
@@ -529,7 +543,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     .panel-header div { flex-wrap: wrap; }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     body { padding: 15px 10px; }
     #control-panel { padding: 15px; }
     .panel-header h2 { font-size: 22px; text-align: center; }
@@ -1380,6 +1394,4 @@ function deleteEmployee(empId) {
     </script>
 </body>
 </html>
-
-
 
