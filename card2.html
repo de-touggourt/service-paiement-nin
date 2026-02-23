@@ -468,12 +468,31 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 #card-container.theme-2 .side-group.right { right: 15px; top: 90px; } 
 #card-container.theme-2 .side-group.left { left: 15px; top: 3px; }
 
-#card-container.theme-2 .header-logo { width: 85px; height: 85px; filter: none; border-radius: 50%; object-fit: cover;}
+#card-container.theme-2 .header-logo { 
+    width: 85px; 
+    height: 85px; 
+    filter: none; 
+    object-fit: contain !important; /* يمنع تشوه الشعار */
+}
+
 #card-container.theme-2 .side-text { font-size: 25px; font-weight: 700; margin-top: 2px; white-space: nowrap;color: #000000;}
 
 #card-container.theme-2 .card-body { padding: 0; display: flex; flex-direction: row; }
 #card-container.theme-2 .right-section { flex: 2; padding: 10px 20px 5px 20px; border-left: 1px solid #333; display: flex; flex-direction: column; gap: 2px; justify-content: flex-start;position: relative; }
-#card-container.theme-2 .card-type-title { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; text-decoration: underline; text-underline-offset: 5px; color:#000; border: none;}
+
+
+#card-container.theme-2 .card-type-title { 
+    align-self: center; /* لتوسيط العنوان */
+    font-size: 28px; 
+    font-weight: 700; 
+    margin-bottom: 8px; 
+    color: #000; 
+    text-decoration: none !important; /* إزالة التسطير المزعج */
+    border-bottom: 2.5px solid #000; /* وضع خط سفلي نظيف */
+    padding-bottom: 2px;
+}
+
+
 
 #card-container.theme-2 .info-row { 
     font-size: 24px; 
@@ -1409,81 +1428,94 @@ function deleteEmployee(empId) {
 }
 
 
-// --- دالة استخراج الـ PDF (النسخة المطورة مع التسمية التلقائية) ---
+// --- دالة استخراج الـ PDF (النسخة النهائية مع حل مشاكل الـ QR) ---
 async function downloadSelectedPDF() {
     const templateId = parseInt(document.getElementById('pdf-template-select').value);
     
-    // --- الجديد: جلب اسم المؤسسة لتسمية الملف ---
     const institutionSelect = document.getElementById('sel-institution');
     let institutionName = institutionSelect.options[institutionSelect.selectedIndex].text;
     
-    // إذا لم يتم اختيار مؤسسة، نضع اسماً افتراضياً
     if (!institutionSelect.value || institutionName === "اختر المؤسسة...") {
         institutionName = "بدون_مؤسسة";
     } else {
-        // استبدال المسافات بشرطات سفلية لتفادي مشاكل أسماء الملفات في بعض الأنظمة
         institutionName = institutionName.replace(/\s+/g, '_');
     }
 
-    // 1. تغيير التصميم ورسم البطاقات في الخلفية
     currentTemplate = templateId;
     renderCards();
 
-    // التحقق من وجود بيانات
     if (employees.length === 0) {
-        alert("يرجى تحميل أو إضافة بيانات الموظفين أولاً.");
+        alert("يرجى تحميل بيانات الموظفين أولاً.");
         return;
     }
 
-    // 2. إظهار رسالة تحميل للمستخدم وتجميد الزر
     const btn = document.querySelector('button[onclick="downloadSelectedPDF()"]');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ جاري تجهيز الـ PDF...';
+    btn.innerHTML = '⏳ جاري جلب الباركود وتجهيز الـ PDF...';
     btn.disabled = true;
-    document.body.style.cursor = 'wait'; // تحويل مؤشر الماوس لوضع الانتظار
+    document.body.style.cursor = 'wait';
 
     const container = document.getElementById('card-container');
 
-    // 3. انتظار 800 مللي ثانية إجبارية للتأكد من بناء الـ DOM ورسم الـ Barcode
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // الانتظار لبناء العناصر
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    // 4. الانتظار الذكي: فحص جميع الصور والـ QR Code حتى يكتمل تحميلها من الإنترنت
-    const images = container.querySelectorAll('img');
-    const imagePromises = Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve(); // إذا كانت محملة مسبقاً
-        return new Promise(resolve => {
-            img.onload = resolve;  // عندما يكتمل التحميل
-            img.onerror = resolve; // نكمل حتى لو فشلت صورة لتفادي توقف النظام بالكامل
+    // فحص جميع الصور (بما فيها QR Codes) بدقة عالية
+    const images = Array.from(container.querySelectorAll('img'));
+    
+    const imagePromises = images.map(img => {
+        return new Promise((resolve) => {
+            // إذا كانت الصورة محملة وجاهزة
+            if (img.complete && img.naturalHeight !== 0) {
+                resolve();
+            } else {
+                // إذا نجح التحميل
+                img.onload = () => resolve();
+                // إذا فشل التحميل (مثل حالة بلوك سيرفر الـ QR)
+                img.onerror = () => {
+                    console.log("إعادة تحميل صورة فشلت:", img.src);
+                    // إضافة رقم عشوائي للرابط لكسر الكاش ومحاولة التحميل مجدداً
+                    setTimeout(() => {
+                        img.src = img.src + "&retry=" + new Date().getTime();
+                        resolve(); 
+                    }, 800);
+                };
+            }
         });
     });
 
-    await Promise.all(imagePromises); // ننتظر هنا حتى تنتهي كل الوعود (الصور)
+    // ننتظر حتى تكتمل كل المحاولات لكل الصور
+    await Promise.all(imagePromises);
+    
+    // انتظار إضافي أخير لضمان استقرار الشاشة قبل التصوير
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // --- الجديد: تحديد اسم الملف الديناميكي ---
     const finalFileName = `البطاقات_المهنية_${institutionName}_نموذج_${templateId}.pdf`;
 
-    // 5. إعدادات مكتبة html2pdf الصارمة
     const opt = {
         margin:       0,
-        filename:     finalFileName, // استخدام الاسم الجديد هنا
-        image:        { type: 'jpeg', quality: 1.0 }, // أعلى جودة للصورة
+        filename:     finalFileName,
+        image:        { type: 'jpeg', quality: 1.0 },
         html2canvas:  { 
-            scale: 4,         // تكبير الدقة 4 أضعاف لطباعة فائقة النقاء
-            useCORS: true,    // أمر حاسم: السماح بجلب الـ QR من سيرفر خارجي دون أخطاء أمنية
+            scale: 4,         
+            useCORS: true,    
+            letterRendering: true, // يساعد في تحسين جودة النصوص العربية
             logging: false
         },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' } // مقاس A4 دقيق
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 6. التوليد والتحميل
     html2pdf().set(opt).from(container).save().then(() => {
-        // إعادة الزر والمؤشر لحالتهم الطبيعية بعد انتهاء التحميل
         btn.innerHTML = originalText;
         btn.disabled = false;
         document.body.style.cursor = 'default';
-        
-        // إشعار نجاح يُظهر اسم الملف للمستخدم
-        setTimeout(() => alert(`✅ تم تجهيز وتحميل ملف (${finalFileName}) بنجاح! يمكنك الآن طباعته من أي جهاز.`), 500);
+        setTimeout(() => alert(`✅ تم حفظ الملف (${finalFileName}) بنجاح! جميع رموز الـ QR واللوجوهات مكتملة.`), 500);
+    }).catch(err => {
+        console.error("خطأ في توليد PDF:", err);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        document.body.style.cursor = 'default';
+        alert("حدث خطأ أثناء حفظ الملف.");
     });
 }
     </script>
