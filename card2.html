@@ -609,6 +609,65 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 .action-buttons { display: flex; gap: 5px; justify-content: flex-start; }
 
 
+/* --- تنسيقات الحجم الكبير (4 بطاقات أفقية) منفصلة تماماً --- */
+.page-a4-large {
+    width: 297mm;
+    height: 210mm;
+    background: white;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 100mm);
+    grid-template-rows: repeat(2, 67mm);
+    column-gap: 15mm;
+    row-gap: 4mm;
+    justify-content: center; 
+    align-content: start;
+    padding-top: 5mm;
+    box-sizing: border-box;
+    overflow: hidden;
+    page-break-after: always;
+}
+
+@media print {
+    @page { 
+        size: A4 landscape; 
+        margin: 0mm !important; 
+    }
+    
+    .page-a4-large {
+        width: 297mm !important;
+        height: 210mm !important;
+        padding-top: 5mm !important;
+        align-content: start !important;
+        display: grid !important;
+    }
+}
+
+.card-wrapper-large {
+    width: 100mm !important;
+    height: 67mm !important;
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    box-sizing: border-box;
+    page-break-inside: avoid !important; 
+}
+
+/* تمديد التصميم الداخلي ليملأ 100x67 ملم بدقة */
+.card-wrapper-large .card {
+    width: 750px !important;
+    height: 474px !important;
+    min-height: 474px !important;
+    max-height: 474px !important;
+    transform: scale(0.5039, 0.5342) !important;
+    transform-origin: top right !important;
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
 
     </style>
 </head>
@@ -624,17 +683,19 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
                 <button class="btn btn-primary" onclick="printTemplate(1)">🖨️ طباعة النموذج الأول</button>
                 <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج الأول</button>
                 <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة النموذج الثاني</button>
-                <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج الثاني</button>
+               
 
-                <div style="display: inline-flex; align-items: center; gap: 8px; background: #fee2e2; padding: 6px 12px; border-radius: 8px; border: 1px solid #fca5a5;">
-                    <select id="pdf-template-select" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Cairo', sans-serif;">
-                        <option value="1">النموذج الأول (الوجه)</option>
-                        <option value="4">النموذج الأول (الخلفية)</option>
-                        <option value="2">النموذج الثاني (الوجه)</option>
-                        <option value="3">النموذج الثاني (الخلفية)</option>
-                    </select>
-                    <button class="btn btn-danger" onclick="downloadSelectedPDF()" style="margin: 0;">📥 حفظ بصيغة PDF</button>
-                </div>
+                <div style="display: inline-flex; align-items: center; gap: 8px; background: #fee2e2; padding: 6px 12px; border-radius: 8px; border: 1px solid #fca5a5; flex-wrap: wrap; justify-content: center;">
+    <select id="pdf-template-select" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Cairo', sans-serif;">
+        <option value="1">النموذج الأول (الوجه)</option>
+        <option value="4">النموذج الأول (الخلفية)</option>
+        <option value="2">النموذج الثاني (الوجه)</option>
+        
+    </select>
+    
+    <button class="btn btn-primary" onclick="printLargeTemplate()" style="margin: 0; background-color: #059669;">🖨️ طباعة حجم كبير</button>
+   
+</div>
 
                 <button onclick="goBackToMain()" 
                         style="background: #6c757d; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: 'Cairo', sans-serif; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 15px;">
@@ -1107,6 +1168,18 @@ let currentTemplate = 1; // لحفظ النموذج المختار
 // دالة جديدة لتشغيل الطباعة حسب النموذج المختار
 function printTemplate(templateId) {
     currentTemplate = templateId;
+    isLargeFormat = false; // التأكد من إيقاف وضع الحجم الكبير
+
+    // --- كود جديد: إجبار المتصفح على الوضع العمودي (Portrait) ---
+    let style = document.getElementById('dynamic-page-orientation');
+    if (!style) {
+        style = document.createElement('style');
+        style.id = 'dynamic-page-orientation';
+        document.head.appendChild(style);
+    }
+    style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
+    // -------------------------------------------------------------
+
     renderCards(); // إعادة التوليد بالتصميم المطلوب
     setTimeout(() => {
         window.print();
@@ -1129,19 +1202,20 @@ function renderCards() {
     
     container.innerHTML = '';
 
-    const chunkSize = 6;
+    const chunkSize = isLargeFormat ? 4 : 6;
+const wrapperClass = isLargeFormat ? 'card-wrapper-large' : 'card-wrapper';
     
     // الدوران على قائمة الموظفين لطباعة نفس العدد
     for (let i = 0; i < employees.length; i += chunkSize) {
         const chunk = employees.slice(i, i + chunkSize);
         
-        let pageHTML = `<div class="page-a4">`;
+       let pageHTML = `<div class="${isLargeFormat ? 'page-a4-large' : 'page-a4'}">`;
         
         chunk.forEach(emp => {
             if (currentTemplate === 3) {
                 // --- كود الجهة الخلفية الموحدة (النموذج الثالث بالرسومات) ---
                 pageHTML += `
-                <div class="card-wrapper">
+                <div class="${wrapperClass}">
                     <div class="card">
                         <div class="back-content">
                             <div class="back-graphics">
@@ -1165,7 +1239,7 @@ function renderCards() {
             } else if (currentTemplate === 4) {
                 // --- كود الجهة الخلفية (التصميم الرابع الرسمي والحديث) ---
                 pageHTML += `
-                <div class="card-wrapper">
+                <div class="${wrapperClass}">
                     <div class="card">
                         <div class="back-header">
                             <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
@@ -1201,7 +1275,7 @@ function renderCards() {
 
                 if (currentTemplate === 1) {
                     pageHTML += `
-                    <div class="card-wrapper">
+                    <div class="${wrapperClass}">
                         <div class="card">
                             <div class="top-deco-bar"><div class="bar-green"></div><div class="bar-red"></div></div>
                             <div class="watermark"></div>
@@ -1219,11 +1293,11 @@ function renderCards() {
                             <div class="card-body">
                                 <div class="info-section">
                                     <div class="card-name-title">بطاقة التعريف المهنية</div>
-                                    <div class="info-row"><span class="label">الاسم واللقب:</span><span class="value">${emp.name || '...................'}</span></div>
-                                    <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value" dir="ltr">${emp.dob || '...................'}</span></div>
-                                    <div class="info-row"><span class="label">الرتبة:</span><span class="value">${emp.rank || '...................'}</span></div>
-                                    <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.workplace || '...................'}</span></div>
-                                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${emp.jobId || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">الاسم واللقب:&rlm;</span><span class="value">${emp.name || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">تاريخ الميلاد:&rlm;</span><span class="value" dir="ltr">${emp.dob || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">الرتبة:&rlm;</span><span class="value">${emp.rank || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">مكان العمل:&rlm;</span><span class="value">${emp.workplace || '...................'}</span></div>
+                                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:&rlm;</span><span class="value">${emp.jobId || '...................'}</span></div>
                                 </div>
                                 <div class="photo-section">
                                     <div class="serial-number"><span>الرقم:</span><span dir="ltr">2026 / </span></div>
@@ -1252,7 +1326,7 @@ function renderCards() {
                    const qrDataInfo = `الاسم الكامل: ${emp.name} | تاريخ الميلاد: ${emp.dob} | الرتبة: ${emp.rank} | مكان العمل: ${emp.workplace || 'غير متوفر'} | رقم التعريف الوظيفي: ${emp.jobId || 'غير متوفر'}`.replace(/"/g, "'");
 
                     pageHTML += `
-                    <div class="card-wrapper">
+                    <div class="${wrapperClass}">
                         <div class="card">
                             
                             
@@ -1275,13 +1349,13 @@ function renderCards() {
                             <div class="card-body">
                                 <div class="right-section">
                                     <div class="card-type-title">بطاقة التعريف المهنية</div>
-                                    <div class="info-row"><span class="info-label">اللقب والاسم:</span><span>${emp.name}</span></div>
-                                    <div class="info-row"><span class="info-label">تاريخ الميلاد:</span><span dir="ltr">${emp.dob}</span></div>
-                                    <div class="info-row"><span class="info-label">الرتبة:</span><span>${emp.rank}</span></div>
-                                    <div class="info-row"><span class="info-label">مكان العمل:</span><span>${emp.workplace || ''}</span></div>
-                                    <div class="info-row"><span class="info-label">رقم التعريف الوظيفي:</span><span>${emp.jobId || ''}</span></div>
+                                    <div class="info-row"><span class="info-label">اللقب والاسم:&rlm;</span><span>${emp.name}</span></div>
+                                    <div class="info-row"><span class="info-label">تاريخ الميلاد:&rlm;</span><span dir="ltr">${emp.dob}</span></div>
+                                    <div class="info-row"><span class="info-label">الرتبة:&rlm;</span><span>${emp.rank}</span></div>
+                                    <div class="info-row"><span class="info-label">مكان العمل:&rlm;</span><span>${emp.workplace || ''}</span></div>
+                                    <div class="info-row"><span class="info-label">رقم التعريف الوظيفي:&rlm;</span><span>${emp.jobId || ''}</span></div>
                                     <div class="info-row">
-                                        <span class="info-label">توقرت في : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                                       <span class="info-label">توقرت في:&rlm; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
                                     </div>
                                     
                                     <div class="qr-container-theme2">
@@ -1508,6 +1582,110 @@ async function downloadSelectedPDF() {
         btn.disabled = false;
         document.body.style.cursor = 'default';
         alert("حدث خطأ أثناء الحفظ، جرب تقليل عدد الموظفين في المرة الواحدة.");
+    });
+}
+
+// دالة الطباعة بالحجم الكبير (تطبع 4 في الصفحة Landscape)
+// دالة الطباعة بالحجم الكبير (من القائمة المنسدلة)
+function printLargeTemplate() {
+    window.scrollTo(0, 0); 
+    
+    const templateId = parseInt(document.getElementById('pdf-template-select').value);
+    currentTemplate = templateId;
+    isLargeFormat = true;
+    
+    // --- كود جديد: إجبار المتصفح على الوضع الأفقي (Landscape) ---
+    let style = document.getElementById('dynamic-page-orientation');
+    if (!style) {
+        style = document.createElement('style');
+        style.id = 'dynamic-page-orientation';
+        document.head.appendChild(style);
+    }
+    style.innerHTML = `
+        @media print { 
+            @page { size: A4 landscape !important; margin: 0mm !important; } 
+            body { margin: 0 !important; padding: 0 !important; }
+            .page-a4-large { margin: 0 !important; }
+        }
+    `;
+    // -------------------------------------------------------------
+
+    renderCards();
+    
+    setTimeout(() => {
+        window.print();
+        
+        // إعادة النظام والتنسيقات للوضع العادي (العمودي) تلقائياً بعد الطباعة
+        isLargeFormat = false;
+        style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
+        renderCards();
+    }, 600);
+}
+
+// دالة حفظ PDF بالحجم الكبير
+async function downloadLargePDF() {
+    const templateId = parseInt(document.getElementById('pdf-template-select').value);
+    const institutionSelect = document.getElementById('sel-institution');
+    let institutionName = "بدون_مؤسسة";
+    if (institutionSelect.selectedIndex !== -1 && institutionSelect.value !== "") {
+        institutionName = institutionSelect.options[institutionSelect.selectedIndex].text;
+    }
+    institutionName = institutionName.replace(/\s+/g, '_');
+
+    currentTemplate = templateId;
+    isLargeFormat = true; // تفعيل الحجم الكبير
+    renderCards();
+
+    if (employees.length === 0) {
+        alert("يرجى تحميل أو إضافة بيانات الموظفين أولاً.");
+        isLargeFormat = false;
+        return;
+    }
+
+    const btn = document.querySelector('button[onclick="downloadLargePDF()"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ جاري التجهيز...';
+    btn.disabled = true;
+    document.body.style.cursor = 'wait';
+
+    const container = document.getElementById('card-container');
+    window.scrollTo(0, 0); 
+    
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    const finalFileName = `البطاقات_كبيرة_${institutionName}_نموذج_${templateId}.pdf`;
+
+    const opt = {
+        margin:       0,
+        filename:     finalFileName,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: document.documentElement.offsetWidth
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // إجبار الـ PDF ليكون أفقي
+    };
+
+    html2pdf().set(opt).from(container).save().then(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        document.body.style.cursor = 'default';
+        alert(`✅ تم حفظ الملف (${finalFileName}) بنجاح!`);
+        
+        // إعادة النظام للوضع العادي
+        isLargeFormat = false;
+        renderCards();
+    }).catch(err => {
+        console.error("PDF Error:", err);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        document.body.style.cursor = 'default';
+        alert("حدث خطأ أثناء الحفظ.");
+        isLargeFormat = false;
+        renderCards();
     });
 }
     </script>
