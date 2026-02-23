@@ -373,17 +373,18 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
         margin: 0 !important; 
         -webkit-print-color-adjust: exact; 
         print-color-adjust: exact; 
-        /* هذا السطر يمنع توسيط الصفحة بالكامل أثناء الطباعة */
         display: block !important; 
+        width: 100% !important;  /* إضافة مهمة لمنع الانكماش */
+        height: 100% !important; /* إضافة مهمة لمنع الانكماش */
     }
     
     .no-print { display: none !important; }
 
-   .page-a4 { 
-        width: 210mm !important; 
-        height: 297mm !important; 
-        min-height: 297mm !important;
-        max-height: 297mm !important;
+    .page-a4 { 
+        width: 100% !important;  /* هنا السر: 100% بدلاً من 210mm */
+        height: 100% !important; /* هنا السر: 100% بدلاً من 297mm */
+        min-height: auto !important; /* إلغاء القيود */
+        max-height: auto !important; /* إلغاء القيود */
         margin: 0 auto !important;
         border: none !important; 
         box-shadow: none !important;
