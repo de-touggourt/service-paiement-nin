@@ -936,7 +936,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
         }
 
      // --- 4. رفع الملف وقراءة البيانات عبر الزر ---
-        function loadEmployeeData() {
+ function loadEmployeeData() {
             const fileInput = document.getElementById('file-upload');
             const file = fileInput.files[0];
             
@@ -1070,8 +1070,6 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
             };
             reader.readAsArrayBuffer(file);
         }
-
-
 
         // --- 5. رسم الجدول ---
 function renderTable() {
