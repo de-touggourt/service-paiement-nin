@@ -14,25 +14,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
-    <script>
-document.addEventListener("DOMContentLoaded", () => {
-    // جلب تصريح الدخول من الجلسة
-    const accessGranted = sessionStorage.getItem("secure_cards_access");
-
-    // التحقق: إذا لم يكن هناك تصريح، يتم إرجاعه للصفحة الرئيسية فوراً
-    if (accessGranted !== "granted_from_main_page") {
-        // قم بتغيير index.html إلى اسم صفحتك الرئيسية
-        window.location.replace("index.html"); 
-    } else {
-        // يمكنك إزالة التصريح هنا إذا أردت أن الصفحة لا تعمل إذا قام المستخدم بتحديثها (F5)
-        // sessionStorage.removeItem("secure_cards_access");
-        
-        console.log("تم التحقق بنجاح: الدخول مصرح به.");
-    }
-});
-</script>
+  
 
 
 
@@ -1265,12 +1249,12 @@ function renderCards() {
                     </div>`;
                 } else if (currentTemplate === 2) {
                     // تجميع بيانات الموظف لتضمينها في الـ QR Code (بدون رابط خارجي)
-                    const qrDataInfo = `الاسم الكامل: ${emp.name} | تاريخ الميلاد: ${emp.dob} | الرتبة: ${emp.rank} | مكان العمل: ${emp.workplace || 'غير متوفر'} | رقم التعريف الوظيفي: ${emp.jobId || 'غير متوفر'}`;
+                   const qrDataInfo = `الاسم الكامل: ${emp.name} | تاريخ الميلاد: ${emp.dob} | الرتبة: ${emp.rank} | مكان العمل: ${emp.workplace || 'غير متوفر'} | رقم التعريف الوظيفي: ${emp.jobId || 'غير متوفر'}`.replace(/"/g, "'");
 
                     pageHTML += `
                     <div class="card-wrapper">
                         <div class="card">
-                            <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="watermark-theme2">
+                            
                             
                             <div class="corner-ribbon-container">
                                 <div class="corner-ribbon-content">
@@ -1335,26 +1319,35 @@ function renderCards() {
         JsBarcode(".barcode").init();
     }
 
-    // 2. تفعيل الـ QR Code محلياً (سريع جداً ومضمون 100%)
+  // 2. تفعيل الـ QR Code محلياً (باستخدام مكتبة QRious الحديثة)
     if (employees.length > 0) {
         const qrElements = document.querySelectorAll('.local-qr');
         qrElements.forEach(el => {
-            el.innerHTML = ''; // تفريغ لتجنب التكرار
-            const textToEncode = el.getAttribute('data-qrinfo');
-            new QRCode(el, {
-                text: textToEncode,
-                width: 80,
-                height: 80,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
-            });
-            
-            // إصلاح سحري لمكتبة الـ PDF: نجعل الصورة المستخرجة تملأ المربع
-            setTimeout(() => {
-                const qrImg = el.querySelector('img');
-                if(qrImg) { qrImg.style.width = '100%'; qrImg.style.height = '100%'; qrImg.style.display = 'block'; }
-            }, 50);
+            try {
+                // إنشاء لوحة رسم (Canvas) نظيفة داخل المربع
+                el.innerHTML = '<canvas></canvas>'; 
+                const canvas = el.querySelector('canvas');
+                
+                // جلب البيانات الخاصة بالموظف
+                const rawText = el.getAttribute('data-qrinfo');
+                if(!rawText) return;
+                
+                // توليد الرمز باحترافية عالية
+                new QRious({
+                    element: canvas,
+                    value: rawText,    // المكتبة تقبل النص العربي مباشرة دون تشفير معقد
+                    size: 150,         // حجم داخلي كبير لضمان الدقة والنقاء عند الطباعة
+                    level: 'L'         // مستوى خفيف ليجعل المربعات واضحة وسهلة المسح بالهاتف
+                });
+                
+                // إجبار الكانفاس على ملء الإطار المخصص له (85px)
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.display = 'block';
+                
+            } catch (e) {
+                console.error("خطأ في توليد الـ QR:", e);
+            }
         });
     }
 }
@@ -1454,11 +1447,16 @@ function deleteEmployee(empId) {
 
 async function downloadSelectedPDF() {
     const templateId = parseInt(document.getElementById('pdf-template-select').value);
-    
     const institutionSelect = document.getElementById('sel-institution');
-    let institutionName = institutionSelect.options[institutionSelect.selectedIndex].text;
-    institutionName = (!institutionSelect.value || institutionName === "اختر المؤسسة...") ? "بدون_مؤسسة" : institutionName.replace(/\s+/g, '_');
+    
+    // --- إصلاح الخطأ: التحقق من الاختيار قبل قراءة النص ---
+    let institutionName = "بدون_مؤسسة";
+    if (institutionSelect.selectedIndex !== -1 && institutionSelect.value !== "") {
+        institutionName = institutionSelect.options[institutionSelect.selectedIndex].text;
+    }
+    institutionName = institutionName.replace(/\s+/g, '_');
 
+    // تغيير النموذج ورسم البطاقات
     currentTemplate = templateId;
     renderCards();
 
@@ -1475,8 +1473,8 @@ async function downloadSelectedPDF() {
 
     const container = document.getElementById('card-container');
 
-    // انتظار قصير جداً لأن كل شيء محلي الآن
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // انتظار كافٍ لرسم الرموز والباركود (تمت زيادته لضمان الاستقرار)
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     const finalFileName = `البطاقات_المهنية_${institutionName}_نموذج_${templateId}.pdf`;
 
@@ -1485,9 +1483,10 @@ async function downloadSelectedPDF() {
         filename:     finalFileName,
         image:        { type: 'jpeg', quality: 1.0 },
         html2canvas:  { 
-            scale: 4,         
+            scale: 3,         // تقليل المقياس قليلاً من 4 إلى 3 لتجنب استهلاك الذاكرة والانهيار
             useCORS: true,
-            logging: false
+            logging: false,
+            letterRendering: true
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
@@ -1496,12 +1495,13 @@ async function downloadSelectedPDF() {
         btn.innerHTML = originalText;
         btn.disabled = false;
         document.body.style.cursor = 'default';
-        alert(`✅ تم حفظ الملف (${finalFileName}) بنجاح! جميع الرموز مكتملة والشعار مضبوط.`);
+        alert(`✅ تم حفظ الملف (${finalFileName}) بنجاح!`);
     }).catch(err => {
+        console.error("PDF Error:", err);
         btn.innerHTML = originalText;
         btn.disabled = false;
         document.body.style.cursor = 'default';
-        alert("حدث خطأ، يرجى المحاولة مرة أخرى.");
+        alert("حدث خطأ أثناء الحفظ، جرب تقليل عدد الموظفين في المرة الواحدة.");
     });
 }
     </script>
