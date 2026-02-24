@@ -1924,7 +1924,7 @@ async function generateProfessionalPDF(isLargeFormatConfig) {
         // تنظيف وحفظ الملف
         document.body.removeChild(renderContainer);
         const fileName = isLargeFormatConfig 
-            ? `البطاقات_كبيرة_${institutionName}_نموذج_${templateId}.pdf`
+            ? `البطاقات_المهنية_${institutionName}_نموذج_${templateId}.pdf`
             : `البطاقات_المهنية_${institutionName}_نموذج_${templateId}.pdf`;
             
         doc.save(fileName);
@@ -1955,6 +1955,7 @@ function downloadLargePDF() {
     </script>
 </body>
 </html>
+
 
 
 
