@@ -450,7 +450,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 }
 
 #card-container.theme-2 .side-group.right { right: 15px; top: 90px; } 
-#card-container.theme-2 .side-group.left { left: 15px; top: 3px; }
+#card-container.theme-2 .side-group.left { left: 40px; top: 3px; }
 
 #card-container.theme-2 .header-logo { 
     width: 85px !important; 
@@ -460,9 +460,13 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     border-radius: 50% !important; 
     object-fit: contain !important; /* استخدام contain يحافظ على الأبعاد الحقيقية للصورة بدون تشويه */
     background-color: transparent; /* جعل الخلفية شفافة أفضل لتداخل الألوان */
+    
+    /* --- الإزاحة لليسار هنا --- */
+    position: relative;
+    left: -40px;
 }
 
-#card-container.theme-2 .side-text { font-size: 25px; font-weight: 700; margin-top: 2px; white-space: nowrap;color: #000000;}
+#card-container.theme-2 .side-text { font-size: 30px; font-weight: 700; margin-top: 2px; white-space: nowrap;color: #000000;}
 
 #card-container.theme-2 .card-body { padding: 0; display: flex; flex-direction: row; }
 #card-container.theme-2 .right-section { flex: 2; padding: 10px 20px 5px 20px; border-left: 1px solid #333; display: flex; flex-direction: column; gap: 2px; justify-content: flex-start;position: relative; }
@@ -470,7 +474,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 
 #card-container.theme-2 .card-type-title { 
     align-self: center; /* لتوسيط العنوان */
-    font-size: 28px; 
+    font-size: 30px; 
     font-weight: 700; 
     margin-bottom: 8px; 
     color: #000; 
@@ -482,7 +486,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 
 
 #card-container.theme-2 .info-row { 
-    font-size: 24px; 
+    font-size: 30px; 
     font-weight: 700; 
     display: flex; 
     align-items: center; 
@@ -500,13 +504,13 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     justify-content: flex-start; 
     gap: 60px; 
     font-weight: 700; 
-    font-size: 22px; 
+    font-size: 26px; 
     color: #000;
-    padding-right: 45px; 
+    padding-right: 30px; 
 }
 
 #card-container.theme-2 .photo-area { width: 140px; height: 180px; border: 1px dashed #ccc; background-color: #fafafa; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-#card-container.theme-2 .signature { text-align: center; font-weight: 700; font-size: 22px; border: none; width: auto; color: #000; padding: 0;}
+#card-container.theme-2 .signature { text-align: center; font-weight: 700; font-size: 26px; border: none; width: auto; color: #000; padding: 0;}
 
 #card-container.theme-2 .footer { background-color: var(--primary-green); color: #ffffff; text-align: center; padding: 6px 0; height: 40px; font-size: 20px; font-weight: 700; width: 100%; border-top: 1px solid white; display: flex; align-items: center; justify-content: center; position: absolute; bottom: 0; left: 0;}
 
@@ -625,7 +629,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     
     justify-content: center; 
     align-content: start;    /* هذا الأمر يرفع كل المحتوى للأعلى */
-    padding-top: 5mm;       /* مسافة أمان صغيرة جداً من حافة الورقة العلوية */
+    padding-top: 10mm;       /* مسافة أمان صغيرة جداً من حافة الورقة العلوية */
     
     box-sizing: border-box;
     overflow: hidden;
@@ -641,10 +645,11 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     .page-a4-large {
         width: 297mm !important;
         height: 210mm !important;
-        padding-top: 5mm !important; /* التأكيد على الرفع للأعلى في الطباعة */
+        padding-top: 10mm !important; /* التأكيد على الرفع للأعلى في الطباعة */
         align-content: start !important;
         display: grid !important;
     }
+
 }
 
 
@@ -686,22 +691,10 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <button class="btn btn-primary" style="background-color: #10b981;" onclick="openEmployeeModal()">➕ إضافة موظف</button>
                 <button class="btn btn-danger" onclick="clearData()">مسح البيانات</button>
-                <button class="btn btn-primary" onclick="printTemplate(1)">🖨️ طباعة النموذج الأول</button>
-                <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج الأول</button>
-                <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة النموذج الثاني</button>
-                <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج الثاني</button>
-
-                <div style="display: inline-flex; align-items: center; gap: 8px; background: #fee2e2; padding: 6px 12px; border-radius: 8px; border: 1px solid #fca5a5; flex-wrap: wrap; justify-content: center;">
-    <select id="pdf-template-select" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Cairo', sans-serif;">
-        <option value="1">النموذج الأول (الوجه)</option>
-        <option value="4">النموذج الأول (الخلفية)</option>
-        <option value="2">النموذج الثاني (الوجه)</option>
-        <option value="3">النموذج الثاني (الخلفية)</option>
-    </select>
-    <button class="btn btn-danger" onclick="downloadSelectedPDF()" style="margin: 0;">📥 حفظ PDF (حجم صغير)</button>
-    <button class="btn btn-primary" onclick="printLargeTemplate()" style="margin: 0; background-color: #059669;">🖨️ طباعة حجم كبير</button>
-    
-</div>
+                <button class="btn btn-primary" onclick="printTemplate(1)">🖨️ طباعة وجه النموذج 1</button>
+                <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج 1</button>
+                <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة وجه النموذج 2</button>
+                <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج 2</button>
 
                 <button onclick="goBackToMain()" 
                         style="background: #6c757d; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: 'Cairo', sans-serif; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 15px;">
@@ -1172,12 +1165,38 @@ function renderTable() {
 let currentTemplate = 1; // لحفظ النموذج المختار
 let isLargeFormat = false;
 // دالة جديدة لتشغيل الطباعة حسب النموذج المختار
+// دالة تشغيل الطباعة المحدثة لتطبع الحجم الكبير دائماً
 function printTemplate(templateId) {
+    window.scrollTo(0, 0); 
     currentTemplate = templateId;
-    renderCards(); // إعادة التوليد بالتصميم المطلوب
+    isLargeFormat = true; // تفعيل إعدادات الحجم الكبير
+
+    // إجبار المتصفح على الوضع الأفقي (Landscape) ليتناسب مع الحجم الكبير
+    let style = document.getElementById('dynamic-page-orientation');
+    if (!style) {
+        style = document.createElement('style');
+        style.id = 'dynamic-page-orientation';
+        document.head.appendChild(style);
+    }
+    style.innerHTML = `
+        @media print { 
+            @page { size: A4 landscape !important; margin: 0mm !important; } 
+            body { margin: 0 !important; padding: 0 !important; }
+            .page-a4-large { margin: 0 !important; }
+        }
+    `;
+
+    renderCards(); // إعادة رسم البطاقات بناءً على الحجم الكبير
+    
+    // إعطاء مهلة للمتصفح لرسم الباركود والـ QR Code قبل فتح نافذة الطباعة
     setTimeout(() => {
         window.print();
-    }, 500); // مهلة صغيرة ليتمكن المتصفح من رسم الباركود أو الصور قبل الطباعة
+        
+        // إعادة النظام والتنسيقات للوضع العادي (العمودي) تلقائياً بعد إغلاق نافذة الطباعة
+        isLargeFormat = false;
+        style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
+        renderCards();
+    }, 600);
 }
 
 function renderCards() {
@@ -1318,9 +1337,7 @@ function renderCards() {
                         </div>
                     </div>`;
                 } else if (currentTemplate === 2) {
-                    // تجميع بيانات الموظف لتضمينها في الـ QR Code (بدون رابط خارجي)
-                   const qrDataInfo = `الاسم الكامل: ${emp.name} | تاريخ الميلاد: ${emp.dob} | الرتبة: ${emp.rank} | مكان العمل: ${emp.workplace || 'غير متوفر'} | رقم التعريف الوظيفي: ${emp.jobId || 'غير متوفر'}`.replace(/"/g, "'");
-
+                   
                     pageHTML += `
                     <div class="${wrapperClass}">
                         <div class="card">
@@ -1349,14 +1366,7 @@ function renderCards() {
                                     <div class="info-row"><span class="info-label">تاريخ الميلاد:&rlm;</span><span dir="ltr">${emp.dob}</span></div>
                                     <div class="info-row"><span class="info-label">الرتبة:&rlm;</span><span>${emp.rank}</span></div>
                                     <div class="info-row"><span class="info-label">مكان العمل:&rlm;</span><span>${emp.workplace || ''}</span></div>
-                                    <div class="info-row"><span class="info-label">رقم التعريف الوظيفي:&rlm;</span><span>${emp.jobId || ''}</span></div>
-                                    <div class="info-row">
-                                       <span class="info-label">توقرت في:&rlm; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                                    </div>
-                                    
-                                    <div class="qr-container-theme2">
-                                        <div class="local-qr" data-qrinfo="${qrDataInfo}" style="width: 100px; height: 100px; z-index: 10;"></div>
-                                    </div>
+                                    <div class="info-row"><span class="info-label">توقرت في:&rlm;</span></div> 
 
                                 </div>
                                 <div class="left-section">
@@ -1582,36 +1592,7 @@ async function downloadSelectedPDF() {
 }
 
 // دالة الطباعة بالحجم الكبير (من القائمة المنسدلة)
-function printLargeTemplate() {
-    window.scrollTo(0, 0); 
-    
-    const templateId = parseInt(document.getElementById('pdf-template-select').value);
-    currentTemplate = templateId;
-    isLargeFormat = true;
-    
-    // ستايل إجباري لإلغاء أي إزاحة يضيفها المتصفح
-    const style = document.createElement('style');
-    style.id = 'print-landscape-style';
-    style.innerHTML = `
-        @media print { 
-            @page { size: A4 landscape; margin: 0mm !important; } 
-            body { margin: 0 !important; padding: 0 !important; }
-            .page-a4-large { margin: 0 !important; }
-        }
-    `;
-    document.head.appendChild(style);
 
-    renderCards();
-    
-    setTimeout(() => {
-        window.print();
-        document.getElementById('print-landscape-style').remove();
-        isLargeFormat = false;
-        renderCards();
-    }, 600);
-}
-
-// دالة حفظ PDF بالحجم الكبير (من القائمة المنسدلة)
 function printLargeTemplate() {
     window.scrollTo(0, 0); 
     
@@ -1716,5 +1697,4 @@ async function downloadLargePDF() {
     </script>
 </body>
 </html>
-
 
