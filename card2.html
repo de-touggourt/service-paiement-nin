@@ -18,7 +18,24 @@
 
   
 
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+    // جلب تصريح الدخول من الجلسة
+    const accessGranted = sessionStorage.getItem("secure_cards_access");
 
+    // التحقق: إذا لم يكن هناك تصريح، يتم إرجاعه للصفحة الرئيسية فوراً
+    if (accessGranted !== "granted_from_main_page") {
+        // قم بتغيير index.html إلى اسم صفحتك الرئيسية
+        window.location.replace("index.html"); 
+    } else {
+        // يمكنك إزالة التصريح هنا إذا أردت أن الصفحة لا تعمل إذا قام المستخدم بتحديثها (F5)
+        // sessionStorage.removeItem("secure_cards_access");
+        
+        console.log("تم التحقق بنجاح: الدخول مصرح به.");
+    }
+});
+</script>
+    
 
 
     <style>
@@ -1737,4 +1754,5 @@ async function downloadLargePDF() {
     </script>
 </body>
 </html>
+
 
