@@ -19,24 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
 
- <script>
-document.addEventListener("DOMContentLoaded", () => {
-    // جلب تصريح الدخول من الجلسة
-    const accessGranted = sessionStorage.getItem("secure_cards_access");
 
-    // التحقق: إذا لم يكن هناك تصريح، يتم إرجاعه للصفحة الرئيسية فوراً
-    if (accessGranted !== "granted_from_main_page") {
-        // قم بتغيير index.html إلى اسم صفحتك الرئيسية
-        window.location.replace("index.html"); 
-    } else {
-        // يمكنك إزالة التصريح هنا إذا أردت أن الصفحة لا تعمل إذا قام المستخدم بتحديثها (F5)
-        // sessionStorage.removeItem("secure_cards_access");
-        
-        console.log("تم التحقق بنجاح: الدخول مصرح به.");
-    }
-});
-</script>
-    
 
 
     <style>
@@ -1749,41 +1732,23 @@ function getCardHTML(emp, templateId) {
         </div>`;
     }
     else if (templateId === 3) {
+        // استخدام ستايل الإطار المتوفر في كودك
+        const printStyle = typeof normalPrintStyle !== 'undefined' ? normalPrintStyle : cardPrintStyle;
+        
         return `
-        <div class="card" style="${cardPrintStyle}">
+        <div class="card" style="${printStyle}" dir="rtl">
             <div class="back-content">
                 <div class="back-graphics">
                     <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" alt="شعار وزارة التربية" class="ministry-logo-back">
                 </div>
-                <div class="ministry-title-back">وزارة التربية الوطنية</div>
+                
+                <div class="ministry-title-back" style="letter-spacing: normal !important; font-family: 'Cairo', sans-serif !important; text-align: center; width: 100%;">وزارة التربية الوطنية</div>
+                
                 <div class="rules-container">
-                    <ul class="rules-list">
+                    <ul class="rules-list" style="letter-spacing: normal !important;">
                         <li>كل استعمال غير قانوني أو لأغراض غير مهنية للبطاقة المهنية يعرض صاحبها لعقوبات تأديبية</li>
                         <li>في حالة التقاعد أو الإستقالة أو الخروج من الولاية يجب على الموظف تسليم البطاقة للإدارة</li>
                     </ul>
-                </div>
-            </div>
-        </div>`;
-    }
-    else if (templateId === 4) {
-        return `
-        <div class="card" style="${cardPrintStyle}">
-            <div class="back-header">
-                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
-                <h2>وزارة التربية الوطنية</h2>
-            </div>
-            <div class="back-body">
-                <div class="watermark-logo"></div>
-                <div class="instructions-title">تنبيه هام</div>
-                <ul class="rules-list-modern">
-                    <li>كل استعمال غير قانوني أو لأغراض غير مهنية للبطاقة، يعرض صاحبها لعقوبات تأديبية.</li>
-                    <li>في حالة التقاعد، الإستقالة، أو النقل خارج الولاية، يُلزم الموظف بتسليم البطاقة للإدارة.</li>
-                </ul>
-            </div>
-            <div class="back-footer">
-                <div class="return-text">في حالة العثور على هذه البطاقة، يرجى تسليمها إلى مديرية التربية لولاية توقرت أو أقرب مؤسسة تربوية.</div>
-                <div class="qr-box">
-                    <div class="local-qr-render" data-qrinfo="Directorate_of_Education_Touggourt : 0664446349" style="width: 100%; height: 100%;"></div>
                 </div>
             </div>
         </div>`;
@@ -1955,8 +1920,6 @@ function downloadLargePDF() {
     </script>
 </body>
 </html>
-
-
 
 
 
