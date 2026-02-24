@@ -15,10 +15,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
 
-    <script>
+ <script>
 document.addEventListener("DOMContentLoaded", () => {
     // جلب تصريح الدخول من الجلسة
     const accessGranted = sessionStorage.getItem("secure_cards_access");
@@ -758,6 +759,23 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
                     <i class="fas fa-arrow-right"></i> رجوع للواجهة الرئيسية
                 </button>
                 
+
+<div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; width: 100%;">
+                
+                <label style="font-weight: bold; font-size: 14px; color: var(--ui-secondary);">اختر النموذج للتصدير:</label>
+                <select id="pdf-template-select" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: 'Cairo', sans-serif; cursor: pointer; outline: none;">
+                    
+                    <option value="2">النموذج 2 (الوجه)</option>
+                    <option value="3">النموذج 2 (الخلفية الكلاسيكية)</option>
+                </select>
+                
+                <button class="btn btn-primary" style="background-color: #b91c1c; box-shadow: 0 4px 6px rgba(185, 28, 28, 0.2);" onclick="downloadLargePDF()">
+                    📄 حفظ PDF
+                </button>
+
+            </div>
+
+
             </div>
         </div>
 
@@ -1588,65 +1606,7 @@ function deleteEmployee(empId) {
     }
 }
 
-async function downloadSelectedPDF() {
-    const templateId = parseInt(document.getElementById('pdf-template-select').value);
-    const institutionSelect = document.getElementById('sel-institution');
-    
-    // --- إصلاح الخطأ: التحقق من الاختيار قبل قراءة النص ---
-    let institutionName = "بدون_مؤسسة";
-    if (institutionSelect.selectedIndex !== -1 && institutionSelect.value !== "") {
-        institutionName = institutionSelect.options[institutionSelect.selectedIndex].text;
-    }
-    institutionName = institutionName.replace(/\s+/g, '_');
 
-    // تغيير النموذج ورسم البطاقات
-    currentTemplate = templateId;
-    renderCards();
-
-    if (employees.length === 0) {
-        alert("يرجى تحميل أو إضافة بيانات الموظفين أولاً.");
-        return;
-    }
-
-    const btn = document.querySelector('button[onclick="downloadSelectedPDF()"]');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ جاري تجهيز الـ PDF...';
-    btn.disabled = true;
-    document.body.style.cursor = 'wait';
-
-    const container = document.getElementById('card-container');
-
-    // انتظار كافٍ لرسم الرموز والباركود (تمت زيادته لضمان الاستقرار)
-    await new Promise(resolve => setTimeout(resolve, 1200));
-
-    const finalFileName = `البطاقات_المهنية_${institutionName}_نموذج_${templateId}.pdf`;
-
-    const opt = {
-        margin:       0,
-        filename:     finalFileName,
-        image:        { type: 'jpeg', quality: 1.0 },
-        html2canvas:  { 
-            scale: 3,         // تقليل المقياس قليلاً من 4 إلى 3 لتجنب استهلاك الذاكرة والانهيار
-            useCORS: true,
-            logging: false,
-            letterRendering: true
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(container).save().then(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        document.body.style.cursor = 'default';
-        alert(`✅ تم حفظ الملف (${finalFileName}) بنجاح!`);
-    }).catch(err => {
-        console.error("PDF Error:", err);
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        document.body.style.cursor = 'default';
-        alert("حدث خطأ أثناء الحفظ، جرب تقليل عدد الموظفين في المرة الواحدة.");
-    });
-}
 
 // دالة الطباعة بالحجم الكبير (من القائمة المنسدلة)
 
@@ -1685,76 +1645,316 @@ function printLargeTemplate() {
     }, 600);
 }
 
-// دالة حفظ PDF بالحجم الكبير
-async function downloadLargePDF() {
-    const templateId = parseInt(document.getElementById('pdf-template-select').value);
-    const institutionSelect = document.getElementById('sel-institution');
-    let institutionName = "بدون_مؤسسة";
-    if (institutionSelect.selectedIndex !== -1 && institutionSelect.value !== "") {
-        institutionName = institutionSelect.options[institutionSelect.selectedIndex].text;
+// --- دوال مساعدة لضمان تحميل الموارد قبل التصدير ---
+
+// دالة لانتظار تحميل جميع الصور داخل عنصر معين
+async function waitForImages(element) {
+    const images = element.querySelectorAll('img');
+    const promises = Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve; // لا توقف العملية إذا فشلت صورة واحدة
+        });
+    });
+    return Promise.all(promises);
+}
+
+// دالة لانتظار تحميل الخطوط بالكامل
+async function waitForFonts() {
+    await document.fonts.ready;
+}
+
+// دالة لتوليد كود الـ HTML للبطاقة بدون الإطارات والتحجيم (Scale)
+function getCardHTML(emp, templateId) {
+    const photoHTML = emp.photo 
+        ? `<img src="${emp.photo}" style="width:100%; height:100%; object-fit:cover;">`
+        : `<span style="color:#ccc; font-size:14px">صورة شمسية</span>`;
+    const barcodeValue = emp.jobId ? emp.jobId : "0000000000";
+
+    // هنا قمنا بإضافة الإطار الأسود (border: 2px solid #000) ليظهر في الـ PDF فقط
+    const cardPrintStyle = "position: relative; transform: none; right: auto; top: auto; border: 2px solid #000; box-sizing: border-box; overflow: hidden;";
+
+    if (templateId === 1) {
+        return `
+        <div class="card" style="${cardPrintStyle}">
+            <div class="top-deco-bar"><div class="bar-green"></div><div class="bar-red"></div></div>
+            <div class="watermark"></div>
+            <div class="header">
+                <div class="logo-box">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                    <div class="logo-text">وزارة التربية الوطنية</div>
+                </div>
+                <div class="header-center"><div class="main-title">الجمهورية الجزائرية الديمقراطية الشعبية</div></div>
+                <div class="logo-box">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" class="header-logo">
+                    <div class="logo-text">مديرية التربية لولاية توقرت</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-section">
+                    <div class="card-name-title">بطاقة التعريف المهنية</div>
+                    <div class="info-row"><span class="label">الاسم واللقب:</span><span class="value">${emp.name}</span></div>
+                    <div class="info-row"><span class="label">تاريخ الميلاد:</span><span class="value" dir="ltr">${emp.dob}</span></div>
+                    <div class="info-row"><span class="label">الرتبة:</span><span class="value">${emp.rank}</span></div>
+                    <div class="info-row"><span class="label">مكان العمل:</span><span class="value">${emp.workplace || ''}</span></div>
+                    <div class="info-row"><span class="label">الرقم التعريف الوظيفي:</span><span class="value">${emp.jobId}</span></div>
+                </div>
+                <div class="photo-section">
+                    <div class="serial-number"><span>الرقم:</span><span dir="ltr">2026 / </span></div>
+                    <div class="photo-frame">${photoHTML}</div>
+                    <div class="signature-title">مدير التربية</div>
+                </div>
+            </div>
+            <div class="barcode-container">
+                <svg class="barcode-render"
+                    jsbarcode-value="${barcodeValue}" jsbarcode-format="CODE128"
+                    jsbarcode-displayValue="false" jsbarcode-height="28"
+                    jsbarcode-width="1.5" jsbarcode-margin="0" jsbarcode-background="transparent">
+                </svg>
+            </div>
+            <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
+        </div>`;
+    } 
+    else if (templateId === 2) {
+        return `
+        <div class="card" style="${cardPrintStyle}">
+            <div class="corner-ribbon-container">
+                <div class="corner-ribbon-content"><div class="stripe green"></div><div class="stripe red"></div></div>
+            </div>
+            <div class="header">
+                <div class="main-title">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+                <div class="side-group right"><div class="side-text">وزارة التربية الوطنية</div></div>
+                <div class="side-group left">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" alt="شعار" class="header-logo">
+                    <div class="side-text">مديرية التربية لولاية توقرت</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="right-section">
+                    <div class="card-type-title">بطاقة التعريف المهنية</div>
+                    <div class="info-row"><span class="info-label">اللقب والاسم:</span><span>${emp.name}</span></div>
+                    <div class="info-row"><span class="info-label">تاريخ الميلاد:</span><span dir="ltr">${emp.dob}</span></div>
+                    <div class="info-row"><span class="info-label">الرتبة:</span><span>${emp.rank}</span></div>
+                    <div class="info-row"><span class="info-label">مكان العمل:</span><span>${emp.workplace || ''}</span></div>
+                    <div class="info-row"><span class="info-label">توقرت في:</span></div> 
+                </div>
+                <div class="left-section">
+                    <div class="number-row"><span>الرقم:</span><span dir="ltr">2026 /</span></div>
+                    <div class="photo-area">${photoHTML}</div>
+                    <div class="signature" style="line-height: 1;">مدير التربية<br>بوعزيز صالح</div>
+                </div>
+            </div>
+            <div class="footer">على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات</div>
+        </div>`;
     }
-    institutionName = institutionName.replace(/\s+/g, '_');
-
-    currentTemplate = templateId;
-    isLargeFormat = true; // تفعيل الحجم الكبير
-    renderCards();
-
+    else if (templateId === 3) {
+        return `
+        <div class="card" style="${cardPrintStyle}">
+            <div class="back-content">
+                <div class="back-graphics">
+                    <img src="https://lh3.googleusercontent.com/d/1O9TZQrn9q4iRnI1NldJNxfq0bKuc8S-u" alt="شعار وزارة التربية" class="ministry-logo-back">
+                </div>
+                <div class="ministry-title-back">وزارة التربية الوطنية</div>
+                <div class="rules-container">
+                    <ul class="rules-list">
+                        <li>كل استعمال غير قانوني أو لأغراض غير مهنية للبطاقة المهنية يعرض صاحبها لعقوبات تأديبية</li>
+                        <li>في حالة التقاعد أو الإستقالة أو الخروج من الولاية يجب على الموظف تسليم البطاقة للإدارة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>`;
+    }
+    else if (templateId === 4) {
+        return `
+        <div class="card" style="${cardPrintStyle}">
+            <div class="back-header">
+                <h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                <h2>وزارة التربية الوطنية</h2>
+            </div>
+            <div class="back-body">
+                <div class="watermark-logo"></div>
+                <div class="instructions-title">تنبيه هام</div>
+                <ul class="rules-list-modern">
+                    <li>كل استعمال غير قانوني أو لأغراض غير مهنية للبطاقة، يعرض صاحبها لعقوبات تأديبية.</li>
+                    <li>في حالة التقاعد، الإستقالة، أو النقل خارج الولاية، يُلزم الموظف بتسليم البطاقة للإدارة.</li>
+                </ul>
+            </div>
+            <div class="back-footer">
+                <div class="return-text">في حالة العثور على هذه البطاقة، يرجى تسليمها إلى مديرية التربية لولاية توقرت أو أقرب مؤسسة تربوية.</div>
+                <div class="qr-box">
+                    <div class="local-qr-render" data-qrinfo="Directorate_of_Education_Touggourt : 0664446349" style="width: 100%; height: 100%;"></div>
+                </div>
+            </div>
+        </div>`;
+    }
+}
+// --- الدالة الموحدة لإنشاء وتصدير PDF باحترافية ---
+// --- الدالة الموحدة لإنشاء وتصدير PDF باحترافية (تم الإصلاح) ---
+async function generateProfessionalPDF(isLargeFormatConfig) {
     if (employees.length === 0) {
         alert("يرجى تحميل أو إضافة بيانات الموظفين أولاً.");
-        isLargeFormat = false;
         return;
     }
 
-    const btn = document.querySelector('button[onclick="downloadLargePDF()"]');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ جاري التجهيز...';
-    btn.disabled = true;
+    const templateId = parseInt(document.getElementById('pdf-template-select').value);
+    const institutionSelect = document.getElementById('sel-institution');
+    let institutionName = (institutionSelect.selectedIndex !== -1 && institutionSelect.value !== "") 
+        ? institutionSelect.options[institutionSelect.selectedIndex].text.replace(/\s+/g, '_') 
+        : "بدون_مؤسسة";
+
+    // 1. إصلاح مشكلة الزر: تحديد الزر بناءً على المعطيات بدون استخدام event
+    const btn = isLargeFormatConfig 
+        ? document.querySelector('button[onclick="downloadLargePDF()"]')
+        : document.querySelector('button[onclick="downloadSelectedPDF()"]');
+        
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = '⏳ جاري تحضير وإنشاء الـ PDF...';
+        btn.disabled = true;
+    }
     document.body.style.cursor = 'wait';
 
-    const container = document.getElementById('card-container');
-    window.scrollTo(0, 0); 
-    
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    // 2. إصلاح مشكلة الـ CSS: نقوم بتغيير اسم الحاوية الأصلية مؤقتاً
+    // لكي نتمكن من استخدام id="card-container" للحاوية المخفية وتطبيق كافة ألوانك وتنسيقاتك عليها
+    const originalContainer = document.getElementById('card-container');
+    if (originalContainer) originalContainer.id = 'card-container-temp';
 
-    const finalFileName = `البطاقات_كبيرة_${institutionName}_نموذج_${templateId}.pdf`;
-
-    const opt = {
-        margin:       0,
-        filename:     finalFileName,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-            scale: 2, 
-            useCORS: true,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: document.documentElement.offsetWidth
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // إجبار الـ PDF ليكون أفقي
-    };
-
-    html2pdf().set(opt).from(container).save().then(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        document.body.style.cursor = 'default';
-        alert(`✅ تم حفظ الملف (${finalFileName}) بنجاح!`);
+    try {
+        const { jsPDF } = window.jspdf;
         
-        // إعادة النظام للوضع العادي
-        isLargeFormat = false;
-        renderCards();
-    }).catch(err => {
-        console.error("PDF Error:", err);
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        // إعدادات مقاسات الميليمتر الثابتة
+        const pdfOrientation = isLargeFormatConfig ? 'landscape' : 'portrait';
+        const doc = new jsPDF({ orientation: pdfOrientation, unit: 'mm', format: 'a4' });
+        
+        const cardWidthPx = 750;
+        const cardHeightPx = 474;
+        
+        // إعدادات هندسة الصفحة
+        const config = isLargeFormatConfig ? {
+            cardW_mm: 100, cardH_mm: 67, cols: 2, rows: 2,
+            startX: 41, startY: 10, gapX: 15, gapY: 4, cardsPerPage: 4
+        } : {
+            cardW_mm: 85.6, cardH_mm: 54, cols: 2, rows: 3,
+            startX: 11.9, startY: 15, gapX: 15, gapY: 20, cardsPerPage: 6
+        };
+
+        // إنشاء حاوية مخفية خارج الشاشة لتصيير البطاقات بحجمها الأصلي
+        const renderContainer = document.createElement('div');
+        renderContainer.id = 'card-container'; // إعطاؤها المُعرّف الأصلي لسحب الـ CSS
+        renderContainer.style.position = 'fixed';
+        renderContainer.style.top = '-9999px';
+        renderContainer.style.left = '-9999px';
+        renderContainer.style.width = `${cardWidthPx}px`;
+        renderContainer.style.height = `${cardHeightPx}px`;
+        renderContainer.style.background = 'white';
+        renderContainer.style.zIndex = '-1000';
+        
+        // إضافة الكلاس المناسب للتصميم
+        renderContainer.className = templateId === 2 ? 'theme-2' : (templateId === 3 ? 'theme-3' : (templateId === 4 ? 'theme-4' : ''));
+        document.body.appendChild(renderContainer);
+
+        await waitForFonts(); // التأكد من تحميل الخطوط قبل التصيير
+
+        // الدوران على الموظفين لمعالجة كل بطاقة على حدة
+        for (let i = 0; i < employees.length; i++) {
+            const emp = employees[i];
+            
+            // حقن الـ HTML الخاص بالبطاقة
+            renderContainer.innerHTML = getCardHTML(emp, templateId);
+            
+            // 3. الإصلاح الجذري للباركود ليعمل مع الحاوية المخفية
+            if (templateId === 1) {
+                const barcodeSvg = renderContainer.querySelector(".barcode-render");
+                if (barcodeSvg) {
+                    JsBarcode(barcodeSvg, emp.jobId || "0000000000", {
+                        format: "CODE128",
+                        displayValue: false,
+                        height: 28,
+                        width: 1.5,
+                        margin: 0,
+                        background: "transparent"
+                    });
+                }
+            }
+            
+            // توليد QR Code إذا لزم الأمر
+            if (templateId === 4) {
+                const qrEl = renderContainer.querySelector('.local-qr-render');
+                if(qrEl) {
+                    qrEl.innerHTML = '<canvas></canvas>';
+                    const utf8Text = unescape(encodeURIComponent(qrEl.getAttribute('data-qrinfo')));
+                    new QRious({
+                        element: qrEl.querySelector('canvas'),
+                        value: utf8Text, size: 200, level: 'L', padding: 0
+                    });
+                    qrEl.querySelector('canvas').style.width = '100%';
+                    qrEl.querySelector('canvas').style.height = '100%';
+                }
+            }
+
+            // انتظار تحميل الصور 
+            await waitForImages(renderContainer);
+
+            // التقاط الصورة بجودة عالية
+            const canvas = await html2canvas(renderContainer, {
+                scale: 3, 
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+            // حساب الإحداثيات الرياضية للورقة
+            const pageIndex = i % config.cardsPerPage;
+            if (i > 0 && pageIndex === 0) {
+                doc.addPage();
+            }
+
+            const col = pageIndex % config.cols;
+            const row = Math.floor(pageIndex / config.cols);
+            
+            const x = config.startX + (col * (config.cardW_mm + config.gapX));
+            const y = config.startY + (row * (config.cardH_mm + config.gapY));
+
+            // رسم البطاقة على الـ PDF
+            doc.addImage(imgData, 'JPEG', x, y, config.cardW_mm, config.cardH_mm);
+        }
+
+        // تنظيف وحفظ الملف
+        document.body.removeChild(renderContainer);
+        const fileName = isLargeFormatConfig 
+            ? `البطاقات_كبيرة_${institutionName}_نموذج_${templateId}.pdf`
+            : `البطاقات_المهنية_${institutionName}_نموذج_${templateId}.pdf`;
+            
+        doc.save(fileName);
+        alert(`✅ تم حفظ الملف (${fileName}) بنجاح بدقة تامة!`);
+
+    } catch (error) {
+        console.error("خطأ تقني في بناء الـ PDF:", error);
+        alert("حدث خطأ أثناء التصدير. يرجى التحقق من لوحة تحكم المتصفح (F12) لمزيد من التفاصيل.");
+    } finally {
+        // 4. استرجاع الإعدادات الأصلية للواجهة (هام جداً)
+        if (originalContainer) originalContainer.id = 'card-container';
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
         document.body.style.cursor = 'default';
-        alert("حدث خطأ أثناء الحفظ.");
-        isLargeFormat = false;
-        renderCards();
-    });
+    }
+}
+
+// استبدال الدوال الأصلية لترتبط بالهندسة الجديدة
+function downloadSelectedPDF() {
+    generateProfessionalPDF(false); // حجم قياسي (6 بطاقات، Portrait)
+}
+
+function downloadLargePDF() {
+    generateProfessionalPDF(true); // حجم كبير (4 بطاقات، Landscape)
 }
     </script>
 </body>
 </html>
-
 
 
 
