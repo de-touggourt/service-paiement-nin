@@ -472,18 +472,20 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 #card-container.theme-2 .card-body { padding: 0; display: flex; flex-direction: row; }
 
 #card-container.theme-2 .right-section { 
-    flex: 0 0 480px !important; /* يمنع هذا السطر القسم من التمدد نهائياً، مما يحمي الصورة من الإزاحة */
+    flex: 0 0 480px !important; /* ثابت تماماً */
     width: 480px !important;
     max-width: 480px !important;
-    /* الحشو (Padding): 20px على اليسار (جهة الخط) و20px على اليمين */
     padding: 10px 20px 5px 20px; 
-    border-left: 1px solid #333; /* هذا هو الخط العمودي الفاصل */
-    display: flex; 
-    flex-direction: column; 
-    gap: 0px; /* تقليل المسافة الرأسية بين الأسطر لتبدو البيانات متراصة وجميلة */
-    justify-content: flex-start;
-    position: relative;
-    overflow: hidden; /* يضمن عدم خروج أي نص خارج حدود الـ 480px */
+    border-left: 2px solid #333; /* تقوية الخط العمودي */
+    overflow: hidden; 
+}
+
+.shrink-target {
+    white-space: nowrap; 
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: clip; /* قطع النص إذا تجاوز الحد في أسوأ الظروف */
+    max-width: 320px; /* إضافة حد أقصى تقريبي لعرض النص نفسه لمنع عبور الخط */
 }
 
 #card-container.theme-2 .card-type-title { 
@@ -734,12 +736,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     flex-direction: column !important;
 }
 
-.shrink-target {
-    white-space: nowrap;
-    display: inline-block;
-    overflow: hidden;
-    flex: 1;
-}
+
 
     </style>
 </head>
@@ -1266,7 +1263,15 @@ function printTemplate(templateId) {
 
     renderCards(); // إعادة رسم البطاقات بناءً على الحجم الكبير
     
-    // إعطاء مهلة للمتصفح لرسم الباركود والـ QR Code قبل فتح نافذة الطباعة
+    // 1. استدعاء فوري لعملية التصغير التلقائي للبطاقات التي تم رسمها للتو
+    setTimeout(() => {
+        const container = document.getElementById('card-container');
+        if (container) {
+            autoShrinkText(container); // تصغير "الرتبة" و "مكان العمل" لمنع تداخلها مع الخط
+        }
+    }, 100);
+
+    // 2. إعطاء مهلة كافية (800ms) للمتصفح لتطبيق التغييرات ورسم الباركود قبل الطباعة
     setTimeout(() => {
         window.print();
         
@@ -1274,7 +1279,7 @@ function printTemplate(templateId) {
         isLargeFormat = false;
         style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
         renderCards();
-    }, 600);
+    }, 800); 
 }
 
 function renderCards() {
@@ -1848,9 +1853,16 @@ async function generateProfessionalPDF(isLargeFormatConfig) {
         for (let i = 0; i < employees.length; i++) {
             const emp = employees[i];
             
-            // حقن الـ HTML الخاص بالبطاقة
-            renderContainer.innerHTML = getCardHTML(emp, templateId);
-            autoShrinkText();
+          
+            // 1. حقن محتوى البطاقة
+renderContainer.innerHTML = getCardHTML(emp, templateId);
+
+// 2. تفعيل التصغير التلقائي "داخل" حاوية الـ PDF حصراً
+autoShrinkText(renderContainer); 
+
+// 3. إضافة مهلة زمنية (50 مللي ثانية) لضمان ثبات الخطوط قبل التقاط الصورة
+await new Promise(resolve => setTimeout(resolve, 50));
+         
             // 3. الإصلاح الجذري للباركود ليعمل مع الحاوية المخفية
             if (templateId === 1) {
                 const barcodeSvg = renderContainer.querySelector(".barcode-render");
@@ -1941,30 +1953,24 @@ function downloadLargePDF() {
     generateProfessionalPDF(true); // حجم كبير (4 بطاقات، Landscape)
 }
 
-function autoShrinkText() {
-    const elements = document.querySelectorAll('.shrink-target');
+function autoShrinkText(container = document) {
+    const elements = container.querySelectorAll('.shrink-target');
     
     elements.forEach(el => {
-        // 1. إعادة الخط للحجم الطبيعي الكبير أولاً قبل أي فحص
-        const originalSize = 30; 
-        el.style.fontSize = originalSize + 'px';
+        el.style.fontSize = '30px'; 
+        let fontSize = 30;
         
-        let fontSize = originalSize;
-        
-        // 2. حساب المساحة المتاحة حتى الخط العمودي بدقة (العرض 480 - الهامش 20)
-        const containerLimit = 458; // رفعنا القيمة لتقترب أكثر من الخط
+        // --- تعديل الحد ليكون 445 لضمان عدم لمس الخط العمودي ---
+        const containerLimit = 445; 
         const labelWidth = el.previousElementSibling ? el.previousElementSibling.offsetWidth : 0;
         const availableWidth = containerLimit - labelWidth;
 
-        // 3. الفحص: "إذا" كان عرض النص الحالي أكبر من المساحة المتاحة فقط ابدأ التصغير
+        // حلقة التصغير
         if (el.scrollWidth > availableWidth) {
-            while (el.scrollWidth > availableWidth && fontSize > 11) {
-                fontSize -= 0.5; // تصغير تدريجي دقيق جداً
+            while (el.scrollWidth > availableWidth && fontSize > 9) {
+                fontSize -= 0.5;
                 el.style.fontSize = fontSize + 'px';
             }
-        } else {
-            // إذا كان النص صغيراً، نضمن بقاء الخط كبيراً 30px
-            el.style.fontSize = originalSize + 'px';
         }
     });
 }
@@ -1979,6 +1985,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
