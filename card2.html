@@ -752,10 +752,9 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <button class="btn btn-primary" style="background-color: #10b981;" onclick="openEmployeeModal()">➕ إضافة موظف</button>
                 <button class="btn btn-danger" onclick="clearData()">مسح البيانات</button>
-                <button class="btn btn-primary" onclick="printTemplate(1)">🖨️ طباعة وجه النموذج 1</button>
-                <button class="btn btn-primary" style="background-color: #34495e;" onclick="printTemplate(4)">🖨️ طباعة خلفية النموذج 1</button>
-                <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة وجه النموذج 2</button>
-                <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج 2</button>
+               
+                <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة وجه النموذج</button>
+                <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج</button>
 
                 <button onclick="goBackToMain()" 
                         style="background: #6c757d; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: 'Cairo', sans-serif; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 15px;">
@@ -768,8 +767,8 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
                 <label style="font-weight: bold; font-size: 14px; color: var(--ui-secondary);">اختر النموذج للتصدير:</label>
                 <select id="pdf-template-select" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: 'Cairo', sans-serif; cursor: pointer; outline: none;">
                     
-                    <option value="2">النموذج 2 (الوجه الأمامي)</option>
-                    <option value="3">النموذج 2 (الوجه الخلفي)</option>
+                    <option value="2">الوجه الأمامي للبطاقة</option>
+                    <option value="3">الوجه الخلفي للبطاقة</option>
                 </select>
                 
                 <button class="btn btn-primary" style="background-color: #b91c1c; box-shadow: 0 4px 6px rgba(185, 28, 28, 0.2);" onclick="downloadLargePDF()">
@@ -2024,6 +2023,7 @@ checkVersionUpdate();
     </script>
 </body>
 </html>
+
 
 
 
