@@ -1985,9 +1985,46 @@ renderCards = function() {
     setTimeout(autoShrinkText, 50); // تنفيذ التصغير بعد 50 مللي ثانية من الرسم
 };
 
+
+        
+
+        // --- ميزة التحديث التلقائي الذكية ---
+const VERSION_FILE_URL = 'version.json'; // تأكد من أن اسم الملف مطابق لما لديك
+let currentVersion = "1.0.7"; // الإصدار الحالي المتوافق مع ملفك
+
+async function checkVersionUpdate() {
+    try {
+        // إضافة timestamp لمنع المتصفح من كاش (Cache) الملف القديم
+        const response = await fetch(`${VERSION_FILE_URL}?t=${Date.now()}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        // المقارنة: إذا كان رقم الإصدار في الملف يختلف عن الإصدار الحالي
+        if (data.version !== currentVersion) {
+            console.log("تم اكتشاف تحديث جديد: " + data.version);
+            
+            // إشعار المستخدم قبل التحويل (اختياري)
+            alert("تم تحديث النظام إلى نسخة جديدة (" + data.version + "). سيتم توجيهك للرئيسية.");
+            
+            // العودة للصفحة الرئيسية وتحديث الصفحة
+            window.location.href = "index.html"; 
+        }
+    } catch (error) {
+        console.error("فشل التحقق من التحديثات:", error);
+    }
+}
+
+// فحص التحديثات كل 30 ثانية
+setInterval(checkVersionUpdate, 5000);
+
+// فحص فوري عند تحميل الصفحة لأول مرة
+checkVersionUpdate();
+
     </script>
 </body>
 </html>
+
 
 
 
