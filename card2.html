@@ -18,7 +18,7 @@
    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
-
+ 
   <script>
 document.addEventListener("DOMContentLoaded", () => {
     // جلب تصريح الدخول من الجلسة
@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
     
+
 
 
     <style>
@@ -190,9 +191,9 @@ table {
 }
 
 th, td { 
-    padding: 16px; 
+    padding: 14px; 
     border-bottom: 1px solid var(--ui-border); 
-    font-size: 14px; 
+    font-size: 12px; 
 }
 
 th { 
@@ -551,7 +552,7 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 
 #card-container.theme-2 .footer { background-color: var(--primary-green); color: #ffffff; text-align: center; padding: 6px 0; height: 40px; font-size: 20px; font-weight: 700; width: 100%; border-top: 1px solid white; display: flex; align-items: center; justify-content: center; position: absolute; bottom: 0; left: 0;}
 
-#card-container.theme-2 .card-wrapper { border: 1.5px solid #000000; border-radius: 0; }
+#card-container.theme-2 .card-wrapper { border: 1px solid #ddd; border-radius: 4px; }
 #card-container.theme-2 .card { border-radius: 0; }
 
 #card-container.theme-2 .qr-container-theme2 { position: absolute; left: 30px; bottom: 30px; z-index: 10; }
@@ -767,12 +768,17 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
             <h1> نظام إدارة البطاقات المهنية - فضاء المدير</h1>
 
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+
+                <button class="btn" style="background-color: #f59e0b; color: white;" onclick="window.open('https://www.youtube.com', '_blank')">
+                🎥 فيديو توضيحي
+                </button>
+
                 <button class="btn btn-primary" style="background-color: #10b981;" onclick="openEmployeeModal()">➕ إضافة موظف</button>
                 <button class="btn btn-danger" onclick="clearData()">مسح البيانات</button>
                
                 <button class="btn btn-primary" style="background-color: #2980b9;" onclick="printTemplate(2)">🖨️ طباعة وجه النموذج</button>
                 <button class="btn btn-primary" style="background-color: #8e44ad;" onclick="printTemplate(3)">🖨️ طباعة خلفية النموذج</button>
-
+                
                 <button onclick="goBackToMain()" 
                         style="background: #6c757d; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: 'Cairo', sans-serif; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 15px;">
                     <i class="fas fa-arrow-right"></i> رجوع للواجهة الرئيسية
@@ -1256,7 +1262,7 @@ function renderTable() {
 
       
 // --- 7. توليد البطاقات للطباعة ---
-let currentTemplate = 1; // لحفظ النموذج المختار
+let currentTemplate = 2; // لحفظ النموذج المختار
 let isLargeFormat = false;
 // دالة جديدة لتشغيل الطباعة حسب النموذج المختار
 // دالة تشغيل الطباعة المحدثة لتطبع الحجم الكبير دائماً
@@ -1703,8 +1709,8 @@ function getCardHTML(emp, templateId) {
         : `<span style="color:#ccc; font-size:14px">صورة شمسية</span>`;
     const barcodeValue = emp.jobId ? emp.jobId : "0000000000";
 
-    // هنا قمنا بإضافة الإطار الأسود (border: 2px solid #000) ليظهر في الـ PDF فقط
-    const cardPrintStyle = "position: relative; transform: none; right: auto; top: auto; border: 2px solid #000; box-sizing: border-box; overflow: hidden;";
+   // هذا التعديل يجعل إطار الـ PDF مطاباقاً تماماً لمعاينة الحجم الكبير
+const cardPrintStyle = "position: relative; transform: none; right: auto; top: auto; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; overflow: hidden;";
 
     if (templateId === 1) {
         return `
@@ -2040,20 +2046,5 @@ checkVersionUpdate();
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
