@@ -472,17 +472,18 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 #card-container.theme-2 .card-body { padding: 0; display: flex; flex-direction: row; }
 
 #card-container.theme-2 .right-section { 
-    flex: 0 0 480px !important; /* تثبيت العرض تماماً لمنع إزاحة الصورة */
+    flex: 0 0 480px !important; /* يمنع هذا السطر القسم من التمدد نهائياً، مما يحمي الصورة من الإزاحة */
     width: 480px !important;
     max-width: 480px !important;
+    /* الحشو (Padding): 20px على اليسار (جهة الخط) و20px على اليمين */
     padding: 10px 20px 5px 20px; 
-    border-left: 1px solid #333; 
+    border-left: 1px solid #333; /* هذا هو الخط العمودي الفاصل */
     display: flex; 
     flex-direction: column; 
-    gap: 0px; /* تقليل المسافة بين الأسطر */
+    gap: 0px; /* تقليل المسافة الرأسية بين الأسطر لتبدو البيانات متراصة وجميلة */
     justify-content: flex-start;
     position: relative;
-    overflow: hidden; 
+    overflow: hidden; /* يضمن عدم خروج أي نص خارج حدود الـ 480px */
 }
 
 #card-container.theme-2 .card-type-title { 
@@ -1941,22 +1942,29 @@ function downloadLargePDF() {
 }
 
 function autoShrinkText() {
-    // استهداف العناصر التي تحمل الكلاس فقط
     const elements = document.querySelectorAll('.shrink-target');
     
     elements.forEach(el => {
-        el.style.fontSize = '30px'; // البدء بالحجم الأصلي
-        let fontSize = 30;
+        // 1. إعادة الخط للحجم الطبيعي الكبير أولاً قبل أي فحص
+        const originalSize = 30; 
+        el.style.fontSize = originalSize + 'px';
         
-        // حساب المساحة المتاحة (العرض الثابت 480 ناقص الهوامش وعرض التسمية)
-        const containerWidth = 440; 
+        let fontSize = originalSize;
+        
+        // 2. حساب المساحة المتاحة حتى الخط العمودي بدقة (العرض 480 - الهامش 20)
+        const containerLimit = 458; // رفعنا القيمة لتقترب أكثر من الخط
         const labelWidth = el.previousElementSibling ? el.previousElementSibling.offsetWidth : 0;
-        const availableWidth = containerWidth - labelWidth - 10; 
+        const availableWidth = containerLimit - labelWidth;
 
-        // تقليص الخط تدريجياً حتى يناسب المساحة
-        while (el.scrollWidth > availableWidth && fontSize > 12) {
-            fontSize -= 1;
-            el.style.fontSize = fontSize + 'px';
+        // 3. الفحص: "إذا" كان عرض النص الحالي أكبر من المساحة المتاحة فقط ابدأ التصغير
+        if (el.scrollWidth > availableWidth) {
+            while (el.scrollWidth > availableWidth && fontSize > 11) {
+                fontSize -= 0.5; // تصغير تدريجي دقيق جداً
+                el.style.fontSize = fontSize + 'px';
+            }
+        } else {
+            // إذا كان النص صغيراً، نضمن بقاء الخط كبيراً 30px
+            el.style.fontSize = originalSize + 'px';
         }
     });
 }
@@ -1971,6 +1979,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
