@@ -1273,7 +1273,7 @@ function printTemplate(templateId) {
         if (container) {
             autoShrinkText(container); // استهداف الحاوية الرئيسية
         }
-    }, 500);
+    }, 50);
 
     // 3. مهلة أمان (1 ثانية كاملة) لضمان أن المتصفح قد طبق الأحجام الجديدة لكل الموظفين
     setTimeout(() => {
@@ -1283,7 +1283,7 @@ function printTemplate(templateId) {
         isLargeFormat = false;
         style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
         renderCards();
-    }, 10000); 
+    }, 1000); 
 }
 
 function renderCards() {
@@ -1988,6 +1988,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
