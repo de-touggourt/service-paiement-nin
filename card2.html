@@ -485,19 +485,21 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     display: inline-block;
     /* تأكد من إزالة max-width إذا كانت موجودة */
     max-width: none !important; 
-    overflow: visible; /* السماح للنص بالظهور كاملاً أثناء عملية الحساب */
+    overflow: visible !important; /* السماح للنص بالظهور كاملاً أثناء عملية الحساب */
     flex: 1;
 }
 
 #card-container.theme-2 .card-type-title { 
-    align-self: center; /* لتوسيط العنوان */
+    align-self: center; 
     font-size: 30px; 
     font-weight: 700; 
     margin-bottom: 8px; 
     color: #000; 
-    text-decoration: none !important; /* إزالة التسطير المزعج */
-    border-bottom: 2.5px solid #000; /* وضع خط سفلي نظيف */
+    border-bottom: 2.5px solid #000; /* السطر أسفل النص مباشرة */
     padding-bottom: 2px;
+    width: fit-content; /* هذا هو السر ليكون السطر بطول الكلمة فقط */
+    margin-right: auto;
+    margin-left: auto;
 }
 
 
@@ -1856,11 +1858,12 @@ async function generateProfessionalPDF(isLargeFormatConfig) {
             const emp = employees[i];
             
           
+// بعد حقن الـ HTML
 renderContainer.innerHTML = getCardHTML(emp, templateId);
+// استدعاء التصغير فوراً
 autoShrinkText(renderContainer); 
-
-// هذا السطر ضروري جداً لاكتمال النص في الـ PDF
-await new Promise(resolve => setTimeout(resolve, 100));
+// انتظار 100ms لضمان اكتمال معالجة النص الطويل قبل تصويره
+await new Promise(r => setTimeout(r, 100));
          
             // 3. الإصلاح الجذري للباركود ليعمل مع الحاوية المخفية
             if (templateId === 1) {
@@ -1956,30 +1959,25 @@ function autoShrinkText(container = document) {
     const elements = container.querySelectorAll('.shrink-target');
     
     elements.forEach(el => {
-        // 1. العودة للحجم الأصلي للفحص
-        el.style.fontSize = '30px'; 
+        el.style.fontSize = '30px'; // البدء بالحجم الطبيعي
         let fontSize = 30;
         
-        // 2. حساب المساحة المتاحة بدقة (حتى الخط العمودي)
-        // العرض الثابت 480 - الهامش 20 = 460 بكسل
-        const containerLimit = 458; 
+        // حد الأمان قبل الخط العمودي
+        const containerLimit = 450; 
         const labelWidth = el.previousElementSibling ? el.previousElementSibling.offsetWidth : 0;
         const availableWidth = containerLimit - labelWidth;
 
-        // 3. عملية التصغير المستمرة حتى يكتمل النص داخل المساحة
-        // قمنا بخفض الحد الأدنى للخط إلى 7px لضمان اكتمال النصوص الطويلة جداً
+        // التصغير بدقة 0.2 درجة لضمان أفضل تعبئة للمساحة دون قطع النص
         if (el.scrollWidth > availableWidth) {
-            while (el.scrollWidth > availableWidth && fontSize > 5) {
-                fontSize -= 0.5;
+            while (el.scrollWidth > availableWidth && fontSize > 6) {
+                fontSize -= 0.2; 
                 el.style.fontSize = fontSize + 'px';
             }
         }
-
-        // 4. بعد الانتهاء، إذا ظل النص طويلاً، نضمن عدم قطعه برمجياً
-        el.style.overflow = 'visible';
+        // التأكد من أن النص يظهر كاملاً بعد التصغير
+        el.style.width = "auto";
     });
 }
-
 // تعديل استدعاء الدالة لضمان تنفيذها بعد الرسم تماماً
 const originalRenderCards = renderCards;
 renderCards = function() {
@@ -1990,6 +1988,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
