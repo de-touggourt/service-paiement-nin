@@ -470,8 +470,20 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 #card-container.theme-2 .side-text { font-size: 30px; font-weight: 700; margin-top: 2px; white-space: nowrap;color: #000000;}
 
 #card-container.theme-2 .card-body { padding: 0; display: flex; flex-direction: row; }
-#card-container.theme-2 .right-section { flex: 2; padding: 10px 20px 5px 20px; border-left: 1px solid #333; display: flex; flex-direction: column; gap: 2px; justify-content: flex-start;position: relative; }
 
+#card-container.theme-2 .right-section { 
+    flex: 0 0 480px !important; /* تثبيت العرض تماماً لمنع إزاحة الصورة */
+    width: 480px !important;
+    max-width: 480px !important;
+    padding: 10px 20px 5px 20px; 
+    border-left: 1px solid #333; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0px; /* تقليل المسافة بين الأسطر */
+    justify-content: flex-start;
+    position: relative;
+    overflow: hidden; 
+}
 
 #card-container.theme-2 .card-type-title { 
     align-self: center; /* لتوسيط العنوان */
@@ -721,6 +733,12 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
     flex-direction: column !important;
 }
 
+.shrink-target {
+    white-space: nowrap;
+    display: inline-block;
+    overflow: hidden;
+    flex: 1;
+}
 
     </style>
 </head>
@@ -1423,8 +1441,8 @@ function renderCards() {
                                     <div class="card-type-title">بطاقة التعريف المهنية</div>
                                     <div class="info-row"><span class="info-label">اللقب والاسم:&rlm;</span><span>${emp.name}</span></div>
                                     <div class="info-row"><span class="info-label">تاريخ الميلاد:&rlm;</span><span dir="ltr">${emp.dob}</span></div>
-                                    <div class="info-row"><span class="info-label">الرتبة:&rlm;</span><span>${emp.rank}</span></div>
-                                    <div class="info-row"><span class="info-label">مكان العمل:&rlm;</span><span>${emp.workplace || ''}</span></div>
+                                    <div class="info-row"><span class="info-label">الرتبة:&rlm;</span><span>class="shrink-target">${emp.rank}</span></div>
+                                    <div class="info-row"><span class="info-label">مكان العمل:&rlm;</span><span>class="shrink-target">${emp.workplace || ''}</span></div>
                                     <div class="info-row"><span class="info-label">توقرت في:&rlm;</span></div> 
 
                                 </div>
@@ -1918,10 +1936,38 @@ function downloadSelectedPDF() {
 function downloadLargePDF() {
     generateProfessionalPDF(true); // حجم كبير (4 بطاقات، Landscape)
 }
+
+function autoShrinkText() {
+    // استهداف الرتبة ومكان العمل اللذان يحملان كلاس shrink-target
+    const elements = document.querySelectorAll('#card-container.theme-2 .shrink-target');
+    
+    elements.forEach(el => {
+        el.style.fontSize = '30px'; // الحجم الأصلي الافتراضي
+        let fontSize = 30;
+        
+        // حساب المساحة المتاحة في السطر بدقة
+        const containerWidth = 440; // العرض الصافي المخصص للنص داخل القسم الأيمن
+        const labelWidth = el.previousElementSibling ? el.previousElementSibling.offsetWidth : 0;
+        const availableWidth = containerWidth - labelWidth - 10; 
+
+        // تقليل حجم الخط طالما أن النص يتجاوز المساحة المتاحة
+        while (el.scrollWidth > availableWidth && fontSize > 12) {
+            fontSize -= 1;
+            el.style.fontSize = fontSize + 'px';
+        }
+    });
+}
+
+// تعديل استدعاء الدالة لضمان تنفيذها بعد الرسم تماماً
+const originalRenderCards = renderCards;
+renderCards = function() {
+    originalRenderCards();
+    setTimeout(autoShrinkText, 50); // تنفيذ التصغير بعد 50 مللي ثانية من الرسم
+};
+
     </script>
 </body>
 </html>
-
 
 
 
