@@ -1969,7 +1969,7 @@ function autoShrinkText(container = document) {
         // 3. عملية التصغير المستمرة حتى يكتمل النص داخل المساحة
         // قمنا بخفض الحد الأدنى للخط إلى 7px لضمان اكتمال النصوص الطويلة جداً
         if (el.scrollWidth > availableWidth) {
-            while (el.scrollWidth > availableWidth && fontSize > 7) {
+            while (el.scrollWidth > availableWidth && fontSize > 5) {
                 fontSize -= 0.5;
                 el.style.fontSize = fontSize + 'px';
             }
@@ -1990,6 +1990,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
