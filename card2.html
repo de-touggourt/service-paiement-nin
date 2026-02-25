@@ -1959,8 +1959,8 @@ function autoShrinkText(container = document) {
     const elements = container.querySelectorAll('.shrink-target');
     
     elements.forEach(el => {
-        el.style.fontSize = '30px'; // البدء بالحجم الطبيعي
-        let fontSize = 30;
+        el.style.fontSize = '25px'; // البدء بالحجم الطبيعي
+        let fontSize = 25;
         
         // حد الأمان قبل الخط العمودي
         const containerLimit = 450; 
@@ -1969,7 +1969,7 @@ function autoShrinkText(container = document) {
 
         // التصغير بدقة 0.2 درجة لضمان أفضل تعبئة للمساحة دون قطع النص
         if (el.scrollWidth > availableWidth) {
-            while (el.scrollWidth > availableWidth && fontSize > 6) {
+            while (el.scrollWidth > availableWidth && fontSize > 4) {
                 fontSize -= 0.2; 
                 el.style.fontSize = fontSize + 'px';
             }
@@ -1988,6 +1988,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
