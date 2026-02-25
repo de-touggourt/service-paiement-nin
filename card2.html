@@ -1441,9 +1441,11 @@ function renderCards() {
                                     <div class="card-type-title">بطاقة التعريف المهنية</div>
                                     <div class="info-row"><span class="info-label">اللقب والاسم:&rlm;</span><span>${emp.name}</span></div>
                                     <div class="info-row"><span class="info-label">تاريخ الميلاد:&rlm;</span><span dir="ltr">${emp.dob}</span></div>
-                                    <div class="info-row"><span class="info-label">الرتبة:&rlm;</span><span>class="shrink-target">${emp.rank}</span></div>
-                                    <div class="info-row"><span class="info-label">مكان العمل:&rlm;</span><span>class="shrink-target">${emp.workplace || ''}</span></div>
-                                    <div class="info-row"><span class="info-label">توقرت في:&rlm;</span></div> 
+
+                                    <div class="info-row"><span class="info-label">الرتبة:&rlm;</span><span class="shrink-target">${emp.rank}</span></div>
+                                    <div class="info-row"><span class="info-label">مكان العمل:&rlm;</span><span class="shrink-target">${emp.workplace || ''}</span></div>
+
+                                    <div class="info-row"><span class="info-label">توقرت في:&rlm;</span></div>
 
                                 </div>
                                 <div class="left-section">
@@ -1513,6 +1515,7 @@ new QRious({
             }
         });
     }
+setTimeout(autoShrinkText, 50);
 }
 
 function goBackToMain() {
@@ -1737,8 +1740,8 @@ function getCardHTML(emp, templateId) {
                     <div class="card-type-title">بطاقة التعريف المهنية</div>
                     <div class="info-row"><span class="info-label">اللقب والاسم:</span><span>${emp.name}</span></div>
                     <div class="info-row"><span class="info-label">تاريخ الميلاد:</span><span dir="ltr">${emp.dob}</span></div>
-                    <div class="info-row"><span class="info-label">الرتبة:</span><span>${emp.rank}</span></div>
-                    <div class="info-row"><span class="info-label">مكان العمل:</span><span>${emp.workplace || ''}</span></div>
+                    <div class="info-row"><span class="info-label">الرتبة:</span><span class="shrink-target">${emp.rank}</span></div>
+                    <div class="info-row"><span class="info-label">مكان العمل:</span><span class="shrink-target">${emp.workplace || ''}</span></div>
                     <div class="info-row"><span class="info-label">توقرت في:</span></div> 
                 </div>
                 <div class="left-section">
@@ -1846,7 +1849,7 @@ async function generateProfessionalPDF(isLargeFormatConfig) {
             
             // حقن الـ HTML الخاص بالبطاقة
             renderContainer.innerHTML = getCardHTML(emp, templateId);
-            
+            autoShrinkText();
             // 3. الإصلاح الجذري للباركود ليعمل مع الحاوية المخفية
             if (templateId === 1) {
                 const barcodeSvg = renderContainer.querySelector(".barcode-render");
@@ -1938,19 +1941,19 @@ function downloadLargePDF() {
 }
 
 function autoShrinkText() {
-    // استهداف الرتبة ومكان العمل اللذان يحملان كلاس shrink-target
-    const elements = document.querySelectorAll('#card-container.theme-2 .shrink-target');
+    // استهداف العناصر التي تحمل الكلاس فقط
+    const elements = document.querySelectorAll('.shrink-target');
     
     elements.forEach(el => {
-        el.style.fontSize = '30px'; // الحجم الأصلي الافتراضي
+        el.style.fontSize = '30px'; // البدء بالحجم الأصلي
         let fontSize = 30;
         
-        // حساب المساحة المتاحة في السطر بدقة
-        const containerWidth = 440; // العرض الصافي المخصص للنص داخل القسم الأيمن
+        // حساب المساحة المتاحة (العرض الثابت 480 ناقص الهوامش وعرض التسمية)
+        const containerWidth = 440; 
         const labelWidth = el.previousElementSibling ? el.previousElementSibling.offsetWidth : 0;
         const availableWidth = containerWidth - labelWidth - 10; 
 
-        // تقليل حجم الخط طالما أن النص يتجاوز المساحة المتاحة
+        // تقليص الخط تدريجياً حتى يناسب المساحة
         while (el.scrollWidth > availableWidth && fontSize > 12) {
             fontSize -= 1;
             el.style.fontSize = fontSize + 'px';
