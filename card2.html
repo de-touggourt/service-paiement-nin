@@ -483,9 +483,10 @@ button[style*="background: #6c757d"]:hover { background: #334155 !important; }
 .shrink-target {
     white-space: nowrap; 
     display: inline-block;
-    overflow: hidden;
-    text-overflow: clip; /* قطع النص إذا تجاوز الحد في أسوأ الظروف */
-    max-width: 320px; /* إضافة حد أقصى تقريبي لعرض النص نفسه لمنع عبور الخط */
+    /* تأكد من إزالة max-width إذا كانت موجودة */
+    max-width: none !important; 
+    overflow: visible; /* السماح للنص بالظهور كاملاً أثناء عملية الحساب */
+    flex: 1;
 }
 
 #card-container.theme-2 .card-type-title { 
@@ -1244,9 +1245,9 @@ let isLargeFormat = false;
 function printTemplate(templateId) {
     window.scrollTo(0, 0); 
     currentTemplate = templateId;
-    isLargeFormat = true; // تفعيل إعدادات الحجم الكبير
+    isLargeFormat = true; 
 
-    // إجبار المتصفح على الوضع الأفقي (Landscape) ليتناسب مع الحجم الكبير
+    // إعدادات الصفحة للطباعة
     let style = document.getElementById('dynamic-page-orientation');
     if (!style) {
         style = document.createElement('style');
@@ -1261,25 +1262,26 @@ function printTemplate(templateId) {
         }
     `;
 
-    renderCards(); // إعادة رسم البطاقات بناءً على الحجم الكبير
+    // 1. رسم البطاقات أولاً
+    renderCards(); 
     
-    // 1. استدعاء فوري لعملية التصغير التلقائي للبطاقات التي تم رسمها للتو
+    // 2. تنفيذ التصغير التلقائي فوراً لضمان اكتمال النصوص
     setTimeout(() => {
         const container = document.getElementById('card-container');
         if (container) {
-            autoShrinkText(container); // تصغير "الرتبة" و "مكان العمل" لمنع تداخلها مع الخط
+            autoShrinkText(container); // استهداف الحاوية الرئيسية
         }
     }, 100);
 
-    // 2. إعطاء مهلة كافية (800ms) للمتصفح لتطبيق التغييرات ورسم الباركود قبل الطباعة
+    // 3. مهلة أمان (1 ثانية كاملة) لضمان أن المتصفح قد طبق الأحجام الجديدة لكل الموظفين
     setTimeout(() => {
         window.print();
         
-        // إعادة النظام والتنسيقات للوضع العادي (العمودي) تلقائياً بعد إغلاق نافذة الطباعة
+        // إعادة الإعدادات للوضع الطبيعي بعد الطباعة
         isLargeFormat = false;
         style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
         renderCards();
-    }, 800); 
+    }, 1000); 
 }
 
 function renderCards() {
@@ -1854,14 +1856,11 @@ async function generateProfessionalPDF(isLargeFormatConfig) {
             const emp = employees[i];
             
           
-            // 1. حقن محتوى البطاقة
 renderContainer.innerHTML = getCardHTML(emp, templateId);
-
-// 2. تفعيل التصغير التلقائي "داخل" حاوية الـ PDF حصراً
 autoShrinkText(renderContainer); 
 
-// 3. إضافة مهلة زمنية (50 مللي ثانية) لضمان ثبات الخطوط قبل التقاط الصورة
-await new Promise(resolve => setTimeout(resolve, 50));
+// هذا السطر ضروري جداً لاكتمال النص في الـ PDF
+await new Promise(resolve => setTimeout(resolve, 100));
          
             // 3. الإصلاح الجذري للباركود ليعمل مع الحاوية المخفية
             if (templateId === 1) {
@@ -1957,21 +1956,27 @@ function autoShrinkText(container = document) {
     const elements = container.querySelectorAll('.shrink-target');
     
     elements.forEach(el => {
+        // 1. العودة للحجم الأصلي للفحص
         el.style.fontSize = '30px'; 
         let fontSize = 30;
         
-        // --- تعديل الحد ليكون 445 لضمان عدم لمس الخط العمودي ---
-        const containerLimit = 445; 
+        // 2. حساب المساحة المتاحة بدقة (حتى الخط العمودي)
+        // العرض الثابت 480 - الهامش 20 = 460 بكسل
+        const containerLimit = 458; 
         const labelWidth = el.previousElementSibling ? el.previousElementSibling.offsetWidth : 0;
         const availableWidth = containerLimit - labelWidth;
 
-        // حلقة التصغير
+        // 3. عملية التصغير المستمرة حتى يكتمل النص داخل المساحة
+        // قمنا بخفض الحد الأدنى للخط إلى 7px لضمان اكتمال النصوص الطويلة جداً
         if (el.scrollWidth > availableWidth) {
-            while (el.scrollWidth > availableWidth && fontSize > 9) {
+            while (el.scrollWidth > availableWidth && fontSize > 7) {
                 fontSize -= 0.5;
                 el.style.fontSize = fontSize + 'px';
             }
         }
+
+        // 4. بعد الانتهاء، إذا ظل النص طويلاً، نضمن عدم قطعه برمجياً
+        el.style.overflow = 'visible';
     });
 }
 
@@ -1985,6 +1990,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
