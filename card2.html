@@ -1273,7 +1273,7 @@ function printTemplate(templateId) {
         if (container) {
             autoShrinkText(container); // استهداف الحاوية الرئيسية
         }
-    }, 100);
+    }, 500);
 
     // 3. مهلة أمان (1 ثانية كاملة) لضمان أن المتصفح قد طبق الأحجام الجديدة لكل الموظفين
     setTimeout(() => {
@@ -1283,7 +1283,7 @@ function printTemplate(templateId) {
         isLargeFormat = false;
         style.innerHTML = `@media print { @page { size: A4 portrait !important; margin: 0mm !important; } }`;
         renderCards();
-    }, 1000); 
+    }, 10000); 
 }
 
 function renderCards() {
@@ -1963,13 +1963,13 @@ function autoShrinkText(container = document) {
         let fontSize = 25;
         
         // حد الأمان قبل الخط العمودي
-        const containerLimit = 450; 
+        const containerLimit = 440; 
         const labelWidth = el.previousElementSibling ? el.previousElementSibling.offsetWidth : 0;
         const availableWidth = containerLimit - labelWidth;
 
         // التصغير بدقة 0.2 درجة لضمان أفضل تعبئة للمساحة دون قطع النص
         if (el.scrollWidth > availableWidth) {
-            while (el.scrollWidth > availableWidth && fontSize > 4) {
+            while (el.scrollWidth > availableWidth && fontSize > 2) {
                 fontSize -= 0.2; 
                 el.style.fontSize = fontSize + 'px';
             }
@@ -1988,6 +1988,7 @@ renderCards = function() {
     </script>
 </body>
 </html>
+
 
 
 
